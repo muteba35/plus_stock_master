@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@netlify/plugin-nextjs": "^5.15.9",
     "axios": "^1.13.6",
     "dexie": "^4.3.0",
     "framer-motion": "^12.38.0",
