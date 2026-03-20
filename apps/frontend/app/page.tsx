@@ -20,7 +20,7 @@ function Counter({ value, suffix = "" }: { value: number; suffix?: string }) {
     if (isInView) {
       let start = 0;
       const end = value;
-      const duration = 2000; // 2 secondes
+      const duration = 2000; 
       const increment = end / (duration / 16);
       const timer = setInterval(() => {
         start += increment;
@@ -38,19 +38,19 @@ function Counter({ value, suffix = "" }: { value: number; suffix?: string }) {
   return <span ref={ref}>{count}{suffix}</span>;
 }
 
-// --- CONFIGURATION DES ANIMATIONS ---
+// --- CONFIGURATION DES ANIMATIONS (Correction TypeScript avec 'as const') ---
 const reveal = {
   initial: { opacity: 0, y: 30 },
   whileInView: { opacity: 1, y: 0 },
   viewport: { once: true },
-  transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] }
+  transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] as const }
 };
 
 const slideIn = (direction: "left" | "right") => ({
   initial: { opacity: 0, x: direction === "left" ? -60 : 60 },
   whileInView: { opacity: 1, x: 0 },
   viewport: { once: true },
-  transition: { duration: 1, ease: [0.16, 1, 0.3, 1] }
+  transition: { duration: 1, ease: [0.16, 1, 0.3, 1] as const }
 });
 
 export default function LandingPage() {
@@ -64,9 +64,15 @@ export default function LandingPage() {
       <Navbar />
       <Hero />
 
-      {/* --- SECTION 1 : SERVICES (DESIGN AFFINÉ) --- */}
+      {/* --- SECTION 1 : SERVICES --- */}
       <section className="py-24 px-6 max-w-7xl mx-auto">
-        <motion.div {...reveal} className="text-center mb-16">
+        <motion.div 
+          initial={reveal.initial}
+          whileInView={reveal.whileInView}
+          viewport={reveal.viewport}
+          transition={reveal.transition}
+          className="text-center mb-16"
+        >
           <h2 className="text-indigo-600 font-black uppercase tracking-[0.3em] text-[10px] mb-4">Services Experts</h2>
           <motion.p style={{ color: textColor }} className="text-3xl md:text-4xl font-black italic tracking-tighter uppercase leading-tight">
             Une infrastructure robuste <br/> pour vos ventes.
@@ -80,7 +86,11 @@ export default function LandingPage() {
             { icon: <Globe size={20}/>, t: "E-commerce Sync", d: "Synchronisez votre boutique physique avec Shopify." }
           ].map((s, i) => (
             <motion.div 
-              key={i} {...reveal}
+              key={i}
+              initial={reveal.initial}
+              whileInView={reveal.whileInView}
+              viewport={reveal.viewport}
+              transition={{ ...reveal.transition, delay: i * 0.1 }}
               className="p-8 bg-slate-50/50 rounded-[2rem] border border-slate-100 hover:border-indigo-200 transition-all group"
             >
               <div className="w-10 h-10 bg-indigo-600 text-white rounded-xl flex items-center justify-center mb-6 group-hover:rotate-6 transition-transform">
@@ -104,7 +114,7 @@ export default function LandingPage() {
               Recevez des alertes automatiques avant la rupture de stock. Notre IA analyse vos cycles de vente.
             </p>
             <Link href="#" className="flex items-center gap-2 text-[10px] font-black uppercase italic text-indigo-600 group">
-              Découvrir l'analyse <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+              Découvrir lanalyse <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
             </Link>
           </motion.div>
           <motion.div {...slideIn("right")} className="relative">
@@ -124,7 +134,7 @@ export default function LandingPage() {
               Rapports <br/><span className="text-indigo-600">Clairs & Précis.</span>
             </motion.h2>
             <p className="text-slate-500 text-xs mb-8 font-bold uppercase tracking-tight ml-auto max-w-md">
-              Visualisez la santé de votre business en un coup d'œil. Marges nettes et produits phares.
+              Visualisez la santé de votre business en un coup dœil. Marges nettes et produits phares.
             </p>
             <div className="flex justify-end">
               <button className="px-6 py-3 border-2 border-indigo-600 text-indigo-600 rounded-full text-[10px] font-black uppercase italic hover:bg-indigo-600 hover:text-white transition-all">
@@ -135,9 +145,15 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* --- SECTION 4 : PRICING (HOVER & SMALL TEXT) --- */}
+      {/* --- SECTION 4 : PRICING --- */}
       <section id="pricing" className="py-24 px-6 relative">
-        <motion.div {...reveal} className="text-center mb-16">
+        <motion.div 
+          initial={reveal.initial}
+          whileInView={reveal.whileInView}
+          viewport={reveal.viewport}
+          transition={reveal.transition}
+          className="text-center mb-16"
+        >
           <h2 className="text-indigo-500 font-black uppercase text-[10px] tracking-[0.4em] mb-4">Tarification</h2>
           <motion.p style={{ color: textColor }} className="text-4xl md:text-5xl font-black italic uppercase tracking-tighter">
             Vitesse supérieure.
@@ -151,7 +167,11 @@ export default function LandingPage() {
             { t: "Enterprise", p: 99, f: ["Illimité", "API Dédiée"] }
           ].map((plan, i) => (
             <motion.div 
-              key={i} {...reveal}
+              key={i}
+              initial={reveal.initial}
+              whileInView={reveal.whileInView}
+              viewport={reveal.viewport}
+              transition={{ ...reveal.transition, delay: i * 0.1 }}
               whileHover={{ y: -10, scale: 1.02 }}
               className={`p-10 rounded-[3rem] border transition-all cursor-pointer ${plan.hot ? 'border-indigo-500 bg-indigo-600/5 shadow-2xl shadow-indigo-500/10' : 'border-white/10 bg-white/5'} backdrop-blur-md`}
             >
@@ -165,14 +185,14 @@ export default function LandingPage() {
                 ))}
               </ul>
               <button className={`w-full py-4 rounded-xl text-[10px] font-black uppercase italic transition-all ${plan.hot ? 'bg-indigo-600 text-white' : 'bg-white text-slate-900'}`}>
-                S'abonner
+                Sabonner
               </button>
             </motion.div>
           ))}
         </div>
       </section>
 
-      {/* --- SECTION 5 : TRUST / STATS (ANIMÉS) --- */}
+      {/* --- SECTION 5 : TRUST / STATS --- */}
       <section className="py-24 px-6 border-t border-white/5">
         <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-12 text-center">
           {[
@@ -181,7 +201,13 @@ export default function LandingPage() {
             { n: 24, s: "h", t: "Réponse" },
             { n: 10, s: "M", t: "Ventes" }
           ].map((stat, i) => (
-            <motion.div key={i} {...reveal}>
+            <motion.div 
+              key={i}
+              initial={reveal.initial}
+              whileInView={reveal.whileInView}
+              viewport={reveal.viewport}
+              transition={reveal.transition}
+            >
               <div className="text-4xl md:text-5xl font-black text-white mb-1 italic tracking-tighter leading-none">
                 <Counter value={stat.n} suffix={stat.s} />
               </div>
