@@ -7,52 +7,78 @@ export default function Hero() {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: { staggerChildren: 0.2, delayChildren: 0.3 }
+      transition: { staggerChildren: 0.1, delayChildren: 0.2 }
     }
   };
 
   const itemVariants = {
-    hidden: { opacity: 0, y: 30 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] } }
+    hidden: { opacity: 0, y: 20, filter: "blur(10px)" },
+    visible: { 
+      opacity: 1, 
+      y: 0, 
+      filter: "blur(0px)",
+      transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] } 
+    }
   };
 
   return (
-    <section className="pt-48 pb-20 px-6 overflow-hidden">
-      <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
+    <section className="relative pt-32 pb-16 px-6 overflow-hidden bg-white">
+      {/* Background Decor - Très subtil */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full -z-10">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-50 rounded-full blur-[120px] opacity-50" />
+      </div>
+
+      <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
         <motion.div variants={containerVariants} initial="hidden" animate="visible">
-          <motion.span variants={itemVariants} className="inline-block px-4 py-1.5 mb-6 text-sm font-semibold text-indigo-600 bg-indigo-50 rounded-full">
-            Nouveau : Mode multi-entrepôts
-          </motion.span>
-          <motion.h1 variants={itemVariants} className="text-6xl lg:text-8xl font-extrabold text-slate-900 leading-[0.9] mb-8 tracking-tighter">
+          {/* Badge Style Apple/Linear */}
+          <motion.div variants={itemVariants} className="inline-flex items-center gap-2 px-3 py-1 mb-8 border border-slate-200 rounded-full bg-slate-50/50 backdrop-blur-md">
+            <span className="flex h-2 w-2 rounded-full bg-indigo-600 animate-pulse" />
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-600">
+                Nouveau : Mode multi-entrepôts
+            </span>
+          </motion.div>
+
+          <motion.h1 variants={itemVariants} className="text-5xl lg:text-7xl font-black text-slate-900 leading-[0.95] mb-8 tracking-tighter uppercase italic">
             Gérez votre stock <br />
-            <span className="text-indigo-600 italic font-serif">en légèreté.</span>
+            <span className="text-indigo-600 not-italic font-black text-outline">avec précision.</span>
           </motion.h1>
-          <motion.p variants={itemVariants} className="text-xl text-slate-600 mb-10 max-w-lg leading-relaxed">
-            La solution tout-en-un pour automatiser vos inventaires et optimiser votre logistique en temps réel.
+
+          <motion.p variants={itemVariants} className="text-sm md:text-base text-slate-500 mb-10 max-w-md font-medium leading-relaxed uppercase tracking-tight">
+            L'infrastructure de gestion de stock la plus rapide au monde. 
+            Automatisez, suivez et vendez sans friction.
           </motion.p>
-          <motion.div variants={itemVariants} className="flex flex-wrap gap-4">
-            <button className="px-8 py-4 bg-indigo-600 text-white rounded-full font-bold text-lg hover:shadow-2xl hover:scale-105 transition-all flex items-center gap-2">
-              Démarrer <ArrowRight size={20} />
+
+          <motion.div variants={itemVariants} className="flex flex-wrap gap-5">
+            <button className="px-7 py-3.5 bg-slate-950 text-white rounded-full font-black text-[11px] uppercase tracking-widest hover:bg-indigo-600 transition-all flex items-center gap-3 group">
+              Démarrer l'expérience <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
             </button>
-            <button className="px-8 py-4 bg-white text-slate-700 border border-slate-200 rounded-full font-bold text-lg hover:bg-slate-50 transition flex items-center gap-2">
-              <PlayCircle size={20} /> Voir démo
+            <button className="px-7 py-3.5 bg-transparent text-slate-900 border border-slate-200 rounded-full font-black text-[11px] uppercase tracking-widest hover:bg-slate-50 transition flex items-center gap-3">
+              <PlayCircle size={16} /> Voir la démo
             </button>
           </motion.div>
         </motion.div>
 
+        {/* Dashboard avec animation de flottement */}
         <motion.div 
-          initial={{ opacity: 0, x: 100 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-          className="relative"
+          initial={{ opacity: 0, scale: 0.9, rotateY: 10 }}
+          animate={{ opacity: 1, scale: 1, rotateY: 0 }}
+          transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
+          className="relative lg:ml-auto"
         >
-          <div className="absolute inset-0 bg-indigo-300 rounded-[3rem] blur-[100px] opacity-20" />
           <motion.div 
-            whileHover={{ y: -10 }}
-            className="relative bg-white rounded-[2.5rem] p-4 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] border border-slate-100"
+            animate={{ y: [0, -15, 0] }}
+            transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+            className="relative z-10 bg-white rounded-[2.5rem] p-3 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.12)] border border-slate-100"
           >
-            <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=1000" alt="Dashboard" className="rounded-[2rem] w-full shadow-inner" />
+            <img 
+              src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=1000" 
+              alt="Dashboard" 
+              className="rounded-[2rem] w-full" 
+            />
           </motion.div>
+          
+          {/* Éclat derrière l'image */}
+          <div className="absolute -inset-4 bg-indigo-500/10 blur-3xl rounded-full -z-10" />
         </motion.div>
       </div>
     </section>
