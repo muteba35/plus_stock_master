@@ -38,10 +38,22 @@ export default function Hero() {
             </span>
           </motion.div>
 
-          <motion.h1 variants={itemVariants} className="text-5xl lg:text-7xl font-black text-slate-900 leading-[0.95] mb-8 tracking-tighter uppercase italic">
+          <motion.h1 
+            variants={itemVariants} 
+            className="text-5xl lg:text-7xl font-black text-slate-900 leading-[0.92] mb-8 tracking-tighter uppercase"
+            >
             Gérez votre stock <br />
-            <span className="text-indigo-600 not-italic font-black text-outline">avec précision.</span>
-          </motion.h1>
+            <span className="relative inline-block text-indigo-600 italic tracking-[-0.05em]">
+            avec précision.
+            {/* Une petite touche de "Brillance" sur le mot important */}
+            <motion.span 
+            initial={{ x: "-100%", opacity: 0 }}
+            animate={{ x: "100%", opacity: 1 }}
+            transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 3, ease: "linear" }}
+            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -skew-x-12 pointer-events-none"
+            />
+        </span>
+        </motion.h1>
 
           <motion.p variants={itemVariants} className="text-sm md:text-base text-slate-500 mb-10 max-w-md font-medium leading-relaxed uppercase tracking-tight">
             L'infrastructure de gestion de stock la plus rapide au monde. 

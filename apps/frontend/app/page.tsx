@@ -7,8 +7,8 @@ import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
 import { 
   ArrowRight, CheckCircle2, Smartphone, Database, 
-  Globe, Facebook, Linkedin, Instagram, ArrowUp
-} from "lucide-react";
+  Globe, Facebook, Linkedin, Instagram, ArrowUp,
+  Zap, ShieldCheck, WifiOff, FileDown } from "lucide-react";
 
 // --- COMPOSANT COMPTEUR ---
 function Counter({ value, suffix = "" }: { value: number; suffix?: string }) {
@@ -138,7 +138,62 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* --- SECTION 4 : PRICING --- */}
+{/* --- SECTION BENTO GRID (FEATURES TECHNIQUES) --- */}
+      <section className="py-32 px-6 max-w-7xl mx-auto">
+        <motion.div initial={reveal.initial} whileInView={reveal.whileInView} className="mb-16">
+          <h2 className="text-indigo-500 font-black uppercase text-[10px] tracking-[0.4em] mb-4">Ingénierie</h2>
+          <motion.p style={{ color: textColor }} className="text-4xl font-black italic uppercase tracking-tighter">Puissance brute.</motion.p>
+        </motion.div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 md:grid-rows-2 gap-4 h-full md:h-[600px]">
+          
+          {/* Carte 1: Scan IA (Grande) */}
+          <motion.div whileHover={{ y: -5 }} className="md:col-span-2 md:row-span-2 bg-slate-950 rounded-[3rem] p-10 relative overflow-hidden flex flex-col justify-between border border-white/10 group">
+            <div className="absolute top-0 right-0 w-full h-full bg-[url('https://images.unsplash.com/photo-1556742044-3c52d6e88c62?auto=format&fit=crop&q=80&w=800')] bg-cover opacity-20 group-hover:scale-110 transition-transform duration-700" />
+            <div className="relative z-10 w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center mb-4"><Zap size={24} className="text-white" /></div>
+            <div className="relative z-10">
+              <h3 className="text-white text-3xl font-black uppercase italic mb-3">Scan IA Intégré</h3>
+              <p className="text-slate-400 text-xs font-bold uppercase tracking-wide leading-relaxed max-w-xs">
+                Reconnaissance instantanée des codes-barres via caméra 4K. Inventaire 5x plus rapide.
+              </p>
+            </div>
+          </motion.div>
+
+          {/* Carte 2: Sécurité (Large) */}
+          <motion.div whileHover={{ y: -5 }} className="md:col-span-2 bg-indigo-600 rounded-[3rem] p-8 relative overflow-hidden flex items-center gap-6 group">
+            <div className="flex-1">
+              <h3 className="text-white text-xl font-black uppercase italic mb-2">Cloud Security</h3>
+              <p className="text-indigo-100 text-[10px] font-bold uppercase opacity-80">Chiffrement AES-256 bits & Sauvegarde automatique toutes les 5 min.</p>
+            </div>
+            <ShieldCheck size={80} className="text-white/20 absolute -right-4 group-hover:rotate-12 transition-transform" />
+          </motion.div>
+
+          {/* Carte 3: Mode Offline */}
+          <motion.div whileHover={{ y: -5 }} className="md:col-span-1 bg-slate-100 rounded-[3rem] p-8 flex flex-col justify-between border border-slate-200 group">
+            <WifiOff size={28} className="text-indigo-600" />
+            <div>
+              <h3 className="text-slate-900 font-black uppercase italic text-sm mb-1">Mode Offline</h3>
+              <p className="text-slate-500 text-[9px] font-bold uppercase leading-tight">Continuez à vendre même sans connexion internet.</p>
+            </div>
+          </motion.div>
+
+          {/* Carte 4: Export PDF */}
+          <motion.div whileHover={{ y: -5 }} className="md:col-span-1 bg-white rounded-[3rem] p-8 flex flex-col justify-between border border-slate-200 shadow-sm group">
+            <div className="w-10 h-10 bg-slate-950 rounded-xl flex items-center justify-center"><FileDown size={20} className="text-white" /></div>
+            <div>
+              <h3 className="text-slate-900 font-black uppercase italic text-sm mb-1">Export PDF/XL</h3>
+              <p className="text-slate-500 text-[9px] font-bold uppercase leading-tight">Générez vos bons de commande en un clic.</p>
+            </div>
+          </motion.div>
+
+        </div>
+      </section>
+  
+  {/* --- SÉPARATEUR --- */}
+      <div className="w-full flex justify-center px-6"><div className="w-full max-w-4xl h-[1px] bg-gradient-to-r from-transparent via-slate-200 to-transparent opacity-60" /></div>
+
+
+    {/* --- SECTION 4 : PRICING --- */}
       <section id="pricing" className="py-24 px-6 relative">
         <motion.div initial={reveal.initial} whileInView={reveal.whileInView} viewport={reveal.viewport} transition={reveal.transition} className="text-center mb-16">
           <h2 className="text-indigo-500 font-black uppercase text-[10px] tracking-[0.4em] mb-4">Tarification</h2>
