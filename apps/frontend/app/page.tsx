@@ -71,6 +71,9 @@ export default function LandingPage() {
           ))}
         </div>
       </section>
+      {/* --- SÉPARATEUR 2 --- */}
+      <div className="w-full flex justify-center px-6"><div className="w-full max-w-4xl h-[1px] bg-gradient-to-r from-transparent via-slate-200 to-transparent opacity-40" /></div>
+
 
       {/* --- SECTION 2 & 3 : SOLUTIONS BUSINESS --- */}
       <div className="space-y-24 py-12">
@@ -129,6 +132,9 @@ export default function LandingPage() {
           </div>
         </section>
       </div>
+      {/* --- SÉPARATEUR 2 --- */}
+      <div className="w-full flex justify-center px-6"><div className="w-full max-w-4xl h-[1px] bg-gradient-to-r from-transparent via-slate-200 to-transparent opacity-40" /></div>
+
 
       {/* --- SECTION 4 : FONCTIONNALITÉS CLÉS --- */}
       <section id="solutions" className="py-24 px-6 max-w-6xl mx-auto scroll-mt-20">
@@ -158,6 +164,9 @@ export default function LandingPage() {
           ))}
         </div>
       </section>
+      {/* --- SÉPARATEUR 2 --- */}
+      <div className="w-full flex justify-center px-6"><div className="w-full max-w-4xl h-[1px] bg-gradient-to-r from-transparent via-slate-200 to-transparent opacity-40" /></div>
+
 
       {/* --- SECTION 5 : ABONNEMENTS & TARIFS --- */}
       <section id="pricing" className="py-24 px-6 max-w-6xl mx-auto">
@@ -219,6 +228,9 @@ export default function LandingPage() {
           ))}
         </div>
       </section>
+      {/* --- SÉPARATEUR 2 --- */}
+      <div className="w-full flex justify-center px-6"><div className="w-full max-w-4xl h-[1px] bg-gradient-to-r from-transparent via-slate-200 to-transparent opacity-40" /></div>
+
 
       
             {/* --- SECTION VISION : POURQUOI NOUS ? --- */}
@@ -262,6 +274,8 @@ export default function LandingPage() {
         </div>
       </section>
 
+{/* --- SÉPARATEUR 2 --- */}
+      <div className="w-full flex justify-center px-6"><div className="w-full max-w-4xl h-[1px] bg-gradient-to-r from-transparent via-slate-200 to-transparent opacity-40" /></div>
 
 
       {/* --- FOOTER AMÉLIORÉ --- */}
