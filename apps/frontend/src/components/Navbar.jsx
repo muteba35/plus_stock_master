@@ -9,18 +9,19 @@ export default function Navbar() {
   const { scrollY } = useScroll();
   const [open, setOpen] = useState(false);
 
-  // Animations scroll (Adaptées pour être moins massives sur mobile)
+  // Animations scroll
   const width = useTransform(scrollY, [0, 100], ["100%", "95%"]);
   const y = useTransform(scrollY, [0, 100], [0, 12]);
   const borderRadius = useTransform(scrollY, [0, 100], [0, 24]);
   const borderWidth = useTransform(scrollY, [0, 100], [0, 1]);
   const shadow = useTransform(scrollY, [0, 100], ["none", "0 4px 20px -5px rgba(0,0,0,0.1)"]);
 
+  // --- LIENS RELIÉS AUX SECTIONS ---
   const menuItems = [
-    { name: "Fonctionnalités", href: "#" },
-    { name: "Solutions", href: "#" },
+    { name: "Mobile", href: "#mobile" },
+    { name: "Solutions", href: "#solutions" },
     { name: "Tarifs", href: "#pricing" },
-    { name: "À propos", href: "#" },
+    { name: "Contact", href: "#contact" },
   ];
 
   return (
@@ -44,27 +45,26 @@ export default function Navbar() {
               <div className="w-7 h-7 sm:w-8 sm:h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform">
                 <Package2 size={16} />
               </div>
-              {/* Le texte disparaît sur les tous petits écrans pour laisser la place aux boutons */}
               <span className="hidden xs:block text-[10px] sm:text-xs font-black tracking-tighter text-slate-900 uppercase italic">
                 StockMaster
               </span>
             </Link>
           </div>
 
-          {/* CENTRE : MENU DESKTOP */}
+          {/* CENTRE : MENU DESKTOP (Ancres reliées) */}
           <div className="hidden md:flex items-center gap-6 lg:gap-8 bg-slate-100/50 px-5 py-1.5 rounded-full border border-slate-200/50">
             {menuItems.map((item) => (
-              <Link
+              <a
                 key={item.name}
                 href={item.href}
                 className="text-[9px] lg:text-[10px] font-black text-slate-500 hover:text-indigo-600 transition-colors uppercase tracking-widest italic"
               >
                 {item.name}
-              </Link>
+              </a>
             ))}
           </div>
 
-          {/* CÔTÉ DROIT : ACTIONS (Optimisé pour iPhone SE/XR) */}
+          {/* CÔTÉ DROIT : ACTIONS */}
           <div className="flex items-center gap-1.5 sm:gap-3">
             <Link 
               href="#" 
@@ -74,7 +74,7 @@ export default function Navbar() {
             </Link>
 
             <Link 
-              href="#" 
+              href="#pricing" 
               className="group flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-slate-900 text-[8px] sm:text-[9px] uppercase font-black italic text-white rounded-full hover:bg-indigo-600 transition-all"
             >
               <span className="hidden sm:inline">Essai Gratuit</span>
@@ -95,7 +95,7 @@ export default function Navbar() {
             >
               <div className="flex flex-col p-5 gap-3">
                 {menuItems.map((item) => (
-                  <Link
+                  <a
                     key={item.name}
                     href={item.href}
                     onClick={() => setOpen(false)}
@@ -103,7 +103,7 @@ export default function Navbar() {
                   >
                     {item.name}
                     <ArrowRight size={12} className="text-indigo-600" />
-                  </Link>
+                  </a>
                 ))}
                 <div className="h-px bg-slate-50 my-1" />
                 <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter text-center">
