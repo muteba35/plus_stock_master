@@ -167,6 +167,57 @@ export default function LandingPage() {
           ))}
         </div>
       </section>
+        {/* --- SÉPARATEUR 2 --- */}
+      <div className="w-full flex justify-center px-6"><div className="w-full max-w-4xl h-[1px] bg-gradient-to-r from-transparent via-slate-200 to-transparent opacity-40" /></div>
+
+
+      {/* --- SECTION 4 : PRICING --- */}
+      <section id="pricing" className="py-24 px-6 relative">
+        <motion.div 
+          initial={reveal.initial}
+          whileInView={reveal.whileInView}
+          viewport={reveal.viewport}
+          transition={reveal.transition}
+          className="text-center mb-16"
+        >
+          <h2 className="text-indigo-500 font-black uppercase text-[10px] tracking-[0.4em] mb-4">Tarification</h2>
+          <motion.p style={{ color: textColor }} className="text-4xl md:text-5xl font-black italic uppercase tracking-tighter">
+            Vitesse supérieure.
+          </motion.p>
+        </motion.div>
+
+        <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-6">
+          {[
+            { t: "Starter", p: 0, f: ["1 Boutique", "Stock Limité"] },
+            { t: "Pro", p: 49, f: ["5 Boutiques", "IA Analytics"], hot: true },
+            { t: "Enterprise", p: 99, f: ["Illimité", "API Dédiée"] }
+          ].map((plan, i) => (
+            <motion.div 
+              key={i}
+              initial={reveal.initial}
+              whileInView={reveal.whileInView}
+              viewport={reveal.viewport}
+              transition={{ ...reveal.transition, delay: i * 0.1 }}
+              whileHover={{ y: -10, scale: 1.02 }}
+              className={`p-10 rounded-[3rem] border transition-all cursor-pointer ${plan.hot ? 'border-indigo-500 bg-indigo-600/5 shadow-2xl shadow-indigo-500/10' : 'border-white/10 bg-white/5'} backdrop-blur-md`}
+            >
+              <h3 className="text-indigo-500 font-black uppercase italic text-xs mb-2 tracking-widest">{plan.t}</h3>
+              <div className="text-5xl font-black text-white mb-8 tracking-tighter">{plan.p}$<span className="text-[10px] text-slate-500 uppercase">/mo</span></div>
+              <ul className="space-y-4 mb-10">
+                {plan.f.map((feat, j) => (
+                  <li key={j} className="flex items-center gap-3 text-slate-400 font-bold italic text-[10px] uppercase">
+                    <CheckCircle2 size={14} className="text-indigo-500" /> {feat}
+                  </li>
+                ))}
+              </ul>
+              <button className={`w-full py-4 rounded-xl text-[10px] font-black uppercase italic transition-all ${plan.hot ? 'bg-indigo-600 text-white' : 'bg-white text-slate-900'}`}>
+                Sabonner
+              </button>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
       {/* --- SÉPARATEUR 2 --- */}
       <div className="w-full flex justify-center px-6"><div className="w-full max-w-4xl h-[1px] bg-gradient-to-r from-transparent via-slate-200 to-transparent opacity-40" /></div>
 
