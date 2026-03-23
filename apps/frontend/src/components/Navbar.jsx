@@ -18,10 +18,10 @@ export default function Navbar() {
 
   // --- LIENS RELIÉS AUX SECTIONS ---
   const menuItems = [
-    { name: "Mobile", href: "#mobile" },
+    { name: "Fonctionnalités", href: "#Fonctionnalités" },
     { name: "Solutions", href: "#solutions" },
     { name: "Tarifs", href: "#pricing" },
-    { name: "Contact", href: "#contact" },
+    { name: "Contact", href: "#footer" },
   ];
 
   return (

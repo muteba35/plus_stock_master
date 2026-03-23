@@ -279,7 +279,7 @@ export default function LandingPage() {
 
 
       {/* --- FOOTER AMÉLIORÉ --- */}
-      <footer className="bg-slate-950 text-white pt-20 pb-10 border-t border-white/5 relative overflow-hidden">
+      <footer id="footer" className="bg-slate-950 text-white pt-20 pb-10 border-t border-white/5 relative overflow-hidden">
         {/* Décoration d'arrière-plan */}
         <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-600/5 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2" />
         
@@ -308,7 +308,7 @@ export default function LandingPage() {
             <div>
               <h4 className="text-white text-[10px] font-black uppercase tracking-[0.3em] mb-6">Plateforme</h4>
               <ul className="space-y-4">
-                {['Solutions', 'Tarifs', 'Sécurité', 'Application Mobile'].map((item) => (
+                {['Solutions', 'Tarifs', 'Sécurité', 'Fonctionnalités'].map((item) => (
                   <li key={item}>
                     <a href="#" className="text-slate-500 hover:text-indigo-400 text-[10px] font-bold uppercase transition-colors tracking-widest">{item}</a>
                   </li>
