@@ -9,14 +9,13 @@ export default function Navbar() {
   const { scrollY } = useScroll();
   const [open, setOpen] = useState(false);
 
-  // Animations scroll
+  // Animations au scroll (réduction de la barre)
   const width = useTransform(scrollY, [0, 100], ["100%", "95%"]);
   const y = useTransform(scrollY, [0, 100], [0, 12]);
   const borderRadius = useTransform(scrollY, [0, 100], [0, 24]);
   const borderWidth = useTransform(scrollY, [0, 100], [0, 1]);
-  const shadow = useTransform(scrollY, [0, 100], ["none", "0 4px 20px -5px rgba(0,0,0,0.1)"]);
+  const shadow = useTransform(scrollY, [0, 100], ["none", "0 10px 30px -10px rgba(0,0,0,0.1)"]);
 
-  // --- LIENS RELIÉS AUX SECTIONS ---
   const menuItems = [
     { name: "Fonctionnalités", href: "#Fonctionnalités" },
     { name: "Solutions", href: "#solutions" },
@@ -28,36 +27,44 @@ export default function Navbar() {
     <div className="fixed w-full flex justify-center z-[100] pointer-events-none px-2 sm:px-4">
       <motion.nav
         style={{ width, y, borderRadius, borderWidth, boxShadow: shadow }}
-        className="bg-white/90 backdrop-blur-md border-slate-200/50 pointer-events-auto overflow-hidden"
+        className="bg-white/95 backdrop-blur-md border-slate-200/60 pointer-events-auto overflow-hidden"
       >
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 h-14 sm:h-20 flex items-center justify-between gap-4">
           
-          {/* CÔTÉ GAUCHE : HAMBURGER + LOGO */}
-          <div className="flex items-center gap-2 sm:gap-4">
+          {/* --- LOGO + NOM MODERNE --- */}
+          <div className="flex items-center gap-3">
             <button 
-              className="md:hidden p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
+              className="md:hidden p-2 hover:bg-slate-100 rounded-xl transition-colors"
               onClick={() => setOpen(!open)}
             >
-              {open ? <X size={18} className="text-slate-900"/> : <Menu size={18} className="text-slate-900"/>}
+              {open ? <X size={20} className="text-slate-900"/> : <Menu size={20} className="text-slate-900"/>}
             </button>
 
-            <Link href="/" className="flex items-center gap-1.5 group">
-              <div className="w-7 h-7 sm:w-8 sm:h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform">
-                <Package2 size={16} />
+            <Link href="/" className="flex items-center gap-2.5 group">
+              {/* Icône du Logo avec effet de profondeur */}
+              <div className="w-9 h-9 sm:w-11 sm:h-11 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-600/30 group-hover:scale-105 group-hover:rotate-3 transition-all duration-300">
+                <Package2 size={22} strokeWidth={2.5} />
               </div>
-              <span className="hidden xs:block text-[10px] sm:text-xs font-black tracking-tighter text-slate-900 uppercase italic">
-                StockMaster
-              </span>
+              
+              {/* Le Nom StockMaster avec style Typo Moderne */}
+              <div className="flex flex-col leading-[0.8]">
+                <span className="text-lg sm:text-xl font-black tracking-tighter text-slate-900 uppercase">
+                  STOCK<span className="text-indigo-600">MASTER</span>
+                </span>
+                <span className="text-[7px] sm:text-[9px] font-bold text-slate-400 uppercase tracking-[0.3em] mt-1 ml-0.5">
+                  Pro Edition
+                </span>
+              </div>
             </Link>
           </div>
 
-          {/* CENTRE : MENU DESKTOP (Ancres reliées) */}
-          <div className="hidden md:flex items-center gap-6 lg:gap-8 bg-slate-100/50 px-5 py-1.5 rounded-full border border-slate-200/50">
+          {/* --- NAVIGATION CENTRALE (Desktop) --- */}
+          <div className="hidden md:flex items-center gap-1 bg-slate-100/50 p-1 rounded-2xl border border-slate-200/50">
             {menuItems.map((item) => (
               <a
                 key={item.name}
                 href={item.href}
-                className="text-[9px] lg:text-[10px] font-black text-slate-500 hover:text-indigo-600 transition-colors uppercase tracking-widest italic"
+                className="px-4 py-2 text-[10px] lg:text-[11px] font-black text-slate-500 hover:text-indigo-600 hover:bg-white rounded-xl transition-all uppercase tracking-widest"
               >
                 {item.name}
               </a>
@@ -84,31 +91,28 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* MENU MOBILE DÉROULANT */}
+        {/* --- MENU MOBILE DÉROULANT --- */}
         <AnimatePresence>
           {open && (
             <motion.div 
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
               className="md:hidden border-t border-slate-100 bg-white"
             >
-              <div className="flex flex-col p-5 gap-3">
+              <div className="flex flex-col p-6 gap-4">
                 {menuItems.map((item) => (
                   <a
                     key={item.name}
                     href={item.href}
                     onClick={() => setOpen(false)}
-                    className="text-[11px] font-black uppercase italic text-slate-600 py-1 flex items-center justify-between"
+                    className="text-sm font-black uppercase text-slate-600 hover:text-indigo-600 py-2 border-b border-slate-50 flex items-center justify-between"
                   >
                     {item.name}
-                    <ArrowRight size={12} className="text-indigo-600" />
+                    <ArrowRight size={16} className="text-indigo-500" />
                   </a>
                 ))}
-                <div className="h-px bg-slate-50 my-1" />
-                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter text-center">
-                  Gestion de stock simplifiée • 2026
-                </p>
               </div>
             </motion.div>
           )}
