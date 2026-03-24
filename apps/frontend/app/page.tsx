@@ -116,7 +116,7 @@ export default function LandingPage() {
             </motion.div>
 
             <motion.div {...slideIn("right")} className="order-1 lg:order-2 lg:text-right flex flex-col lg:items-end">
-              <div className="inline-block px-3 py-1 rounded-full border border-indigo-200 text-indigo-600 text-[9px] font-bold uppercase tracking-widest mb-4">Sécurité Maximale</div>
+             <div className="inline-block px-3 py-1 rounded-full border border-indigo-200 text-indigo-600 text-[9px] font-bold uppercase tracking-widest mb-4">Sécurité Maximale</div>
               <motion.h2 style={{ color: textColor }} className="text-3xl md:text-4xl font-extrabold uppercase mb-6 leading-tight tracking-tighter">
                 Protection & <br/><span className="text-indigo-600">Confidentialité.</span>
               </motion.h2>
