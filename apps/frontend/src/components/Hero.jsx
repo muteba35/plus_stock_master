@@ -37,32 +37,35 @@ export default function Hero() {
                 Nouveau : Mode multi-entrepôts
             </span>
           </motion.div>
-
-          <motion.h1 
-            variants={itemVariants} 
-            className="text-5xl lg:text-7xl font-black text-slate-900 leading-[0.92] mb-8 tracking-tighter uppercase"
+           <motion.h1 
+              variants={itemVariants} 
+              className="text-5xl lg:text-7xl font-black text-slate-900 leading-[0.92] mb-8 tracking-tighter"
             >
-            Gérez votre stock <br />
-            <span className="relative inline-block text-indigo-600 italic tracking-[-0.05em]">
-            avec précision.
-            {/* Une petite touche de "Brillance" sur le mot important */}
-            <motion.span 
-            initial={{ x: "-100%", opacity: 0 }}
-            animate={{ x: "100%", opacity: 1 }}
-            transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 3, ease: "linear" }}
-            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -skew-x-12 pointer-events-none"
-            />
-        </span>
-        </motion.h1>
-
-          <motion.p variants={itemVariants} className="text-sm md:text-base text-slate-500 mb-10 max-w-md font-medium leading-relaxed uppercase tracking-tight">
-            L'infrastructure de gestion de stock la plus rapide au monde. 
-            Automatisez, suivez et vendez sans friction.
+              Gérez votre <br />
+              stock{" "}
+              <span className="relative inline-block text-indigo-600 italic tracking-[-0.02em]">
+                avec précision.
+                {/* Effet de brillance */}
+                <motion.span 
+                  initial={{ x: "-100%", opacity: 0 }}
+                  animate={{ x: "100%", opacity: 1 }}
+                  transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 3, ease: "linear" }}
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -skew-x-12 pointer-events-none"
+                />
+              </span>
+          </motion.h1>
+           
+         <motion.p 
+            variants={itemVariants} 
+            className="text-sm md:text-base text-slate-500 mb-10 max-w-md font-medium leading-relaxed uppercase tracking-tight"
+          >
+            La solution complète de gestion de stock pour les entreprises en RDC. 
+            Sécurisez vos inventaires avec le suivi en temps réel et automatisez vos rapports de ventes sans aucune erreur.
           </motion.p>
 
           <motion.div variants={itemVariants} className="flex flex-wrap gap-5">
             <button className="px-7 py-3.5 bg-slate-950 text-white rounded-full font-black text-[11px] uppercase tracking-widest hover:bg-indigo-600 transition-all flex items-center gap-3 group">
-              Démarrer l'expérience <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+              Démarrer l`experience <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
             </button>
             <button className="px-7 py-3.5 bg-transparent text-slate-900 border border-slate-200 rounded-full font-black text-[11px] uppercase tracking-widest hover:bg-slate-50 transition flex items-center gap-3">
               <PlayCircle size={16} /> Voir la démo

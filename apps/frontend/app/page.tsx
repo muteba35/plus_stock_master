@@ -85,7 +85,7 @@ export default function LandingPage() {
                 Zéro interruption <br/><span className="text-indigo-600">Hors Connexion.</span>
               </motion.h2>
               <p className="text-slate-500 text-xs font-bold uppercase tracking-tight leading-relaxed max-w-md mb-8">
-                L'internet tombe ? Votre commerce continue. Enregistrez vos ventes et mouvements de stock en mode hors-ligne. Le système se synchronise automatiquement dès le retour du réseau.
+                L`internet tombe ? Votre commerce continue. Enregistrez vos ventes et mouvements de stock en mode hors-ligne. Le système se synchronise automatiquement dès le retour du réseau.
               </p>
               <div className="flex items-center gap-3 text-indigo-600 font-bold uppercase text-[10px] tracking-widest">
                 <ShieldCheck size={14} /> Fiabilité garantie 24h/7j
