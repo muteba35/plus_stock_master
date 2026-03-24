@@ -21,7 +21,7 @@ export default function Navbar() {
     { name: "Fonctionnalités", href: "#Fonctionnalités" },
     { name: "Solutions", href: "#solutions" },
     { name: "Tarifs", href: "#pricing" },
-    { name: "Contact", href: "#footer" },
+    { name: "A propos", href: "#apropos" },
   ];
 
   return (

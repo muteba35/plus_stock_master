@@ -44,7 +44,7 @@ export default function LandingPage() {
       <Hero />
 
       {/* --- SECTION 1 : ACCESSIBILITÉ & MOBILITÉ --- */}
-      <section className="py-20 px-6 max-w-6xl mx-auto">
+      <section id="Fonctionnalités" className="py-20 px-6 max-w-6xl mx-auto">
         <motion.div {...reveal} className="text-center mb-12">
           <h2 className="text-indigo-600 font-bold uppercase tracking-widest text-[10px] mb-3">Votre boutique partout</h2>
           <motion.p style={{ color: textColor }} className="text-2xl md:text-3xl font-extrabold tracking-tight uppercase">
@@ -167,36 +167,25 @@ export default function LandingPage() {
       {/* --- SÉPARATEUR 2 --- */}
       <div className="w-full flex justify-center px-6"><div className="w-full max-w-4xl h-[1px] bg-gradient-to-r from-transparent via-slate-200 to-transparent opacity-40" /></div>
 
-
-      {/* --- SECTION 5 : ABONNEMENTS & TARIFS --- */}
-      <section id="pricing" className="py-24 px-6 max-w-6xl mx-auto">
+       {/* --- SECTION 5 : ABONNEMENTS & TARIFS --- */}
+      <section id="pricing" className="py-24 px-6 max-w-6xl mx-auto scroll-mt-24">
         <motion.div {...reveal} className="text-center mb-16">
           <h2 className="text-indigo-500 font-bold uppercase text-[9px] tracking-[0.4em] mb-3">Tarification</h2>
           <p className="text-2xl md:text-4xl font-extrabold uppercase tracking-tighter text-white leading-none mb-4">
             Des plans adaptés à <span className="text-indigo-600">votre croissance.</span>
           </p>
-          <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Aucun frais caché. Annulez à tout moment.</p>
         </motion.div>
 
         <div className="grid md:grid-cols-3 gap-8">
           {[
-            { 
-              name: "Essentiel", price: "15$", desc: "Pour les petites boutiques", 
-              features: ["1 Point de vente", "Gestion de stock de base", "1 Utilisateur", "Support par email"] 
-            },
-            { 
-              name: "Professionnel", price: "39$", desc: "Le choix des commerçants", 
-              features: ["Multi-boutiques (jusqu'à 3)", "Rapports avancés", "5 Utilisateurs", "Mode Hors-ligne complet", "Support Prioritaire"],
-              popular: true 
-            },
-            { 
-              name: "Entreprise", price: "99$", desc: "Pour les réseaux de magasins", 
-              features: ["Boutiques illimitées", "Analytique sur mesure", "Utilisateurs illimités", "Accès API sécurisé", "Gestionnaire dédié"] 
-            }
+            { name: "Essentiel", price: "15$", desc: "Pour les petites boutiques", features: ["1 Point de vente", "Gestion de stock de base", "1 Utilisateur", "Support par email"] },
+            { name: "Professionnel", price: "39$", desc: "Le choix des commerçants", features: ["Multi-boutiques (jusqu'à 3)", "Rapports avancés", "5 Utilisateurs", "Mode Hors-ligne complet", "Support Prioritaire"], popular: true },
+            { name: "Entreprise", price: "99$", desc: "Pour les réseaux de magasins", features: ["Boutiques illimitées", "Analytique sur mesure", "Utilisateurs illimités", "Accès API sécurisé", "Gestionnaire dédié"] }
           ].map((plan, i) => (
             <motion.div 
               key={i} {...reveal} transition={{delay: i*0.1}}
-              className={`relative p-8 rounded-[2rem] border ${plan.popular ? 'border-indigo-500 bg-indigo-500/5' : 'border-white/10 bg-white/5'} flex flex-col`}
+              whileHover={{ scale: 1.03, translateY: -10 }}
+              className={`relative p-8 rounded-[2rem] border transition-all duration-500 cursor-default ${plan.popular ? 'border-indigo-500 bg-indigo-500/10 shadow-[0_0_40px_-15px_rgba(79,70,229,0.3)]' : 'border-white/10 bg-white/5 hover:bg-white/[0.08]'} flex flex-col`}
             >
               {plan.popular && (
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-indigo-600 text-white text-[8px] font-black uppercase px-4 py-1 rounded-full tracking-[0.2em]">
@@ -214,9 +203,7 @@ export default function LandingPage() {
               <div className="space-y-4 mb-10 flex-grow">
                 {plan.features.map((f, idx) => (
                   <div key={idx} className="flex items-center gap-3">
-                    <div className="w-5 h-5 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-500">
-                      <Check size={12} />
-                    </div>
+                    <Check size={12} className="text-indigo-500" />
                     <span className="text-slate-300 text-[10px] font-bold uppercase tracking-tight">{f}</span>
                   </div>
                 ))}
@@ -228,13 +215,12 @@ export default function LandingPage() {
           ))}
         </div>
       </section>
+      
       {/* --- SÉPARATEUR 2 --- */}
       <div className="w-full flex justify-center px-6"><div className="w-full max-w-4xl h-[1px] bg-gradient-to-r from-transparent via-slate-200 to-transparent opacity-40" /></div>
 
-
-      
-            {/* --- SECTION VISION : POURQUOI NOUS ? --- */}
-      <section className="py-20 px-6 relative overflow-hidden">
+        {/* --- SECTION VISION : POURQUOI NOUS ? --- */}
+      <section id="apropos" className="py-20 px-6 relative overflow-hidden">
         <div className="max-w-6xl mx-auto border border-white/10 bg-white/[0.02] rounded-[2rem] p-10 md:p-16 relative overflow-hidden">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <motion.div {...reveal}>
@@ -305,18 +291,24 @@ export default function LandingPage() {
             </div>
 
             {/* Colonne 2: Navigation */}
+            {/* Navigation Plateforme */}
             <div>
               <h4 className="text-white text-[10px] font-black uppercase tracking-[0.3em] mb-6">Plateforme</h4>
               <ul className="space-y-4">
-                {['Solutions', 'Tarifs', 'Sécurité', 'Fonctionnalités'].map((item) => (
-                  <li key={item}>
-                    <a href="#" className="text-slate-500 hover:text-indigo-400 text-[10px] font-bold uppercase transition-colors tracking-widest">{item}</a>
+                {[
+                  { n: 'Fonctionnalités', h: '#Fonctionnalités' },
+                  { n: 'Solutions', h: '#solutions' },
+                  { n: 'Tarifs', h: '#pricing' },
+                  { n: 'A propos', h: '#apropos' }
+                ].map((item) => (
+                  <li key={item.n}>
+                    <a href={item.h} className="text-slate-500 hover:text-indigo-400 text-[10px] font-bold uppercase transition-colors tracking-widest">{item.n}</a>
                   </li>
                 ))}
               </ul>
             </div>
 
-            {/* Colonne 3: Support */}
+    {/* Colonne 3: Support */}
             <div>
               <h4 className="text-white text-[10px] font-black uppercase tracking-[0.3em] mb-6">Assistance</h4>
               <ul className="space-y-4">
