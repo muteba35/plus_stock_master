@@ -6,7 +6,7 @@ import {
   Package2, Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, LucideIcon 
 } from "lucide-react";
 import Link from "next/link";
-// 1. L'import de la nouvelle Navbar fixe
+// Import de la Navbar fixe adaptée
 import AuthNavbar from "../AuthNavbar"; 
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -30,10 +30,11 @@ export default function Login() {
 
   return (
     <>
-      {/* 2. Insertion de la Navbar fixe en dehors du conteneur de centrage */}
+      {/* 1. Navbar fixée en haut de la page */}
       <AuthNavbar />
 
-      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6 selection:bg-indigo-100 font-sans relative overflow-hidden">
+      {/* 2. Conteneur avec pt-32 pour laisser de la place à la Navbar fixe */}
+      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6 pt-32 selection:bg-indigo-100 font-sans relative overflow-hidden">
         
         {/* Background Decor */}
         <div className="absolute inset-0 -z-10 overflow-hidden opacity-60">
