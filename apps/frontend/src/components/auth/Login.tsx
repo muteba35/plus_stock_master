@@ -100,9 +100,9 @@ export default function Login() {
                   <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1 italic group-focus-within:text-indigo-600 transition-colors">
                     Mot de passe
                   </label>
-                  <Link href="" size="sm" className="text-[9px] font-bold text-indigo-500 hover:text-indigo-700 uppercase tracking-tighter">
+                    <Link href="" className="text-[9px] font-bold text-indigo-500 hover:text-indigo-700 uppercase tracking-tighter">
                     Oublié ?
-                  </Link>
+                    </Link>
                 </div>
                 <div className="relative">
                   <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-600 transition-all" size={16} />
