@@ -4,10 +4,10 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Package2, Mail, Lock, User, Phone, Store, Building2, 
-  Eye, EyeOff, ArrowRight, Loader2, LucideIcon, Check, ChevronDown 
+  Eye, EyeOff, ArrowRight, Loader2, LucideIcon, Check, 
+  ChevronDown, Coins, Users 
 } from "lucide-react";
 import Link from "next/link";
-// 1. Import de la Navbar fixe
 import AuthNavbar from "../AuthNavbar"; 
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -115,6 +115,42 @@ export default function Register() {
                         <option>Supermarché</option>
                         <option>Pharmacie</option>
                         <option>Restaurant</option>
+                          <option>Fast-food</option>
+                          <option>Bar</option>
+                          <option>Café</option>
+                          <option>Boutique de vêtements</option>
+                           <option>Salon de coiffure</option>
+                          <option>Quincaillerie</option>
+                           <option>Autre</option>
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={14} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Ligne 4 : Devise & Taille (NOUVEAU) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-black uppercase tracking-[0.1em] text-slate-400 ml-1 italic">Devise par défaut</label>
+                    <div className="relative group/select">
+                      <Coins className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within/select:text-indigo-600 transition-colors z-10" size={16} />
+                      <select className="w-full pl-10 pr-10 py-3 bg-slate-50/50 border border-slate-100 rounded-lg outline-none focus:border-indigo-600 focus:bg-white focus:ring-4 focus:ring-indigo-50/50 transition-all appearance-none font-bold text-slate-900 text-sm uppercase cursor-pointer">
+                        <option>USD ($)</option>
+                        <option>CDF (FC)</option>
+                        <option>EUR (€)</option>
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={14} />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-black uppercase tracking-[0.1em] text-slate-400 ml-1 italic">Taille du business (Optionnel)</label>
+                    <div className="relative group/select">
+                      <Users className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within/select:text-indigo-600 transition-colors z-10" size={16} />
+                      <select className="w-full pl-10 pr-10 py-3 bg-slate-50/50 border border-slate-100 rounded-lg outline-none focus:border-indigo-600 focus:bg-white focus:ring-4 focus:ring-indigo-50/50 transition-all appearance-none font-bold text-slate-900 text-sm uppercase cursor-pointer">
+                        <option>1-2 employés</option>
+                        <option>3-10 employés</option>
+                        <option>10+ employés</option>
                       </select>
                       <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={14} />
                     </div>
@@ -143,7 +179,7 @@ export default function Register() {
                       <Check className="absolute h-3 w-3 text-white opacity-0 peer-checked:opacity-100 pointer-events-none" strokeWidth={4} />
                   </div>
                   <label htmlFor="terms" className="text-[10px] text-slate-500 font-bold uppercase tracking-tight cursor-pointer group-hover:text-slate-700">
-                    J'accepte les <Link href="#" className="text-indigo-600 hover:underline">Conditions</Link> de StockMaster Pro.
+                    J`accepte les <Link href="#" className="text-indigo-600 hover:underline">Conditions</Link> de StockMaster Pro.
                   </label>
                 </div>
 
