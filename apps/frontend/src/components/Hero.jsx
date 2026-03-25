@@ -1,6 +1,7 @@
 "use client";
 import { motion } from "framer-motion";
 import { ArrowRight, PlayCircle } from "lucide-react";
+import Link from "next/link"; // Importation du composant Link
 
 export default function Hero() {
   const containerVariants = {
@@ -37,25 +38,25 @@ export default function Hero() {
                 Nouveau : Mode multi-entrepôts
             </span>
           </motion.div>
-           <motion.h1 
-              variants={itemVariants} 
-              className="text-5xl lg:text-7xl font-black text-slate-900 leading-[0.92] mb-8 tracking-tighter"
-            >
-              Gérez votre <br />
-              stock{" "}
-              <span className="relative inline-block text-indigo-600 italic tracking-[-0.02em]">
-                avec précision.
-                {/* Effet de brillance */}
-                <motion.span 
-                  initial={{ x: "-100%", opacity: 0 }}
-                  animate={{ x: "100%", opacity: 1 }}
-                  transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 3, ease: "linear" }}
-                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -skew-x-12 pointer-events-none"
-                />
-              </span>
+          
+          <motion.h1 
+            variants={itemVariants} 
+            className="text-5xl lg:text-7xl font-black text-slate-900 leading-[0.92] mb-8 tracking-tighter"
+          >
+            Gerez votre <br />
+            stock{" "}
+            <span className="relative inline-block text-indigo-600 italic tracking-[-0.02em]">
+              avec précision.
+              <motion.span 
+                initial={{ x: "-100%", opacity: 0 }}
+                animate={{ x: "100%", opacity: 1 }}
+                transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 3, ease: "linear" }}
+                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -skew-x-12 pointer-events-none"
+              />
+            </span>
           </motion.h1>
            
-         <motion.p 
+          <motion.p 
             variants={itemVariants} 
             className="text-sm md:text-base text-slate-500 mb-10 max-w-md font-medium leading-relaxed uppercase tracking-tight"
           >
@@ -64,9 +65,15 @@ export default function Hero() {
           </motion.p>
 
           <motion.div variants={itemVariants} className="flex flex-wrap gap-5">
-            <button className="px-7 py-3.5 bg-slate-950 text-white rounded-full font-black text-[11px] uppercase tracking-widest hover:bg-indigo-600 transition-all flex items-center gap-3 group">
-              Démarrer l`experience <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
-            </button>
+            {/* REDIRECTION VERS L'INSCRIPTION */}
+            <Link 
+              href="/register" 
+              className="px-7 py-3.5 bg-slate-950 text-white rounded-full font-black text-[11px] uppercase tracking-widest hover:bg-indigo-600 transition-all flex items-center gap-3 group"
+            >
+              Démarrer l'experience 
+              <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+            </Link>
+
             <button className="px-7 py-3.5 bg-transparent text-slate-900 border border-slate-200 rounded-full font-black text-[11px] uppercase tracking-widest hover:bg-slate-50 transition flex items-center gap-3">
               <PlayCircle size={16} /> Voir la démo
             </button>
@@ -87,12 +94,11 @@ export default function Hero() {
           >
             <img 
               src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=1000" 
-              alt="Dashboard" 
+              alt="Dashboard StockMaster" 
               className="rounded-[2rem] w-full" 
             />
           </motion.div>
           
-          {/* Éclat derrière l'image */}
           <div className="absolute -inset-4 bg-indigo-500/10 blur-3xl rounded-full -z-10" />
         </motion.div>
       </div>

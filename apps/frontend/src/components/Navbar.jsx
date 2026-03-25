@@ -74,13 +74,7 @@ export default function Navbar() {
 
           {/* --- ACTIONS DROITE --- */}
           <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-            <Link 
-              href="#" 
-              className="hidden sm:block text-[10px] font-black uppercase text-slate-400 hover:text-slate-900 transition-colors tracking-widest"
-            >
-              Login
-            </Link>
-
+         
             <Link 
               href="#pricing" 
               className="group flex items-center gap-1.5 px-3.5 py-2 sm:px-6 sm:py-3 bg-indigo-600 text-[9px] sm:text-[11px] uppercase font-black text-white rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-600/25 transition-all"
