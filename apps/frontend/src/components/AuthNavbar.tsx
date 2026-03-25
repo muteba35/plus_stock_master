@@ -1,21 +1,21 @@
 "use client";
 
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
-import { Package2, Menu, X, ArrowRight } from "lucide-react";
+import { Package2, Menu, X, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function AuthNavbar() {
   const { scrollY } = useScroll();
   const [open, setOpen] = useState(false);
+  const router = useRouter();
 
-  // Garde l'effet visuel mais assure une base stable
   const width = useTransform(scrollY, [0, 100], ["100%", "95%"]);
   const y = useTransform(scrollY, [0, 100], [0, 12]);
   const borderRadius = useTransform(scrollY, [0, 100], [0, 24]);
   const shadow = useTransform(scrollY, [0, 100], ["none", "0 10px 30px -10px rgba(0,0,0,0.1)"]);
 
-  // Liens mis à jour pour pointer vers la landing page
   const menuItems = [
     { name: "Accueil", href: "/" },
     { name: "Fonctionnalités", href: "/#Fonctionnalités" },
@@ -70,15 +70,17 @@ export default function AuthNavbar() {
             ))}
           </div>
 
-          {/* --- ACTIONS --- */}
+          {/* --- ACTION BOUTON RETOUR --- */}
           <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-            <Link 
-              href="/register" 
-              className="group flex items-center gap-1.5 px-3.5 py-2 sm:px-6 sm:py-3 bg-indigo-600 text-[9px] sm:text-[11px] uppercase font-black text-white rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-600/25 transition-all"
+            <button 
+              onClick={() => router.back()}
+              className="group flex items-center gap-2 px-3.5 py-2 sm:px-6 sm:py-3 bg-slate-900 text-[9px] sm:text-[11px] uppercase font-black text-white rounded-xl hover:bg-indigo-600 shadow-lg shadow-slate-900/20 transition-all"
             >
-              <span className="hidden xs:inline">Essai Gratuit</span>
-              <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-            </Link>
+              {/* Icône ArrowLeft à gauche */}
+              <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
+              <span className="hidden xs:inline">Retour</span>
+              <span className="xs:hidden">Retour</span>
+            </button>
           </div>
         </div>
 
@@ -100,7 +102,7 @@ export default function AuthNavbar() {
                     className="text-xs font-black uppercase text-slate-600 hover:text-indigo-600 py-2 border-b border-slate-50 flex items-center justify-between"
                   >
                     {item.name}
-                    <ArrowRight size={16} className="text-indigo-500" />
+                    <ArrowLeft size={16} className="text-indigo-500 rotate-180" />
                   </Link>
                 ))}
               </div>
