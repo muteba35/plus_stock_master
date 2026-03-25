@@ -17,6 +17,7 @@ export default function AuthNavbar() {
   const shadow = useTransform(scrollY, [0, 100], ["none", "0 10px 30px -10px rgba(0,0,0,0.1)"]);
 
   const menuItems = [
+    { name: "Accueil", href: "#" },
     { name: "Fonctionnalités", href: "#Fonctionnalités" },
     { name: "Solutions", href: "#solutions" },
     { name: "Tarifs", href: "#pricing" },
