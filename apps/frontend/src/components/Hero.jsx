@@ -70,7 +70,7 @@ export default function Hero() {
               href="/register" 
               className="px-7 py-3.5 bg-slate-950 text-white rounded-full font-black text-[11px] uppercase tracking-widest hover:bg-indigo-600 transition-all flex items-center gap-3 group"
             >
-              Démarrer l'experience 
+              Démarrer l`experience 
               <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
             </Link>
 
