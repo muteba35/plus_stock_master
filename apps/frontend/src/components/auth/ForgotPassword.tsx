@@ -54,15 +54,13 @@ export default function ForgotPassword() {
                 exit={{ opacity: 0, x: -20 }}
               >
                 <header className="text-center mb-10">
-                  {/* --- LOGO ET NOM RECTIFIÉS --- */}
+                  {/* --- LOGO ET NOM --- */}
                   <div className="flex flex-col items-center gap-3 mb-8">
-                    {/* Carré Bleu avec Icône Blanche */}
-                    <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-indigo-100 group-hover:rotate-3 transition-transform">
+                    <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-indigo-100 transition-transform">
                       <Package2 size={32} />
                     </div>
                     
                     <div className="flex flex-col leading-none">
-                      {/* STOCK (Noir) MASTER (Bleu) */}
                       <span className="text-xl font-black tracking-tighter text-slate-900 uppercase">
                         STOCK<span className="text-indigo-600">MASTER</span>
                       </span>
@@ -70,6 +68,13 @@ export default function ForgotPassword() {
                         Pro Edition
                       </span>
                     </div>
+                  </div>
+
+                  {/* --- SÉPARATEUR MODERNE --- */}
+                  <div className="flex items-center justify-center gap-4 mb-10">
+                    <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+                    <div className="h-1.5 w-1.5 rounded-full bg-slate-200 shrink-0" />
+                    <div className="h-[1px] w-full bg-gradient-to-l from-transparent via-slate-200 to-transparent" />
                   </div>
 
                   <h2 className="text-3xl font-black text-slate-950 uppercase tracking-tighter leading-none mb-4">
