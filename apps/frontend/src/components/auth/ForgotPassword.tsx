@@ -2,13 +2,14 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mail, ArrowRight, Loader2, CheckCircle2, Package2, ArrowLeft } from "lucide-react";
+import { Mail, ArrowRight, Loader2, CheckCircle2, Package2, ArrowLeft, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import AuthNavbar from "../AuthNavbar";
 
 export default function ForgotPassword() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSent, setIsSent] = useState(false);
+  const [isResending, setIsResending] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,6 +21,12 @@ export default function ForgotPassword() {
     }, 2000);
   };
 
+  const handleResend = () => {
+    setIsResending(true);
+    // Simulation de renvoi
+    setTimeout(() => setIsResending(false), 2000);
+  };
+
   return (
     <>
       <AuthNavbar />
@@ -29,10 +36,7 @@ export default function ForgotPassword() {
         {/* Décoration de fond dynamique */}
         <div className="absolute inset-0 -z-10 overflow-hidden opacity-60">
           <motion.div 
-            animate={{ 
-              scale: [1, 1.15, 1],
-              rotate: [0, 5, 0] 
-            }}
+            animate={{ scale: [1, 1.15, 1], rotate: [0, 5, 0] }}
             transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
             className="absolute top-[-10%] right-[-5%] w-[45%] h-[45%] bg-indigo-100 rounded-full blur-[100px]" 
           />
@@ -54,12 +58,10 @@ export default function ForgotPassword() {
                 exit={{ opacity: 0, x: -20 }}
               >
                 <header className="text-center mb-10">
-                  {/* --- LOGO ET NOM --- */}
                   <div className="flex flex-col items-center gap-3 mb-8">
-                    <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-indigo-100 transition-transform">
+                    <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-indigo-100">
                       <Package2 size={32} />
                     </div>
-                    
                     <div className="flex flex-col leading-none">
                       <span className="text-xl font-black tracking-tighter text-slate-900 uppercase">
                         STOCK<span className="text-indigo-600">MASTER</span>
@@ -70,7 +72,6 @@ export default function ForgotPassword() {
                     </div>
                   </div>
 
-                  {/* --- SÉPARATEUR MODERNE --- */}
                   <div className="flex items-center justify-center gap-4 mb-10">
                     <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
                     <div className="h-1.5 w-1.5 rounded-full bg-slate-200 shrink-0" />
@@ -131,18 +132,43 @@ export default function ForgotPassword() {
                   />
                 </div>
                 
-                <h2 className="text-3xl font-black text-slate-950 uppercase tracking-tighter mb-4">Email envoyé !</h2>
-                <p className="text-slate-500 text-sm font-medium leading-relaxed mb-10">
-                  Un lien de récupération a été envoyé à votre adresse. Vérifiez vos spams si besoin.
+                <h2 className="text-3xl font-black text-slate-950 uppercase tracking-tighter mb-4 leading-tight">
+                  Lien Envoyé !
+                </h2>
+                <p className="text-slate-500 text-sm font-medium leading-relaxed mb-10 px-2">
+                  Un email contenant les instructions de récupération vous a été envoyé. 
+                  <span className="block mt-2 font-bold text-indigo-600/80 italic">Vérifiez vos courriers indésirables(spams).</span>
                 </p>
 
-                <Link 
-                  href="/login"
-                  className="inline-flex items-center gap-2 text-indigo-600 font-black text-[11px] uppercase tracking-widest hover:gap-4 transition-all group"
-                >
-                  <ArrowLeft size={16} />
-                  Retour à la connexion
-                </Link>
+                <div className="space-y-4">
+                  <Link 
+                    href="/login"
+                    className="w-full py-4.5 bg-[#090E1A] hover:bg-indigo-600 text-white rounded-2xl font-black text-[11px] uppercase tracking-[0.25em] transition-all duration-300 flex items-center justify-center gap-3 shadow-xl active:scale-[0.98]"
+                  >
+                    Retour à la connexion
+                  </Link>
+
+                  <button 
+                    onClick={handleResend}
+                    disabled={isResending}
+                    className="w-full py-4 border border-slate-100 hover:border-indigo-100 hover:bg-indigo-50/30 text-slate-500 hover:text-indigo-600 rounded-2xl font-bold text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {isResending ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
+                    {isResending ? "Renvoi en cours..." : "Renvoyer le lien"}
+                  </button>
+                </div>
+
+                <footer className="mt-12 pt-8 border-t border-slate-50 text-center">
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-loose">
+                    Erreur d`adresse ? <br />
+                    <button 
+                      onClick={() => setIsSent(false)} 
+                      className="text-indigo-600 hover:underline inline-flex items-center gap-1"
+                    >
+                      Saisir un autre email
+                    </button>
+                  </p>
+                </footer>
               </motion.div>
             )}
           </AnimatePresence>

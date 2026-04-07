@@ -8,6 +8,7 @@ import {
   ChevronDown, Coins, Users 
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation"; // 1. Import du router
 import AuthNavbar from "../AuthNavbar"; 
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -20,6 +21,7 @@ interface InputGroupProps extends React.InputHTMLAttributes<HTMLInputElement> {
 }
 
 export default function Register() {
+  const router = useRouter(); // 2. Initialisation du router
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [acceptedTerms, setAcceptedTerms] = useState<boolean>(false);
@@ -27,16 +29,21 @@ export default function Register() {
   const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!acceptedTerms) return;
+    
     setIsLoading(true);
-    setTimeout(() => setIsLoading(false), 2000);
+    
+    // Simulation d'inscription
+    setTimeout(() => {
+      setIsLoading(false);
+      // 3. Redirection vers la page de vérification d'email
+      router.push("/verify-email"); 
+    }, 2000);
   };
 
   return (
     <>
-      {/* 2. Ajout de la Navbar en dehors du flux pour qu'elle reste fixe */}
       <AuthNavbar />
 
-      {/* 3. Utilisation de pt-32 pour éviter que la Navbar ne cache le formulaire */}
       <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6 pt-32 selection:bg-indigo-100 font-sans relative overflow-hidden">
         
         {/* Background Decor */}
@@ -115,20 +122,20 @@ export default function Register() {
                         <option>Supermarché</option>
                         <option>Pharmacie</option>
                         <option>Restaurant</option>
-                          <option>Fast-food</option>
-                          <option>Bar</option>
-                          <option>Café</option>
-                          <option>Boutique de vêtements</option>
-                           <option>Salon de coiffure</option>
-                          <option>Quincaillerie</option>
-                           <option>Autre</option>
+                        <option>Fast-food</option>
+                        <option>Bar</option>
+                        <option>Café</option>
+                        <option>Boutique de vêtements</option>
+                        <option>Salon de coiffure</option>
+                        <option>Quincaillerie</option>
+                        <option>Autre</option>
                       </select>
                       <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={14} />
                     </div>
                   </div>
                 </div>
 
-                {/* Ligne 4 : Devise & Taille (NOUVEAU) */}
+                {/* Devise & Taille */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[10px] font-black uppercase tracking-[0.1em] text-slate-400 ml-1 italic">Devise par défaut</label>
