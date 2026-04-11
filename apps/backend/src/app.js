@@ -9,11 +9,15 @@ dotenv.config();
 const app = express();
 
 // --- Middlewares ---
-app.use(cors()); // Autorise toutes les origines pendant le développement
+// 2. Configure le CORS
+app.use(cors({
+  origin: 'https://plusstockmaster.netlify.app', // Autorise ton site Netlify
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true
+}));// Autorise toutes les origines pendant le développement
 app.use(express.json()); // Permet de lire le body JSON (indispensable pour le login/register)
 
-// --- Déclaration des Routes ---
-
+// --- Déclaration des Routes //
 // Route de test
 app.get("/", (req, res) => {
   res.send("Backend Plus Stock Master fonctionne !");
@@ -22,6 +26,7 @@ app.get("/", (req, res) => {
 // Routes d'authentification (Register, Login, OTP)
 // Toutes les routes dans authRoutes commenceront par /api/auth
 app.use("/api/auth", authRoutes);
+
 
 
 export default app;
