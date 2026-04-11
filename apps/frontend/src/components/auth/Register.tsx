@@ -58,7 +58,7 @@ export default function Register() {
     setError(null);
 
     try {
-      const response = await axios.post( "https://hotellerie.onrender.com/api/auth/register", formData);
+      const response = await axios.post( "https://plus-stock-master.onrender.com/api/auth/register", formData);
 
       if (response.data.success) {
         router.push("/verify-email-pending"); 
