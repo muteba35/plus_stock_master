@@ -13,11 +13,6 @@ const utilisateurSchema = new mongoose.Schema(
       required: [true, "Le nom est requis"],
       trim: true,
     },
-    postnom: {
-      type: String,
-      required: [true, "Le postnom est requis"],
-      trim: true,
-    },
     prenom: {
       type: String,
       required: [true, "Le prénom est requis"],
