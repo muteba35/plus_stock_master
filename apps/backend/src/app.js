@@ -1,32 +1,22 @@
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
-import authRoutes from "./routes/auth.routes.js"; // Importation des routes d'auth
-
-// Initialisation des variables d'environnement
-dotenv.config();
+import authRoutes from "./routes/auth.routes.js";
 
 const app = express();
 
-// --- Middlewares ---
-// 2. Configure le CORS
+// CONFIGURATION UNIQUE DU CORS
 app.use(cors({
-  origin: "*", // Autorise absolument tout le monde temporairement
+  origin: "*", 
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
-}));// Autorise toutes les origines pendant le développement
-app.use(express.json()); // Permet de lire le body JSON (indispensable pour le login/register)
+}));
 
-// --- Déclaration des Routes //
-// Route de test
+app.use(express.json());
+
 app.get("/", (req, res) => {
   res.send("Backend Plus Stock Master fonctionne !");
 });
 
-// Routes d'authentification (Register, Login, OTP)
-// Toutes les routes dans authRoutes commenceront par /api/auth
 app.use("/api/auth", authRoutes);
 
-
-
-export default app;
+export default app; // On exporte l'instance configurée
