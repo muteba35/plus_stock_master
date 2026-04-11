@@ -116,7 +116,12 @@ export const register = async (req, res) => {
 
   } catch (error) {
     console.error("ERREUR REGISTER:", error);
-    res.status(500).json({ message: "Une erreur est survenue lors de l'inscription." });
+    // On renvoie l'erreur réelle pour savoir ce qui bloque
+    res.status(500).json({ 
+        message: "Erreur serveur", 
+        error: error.message, // <--- AJOUTE ÇA
+        stack: error.stack     // <--- ET ÇA (uniquement pour le test)
+    });
   }
 };
 
