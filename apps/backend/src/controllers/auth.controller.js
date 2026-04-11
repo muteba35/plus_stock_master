@@ -103,26 +103,29 @@ export const register = async (req, res) => {
       </div>
     `;
 
+    try {
     await sendEmail({
       email: email.toLowerCase(),
       subject: "Bienvenue ! Confirmez votre compte StockMaster Pro",
       html: emailHtml
-    });
+          });
+      } catch (mailError) {
+          console.error("L'email n'a pas pu être envoyé mais l'utilisateur est créé :", mailError);
+          // On ne bloque pas l'utilisateur si seul le mail a échoué
+      }
 
-    res.status(201).json({ 
-      success: true, 
-      message: "Inscription réussie ! Un lien de confirmation a été envoyé sur votre email." 
-    });
-
-  } catch (error) {
-    console.error("ERREUR REGISTER:", error);
-    // On renvoie l'erreur réelle pour savoir ce qui bloque
-    res.status(500).json({ 
-        message: "Erreur serveur", 
-        error: error.message, // <--- AJOUTE ÇA
-        stack: error.stack     // <--- ET ÇA (uniquement pour le test)
-    });
-  }
+      // Juste après, renvoie la réponse de succès
+      res.status(201).json({ 
+          success: true, 
+          message: "Inscription réussie ! Un lien de confirmation a été envoyé." 
+      });
+      } catch (error) {
+        res.status(500).json({ 
+            message: "Erreur serveur", 
+            error: error.message, // <--- AJOUTE ÇA
+            stack: error.stack     // <--- ET ÇA (uniquement pour le test)
+        });
+     }
 };
 
 /**
