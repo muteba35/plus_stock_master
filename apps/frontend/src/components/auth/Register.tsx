@@ -61,7 +61,7 @@ export default function Register() {
       const response = await axios.post( "https://plus-stock-master.onrender.com/api/auth/register", formData);
 
       if (response.data.success) {
-        router.push("/verify-email-pending"); 
+        router.push("/VerifyEmail"); 
       }
     } catch (err) {
       // Correction du "Unexpected any" en utilisant AxiosError
