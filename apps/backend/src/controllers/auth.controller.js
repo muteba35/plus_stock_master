@@ -69,7 +69,6 @@ export const register = async (req, res) => {
     const nouvelUtilisateur = new Utilisateur({
       prenom,
       nom,
-      postnom,
       email: email.toLowerCase(),
       telephone,
       nomBoutique,
