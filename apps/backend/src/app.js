@@ -11,9 +11,9 @@ const app = express();
 // --- Middlewares ---
 // 2. Configure le CORS
 app.use(cors({
-  origin: 'https://plusstockmaster.netlify.app', // Autorise ton site Netlify
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  credentials: true
+  origin: "*", // Autorise absolument tout le monde temporairement
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
 }));// Autorise toutes les origines pendant le développement
 app.use(express.json()); // Permet de lire le body JSON (indispensable pour le login/register)
 
