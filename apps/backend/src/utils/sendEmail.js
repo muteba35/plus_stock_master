@@ -1,29 +1,23 @@
 import nodemailer from "nodemailer";
 
-/**
- * Service d'envoi d'email pour StockMaster Pro
- * Configuration optimisée pour Render (Force IPv4 + Port 587)
- */
 export const sendEmail = async (options) => {
   const transporter = nodemailer.createTransport({
+    // On utilise l'hôte SMTP de Gmail
     host: "smtp.gmail.com",
     port: 587,
-    secure: false, // false pour le port 587
+    secure: false, 
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
     },
-    // --- CONFIGURATION ANTI-BLOCAGE RENDER ---
-    connectionTimeout: 10000, 
-    greetingTimeout: 10000,
-    socketTimeout: 10000,
-    dnsTimeout: 5000,
-    // Force l'utilisation de l'adresse IPv4 de Gmail
+    // FORCE LE PASSAGE EN IPV4 (C'est ce qui règle le ENETUNREACH)
     family: 4, 
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
     tls: {
-      // Indispensable pour le port 587
-      ciphers: 'SSLv3',
-      rejectUnauthorized: false 
+      // Indispensable pour éviter les blocages de certificats sur Render
+      rejectUnauthorized: false,
+      minVersion: "TLSv1.2"
     }
   });
 
@@ -34,5 +28,6 @@ export const sendEmail = async (options) => {
     html: options.html,
   };
 
+  // On envoie le mail
   await transporter.sendMail(mailOptions);
 };
