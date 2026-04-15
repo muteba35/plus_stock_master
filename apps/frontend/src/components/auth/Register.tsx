@@ -148,7 +148,7 @@ export default function Register() {
               </div>
               
               <p className="text-slate-500 text-[11px] font-medium leading-relaxed max-w-[200px] opacity-80 italic">
-                Donnez vie à votre projet. Créez votre compte <span className="text-slate-300">professionnel</span> et rejoignez l'élite des commerçants.
+                Donnez vie à votre projet. Créez votre compte <span className="text-slate-300">professionnel</span> et rejoignez l`élite.
               </p>
               </div>
 
@@ -299,7 +299,7 @@ export default function Register() {
                     <Check className="absolute h-3 w-3 text-white opacity-0 peer-checked:opacity-100 pointer-events-none" strokeWidth={4} />
                   </div>
                   <label htmlFor="terms" className="text-[10px] text-slate-500 font-bold uppercase tracking-tight cursor-pointer">
-                    J'accepte les <Link href="#" className="text-indigo-600 hover:underline">Conditions Génerales</Link>
+                    J`accepte les <Link href="#" className="text-indigo-600 hover:underline">Conditions Génerales</Link>
                   </label>
                 </div>
 
