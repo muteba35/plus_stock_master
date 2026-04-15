@@ -1,15 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion"; // Correction ici
+import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   Package2, Mail, Lock, User, Phone, Store, Building2, 
-  Eye, EyeOff, Loader2, LucideIcon, Check, 
-  ChevronDown, Coins, Users, AlertCircle 
+  Eye, EyeOff, Loader2, LucideIcon, Check, X,
+  ChevronDown, Coins, Users, AlertCircle, Ban
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import axios, { AxiosError } from "axios"; // Typage Axios
+import axios, { AxiosError } from "axios";
 import AuthNavbar from "../AuthNavbar"; 
 
 // --- TYPES ---
@@ -18,19 +18,43 @@ interface InputGroupProps extends React.InputHTMLAttributes<HTMLInputElement> {
   icon: LucideIcon;
 }
 
-// Interface pour la structure de l'erreur Backend
 interface ApiErrorResponse {
   message: string;
-  success?: boolean;
+  status?: string;
 }
 
+// --- CONSTANTS ---
+const PASSWORD_REQUIREMENTS = [
+  { 
+    id: 1, 
+    label: "8+ caractères (ex: abc123...)", 
+    test: (pw: string) => pw.length >= 8 
+  },
+  { 
+    id: 2, 
+    label: "Majuscule incluse (A, B, C...)", 
+    test: (pw: string) => /[A-Z]/.test(pw) 
+  },
+  { 
+    id: 3, 
+    label: "Un chiffre (0, 1, 2...)", 
+    test: (pw: string) => /[0-9]/.test(pw) 
+  },
+  { 
+    id: 4, 
+    label: "Caractère spécial (@, #, $...)", 
+    test: (pw: string) => /[^A-Za-z0-9]/.test(pw) 
+  },
+];
 export default function Register() {
   const router = useRouter();
   
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showRequirements, setShowRequirements] = useState(false);
 
   const [formData, setFormData] = useState({
     prenom: "",
@@ -45,29 +69,54 @@ export default function Register() {
     confirmPassword: ""
   });
 
+  // LOGIQUE DE DÉBLOCAGE AUTOMATIQUE
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (isBlocked) {
+      timer = setTimeout(() => {
+        setIsBlocked(false);
+        setError(null);
+      }, 15 * 60 * 1000); 
+    }
+    return () => clearTimeout(timer);
+  }, [isBlocked]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
     if (error) setError(null);
+
+    // Afficher les prérequis dès qu'on commence à taper le mot de passe
+    if (name === "password") {
+      setShowRequirements(value.length > 0);
+    }
   };
 
   const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!acceptedTerms) return;
+    if (!acceptedTerms || isBlocked || isLoading) return;
     
+    // Vérification basique de correspondance des mots de passe
+    if (formData.password !== formData.confirmPassword) {
+      setError("Les mots de passe ne correspondent pas.");
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await axios.post( "https://plus-stock-master.onrender.com/api/auth/register", formData);
-
+      const response = await axios.post("http://localhost:5000/api/auth/register", formData);
       if (response.data.success) {
-        router.push("/verify-email"); 
+        setTimeout(() => router.push("/verify-email"), 2000);
       }
     } catch (err) {
-      // Correction du "Unexpected any" en utilisant AxiosError
       const axiosError = err as AxiosError<ApiErrorResponse>;
-      const message = axiosError.response?.data?.message || "Une erreur est survenue lors de l'inscription.";
-      setError(message);
+      const errorMessage = axiosError.response?.data?.message || "Une erreur est survenue.";
+      if (axiosError.response?.status === 429) {
+        setIsBlocked(true);
+      }
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -92,7 +141,19 @@ export default function Register() {
               <h1 className="text-2xl font-black text-white tracking-tighter uppercase">
                 STOCK<span className="text-indigo-400">MASTER</span>
               </h1>
-              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.4em] mt-1">Pro Edition</p>
+               <div className="flex items-center gap-3 w-full my-8">
+                <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-slate-700" />
+                <div className="w-1.5 h-1.5 rounded-full bg-indigo-500/50" />
+                <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-slate-700" />
+              </div>
+              
+              <p className="text-slate-500 text-[11px] font-medium leading-relaxed max-w-[200px] opacity-80 italic">
+                Donnez vie à votre projet. Créez votre compte <span className="text-slate-300">professionnel</span> et rejoignez l'élite des commerçants.
+              </p>
+              </div>
+
+            <div className="absolute bottom-8 text-slate-800 text-[8px] font-black uppercase tracking-[0.2em]">
+              RDC • Connexion Sécurisée
             </div>
           </div>
 
@@ -105,21 +166,23 @@ export default function Register() {
                 <div className="h-1 w-8 bg-indigo-600 rounded-full mt-3" />
               </header>
 
-              {/* AnimatePresence est maintenant défini via l'import */}
-              <AnimatePresence mode="wait">
-                {error && (
-                  <motion.div 
-                    initial={{ opacity: 0, height: 0, y: -10 }}
-                    animate={{ opacity: 1, height: "auto", y: 0 }}
-                    exit={{ opacity: 0, height: 0, y: -10 }}
-                    className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 flex items-center gap-3 text-red-700 text-xs font-bold uppercase tracking-tight overflow-hidden"
-                  >
-                    <AlertCircle size={18} className="shrink-0" />
+             <AnimatePresence mode="wait">
+              {error && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0, y: -10 }}
+                  animate={{ opacity: 1, height: "auto", y: 0 }}
+                  exit={{ opacity: 0, height: 0, y: -10 }}
+                  className="mb-6 p-4 bg-red-50 border-l-4 border-red-600 flex items-center gap-3 overflow-hidden"
+                  style={{ color: "#dc2626" }} 
+                >
+                  <AlertCircle size={18} className="shrink-0" style={{ color: "#dc2626" }} />
+                  <span className="text-xs font-black uppercase tracking-tight" style={{ color: "#dc2626" }}>
                     {error}
-                  </motion.div>
-                )}
+                  </span>
+                </motion.div>
+              )}
               </AnimatePresence>
-
+              
               <form className="space-y-4" onSubmit={handleRegister}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <InputGroup label="Prénom" name="prenom" icon={User} placeholder="Jean" required onChange={handleChange} />
@@ -128,11 +191,12 @@ export default function Register() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <InputGroup label="Email Pro" name="email" type="email" icon={Mail} placeholder="jean@boutique.cd" required onChange={handleChange} />
-                  <InputGroup label="Téléphone" name="telephone" type="tel" icon={Phone} placeholder="+243..." onChange={handleChange} />
+                  <InputGroup label="Téléphone" name="telephone" type="tel" maxLength={9} icon={Phone} placeholder="+243..." onChange={handleChange} />
                 </div>
 
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <InputGroup label="Boutique" name="nomBoutique" icon={Store} placeholder="Nom du commerce" required onChange={handleChange} />
+                  <InputGroup label="Boutique" name="nomBoutique" icon={Store} placeholder="Nom" required onChange={handleChange} />
                   
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[10px] font-black uppercase text-slate-400 italic ml-1">Business</label>
@@ -148,7 +212,6 @@ export default function Register() {
                         <option>Supermarché</option>
                         <option>Pharmacie</option>
                         <option>Restaurant</option>
-                        <option>Boutique de vêtements</option>
                         <option>Autre</option>
                       </select>
                       <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={14} />
@@ -193,6 +256,37 @@ export default function Register() {
                   <InputGroup label="Confirmer" name="confirmPassword" type="password" icon={Lock} placeholder="••••••••" required onChange={handleChange} />
                 </div>
 
+                <AnimatePresence>
+                  {showRequirements && (
+                    <motion.div 
+                      initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                      animate={{ opacity: 1, height: "auto", marginTop: 8 }}
+                      exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                        {PASSWORD_REQUIREMENTS.map((req) => {
+                          const isMet = req.test(formData.password);
+                          return (
+                            <div key={req.id} className="flex items-center gap-2">
+                              <div className={`p-0.5 rounded-full transition-colors duration-300 ${isMet ? "bg-green-100" : "bg-red-100"}`}>
+                                {isMet ? (
+                                  <Check size={10} className="text-green-600" strokeWidth={4} />
+                                ) : (
+                                  <X size={10} className="text-red-500" strokeWidth={4} />
+                                )}
+                              </div>
+                              <span className={`text-[9px] font-black uppercase tracking-tight transition-colors duration-300 ${isMet ? "text-green-600" : "text-red-500"}`}>
+                                {req.label}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
                 <div className="flex items-center gap-3 mt-6 px-1">
                   <div className="relative flex items-center justify-center shrink-0">
                     <input 
@@ -205,18 +299,55 @@ export default function Register() {
                     <Check className="absolute h-3 w-3 text-white opacity-0 peer-checked:opacity-100 pointer-events-none" strokeWidth={4} />
                   </div>
                   <label htmlFor="terms" className="text-[10px] text-slate-500 font-bold uppercase tracking-tight cursor-pointer">
-                    J`accepte les <Link href="#" className="text-indigo-600 hover:underline">Conditions</Link>
+                    J'accepte les <Link href="#" className="text-indigo-600 hover:underline">Conditions Génerales</Link>
                   </label>
                 </div>
 
-                <button 
-                  disabled={isLoading || !acceptedTerms}
-                  type="submit"
-                  className="w-full py-3.5 bg-[#090E1A] hover:bg-indigo-600 text-white rounded-lg font-black text-[11px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-30 active:scale-[0.98]"
-                >
-                  {isLoading ? <Loader2 className="animate-spin" size={18} /> : "Créer mon compte"}
-                </button>
+                <div className="relative group/btn-container overflow-hidden rounded-lg">
+                  <button 
+                    disabled={isLoading || !acceptedTerms}
+                    type="submit"
+                    className={`w-full py-3.5 rounded-lg font-black text-[11px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] 
+                      bg-[#090E1A] hover:bg-indigo-600 text-white disabled:opacity-30
+                      ${isBlocked ? "cursor-none" : "cursor-pointer"}`}
+                  >
+                    {isLoading ? <Loader2 className="animate-spin" size={18} /> : "Créer mon compte"}
+                  </button>
+
+                  {isBlocked && (
+                    <div 
+                      className="absolute inset-0 z-20 cursor-none"
+                      onMouseMove={(e) => {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const x = e.clientX - rect.left;
+                        const y = e.clientY - rect.top;
+                        const icon = document.getElementById('ban-icon');
+                        if (icon) {
+                          icon.style.transform = `translate(${x - 12}px, ${y - 12}px)`;
+                          icon.style.opacity = "1";
+                        }
+                      }}
+                      onMouseLeave={() => {
+                        const icon = document.getElementById('ban-icon');
+                        if (icon) icon.style.opacity = "0";
+                      }}
+                    >
+                      <div 
+                        id="ban-icon"
+                        className="pointer-events-none opacity-0 transition-opacity duration-200 absolute top-0 left-0"
+                        style={{ willChange: "transform" }}
+                      >
+                        <Ban size={24} color="#dc2626" className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]" />
+                      </div>
+                    </div>
+                  )}
+                </div>
               </form>
+                <footer className="mt-8 pt-6 border-t border-slate-50 text-center">
+                <p className="text-slate-400 font-bold text-[10px] uppercase tracking-[0.1em]">
+                  Déjà un compte ? <Link href="/login" className="text-indigo-600 hover:text-indigo-800 ml-1">Se connecter</Link>
+                </p>
+              </footer>
             </div>
           </div>
         </motion.div>
