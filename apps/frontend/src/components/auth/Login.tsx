@@ -3,37 +3,73 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  Package2, Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, LucideIcon 
+  Package2, Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, LucideIcon, AlertCircle, CheckCircle2 
 } from "lucide-react";
 import Link from "next/link";
-// Import de la Navbar fixe adaptée
+import { useRouter } from "next/navigation";
 import AuthNavbar from "../AuthNavbar"; 
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
-const cn = (...inputs: ClassValue[]) => twMerge(clsx(inputs));
-
-interface InputGroupProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label: string;
-  icon: LucideIcon;
+/**
+ * Utilitaire pour fusionner les classes Tailwind proprement
+ */
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
 }
 
 export default function Login() {
+  const router = useRouter();
+  
+  const [formData, setFormData] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  
+  const [message, setMessage] = useState<{ text: string; type: "error" | "success" | null }>({
+    text: "",
+    type: null
+  });
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
-    setTimeout(() => setIsLoading(false), 2000);
+    setMessage({ text: "", type: null });
+
+    try {
+      const response = await fetch("http://localhost:5000/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Erreur lors de la connexion");
+      }
+
+      if (data.success) {
+        localStorage.setItem("temp_login_email", formData.email);
+        setMessage({ text: "Identifiants valides. Envoi du code...", type: "success" });
+        
+        setTimeout(() => {
+          router.push("/verify-code");
+        }, 1500);
+      }
+
+    } catch (err: unknown) {
+      // Correction de "Unexpected any" : on vérifie si err est une instance de Error
+      const errorMessage = err instanceof Error ? err.message : "Une erreur est survenue";
+      setMessage({ text: errorMessage, type: "error" });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <>
-      {/* 1. Navbar fixée en haut de la page */}
       <AuthNavbar />
 
-      {/* 2. Conteneur avec pt-32 pour laisser de la place à la Navbar fixe */}
       <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6 pt-32 selection:bg-indigo-100 font-sans relative overflow-hidden">
         
         {/* Background Decor */}
@@ -50,32 +86,26 @@ export default function Login() {
           animate={{ opacity: 1, scale: 1 }}
           className="w-full max-w-[900px] flex flex-col lg:flex-row bg-white rounded-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.08)] overflow-hidden border border-slate-100"
         >
-          
           {/* --- PANNEAU GAUCHE --- */}
           <div className="lg:w-[320px] bg-[#090E1A] p-10 flex flex-col items-center justify-center relative shrink-0 border-r border-slate-800/40 text-center">
             <div className="absolute inset-0 opacity-[0.02] pattern-grid-md text-white" />
-            
             <div className="relative z-10 flex flex-col items-center w-full">
               <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-xl flex items-center justify-center text-white shadow-xl mb-6 border border-white/10">
                 <Package2 size={32} strokeWidth={1.5} />
               </div>
-              
               <h1 className="text-2xl font-black text-white tracking-tighter uppercase">
                 STOCK<span className="text-indigo-400">MASTER</span>
               </h1>
               <p className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.4em] mt-1">Pro Edition</p>
-              
               <div className="flex items-center gap-3 w-full my-8">
                 <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-slate-700" />
                 <div className="w-1.5 h-1.5 rounded-full bg-indigo-500/50" />
                 <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-slate-700" />
               </div>
-              
               <p className="text-slate-500 text-[11px] font-medium leading-relaxed max-w-[200px] opacity-80 italic">
                 Accédez à votre tableau de bord <span className="text-slate-300">StockMaster</span> pour piloter votre activité.
               </p>
             </div>
-
             <div className="absolute bottom-8 text-slate-800 text-[8px] font-black uppercase tracking-[0.2em]">
               RDC • Connexion Sécurisée
             </div>
@@ -84,19 +114,40 @@ export default function Login() {
           {/* --- PANNEAU DROIT --- */}
           <div className="flex-1 bg-white p-8 lg:p-14 overflow-y-auto">
             <div className="max-w-[420px] mx-auto">
-              
               <header className="mb-10 text-center lg:text-left">
                 <h2 className="text-2xl font-black text-slate-950 tracking-tight uppercase leading-none">Connexion</h2>
                 <div className="h-1 w-8 bg-indigo-600 rounded-full mt-3 mx-auto lg:mx-0" />
                 <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-4">Ravis de vous revoir sur StockMaster</p>
               </header>
 
+               <div className="min-h-[28px] mb-6 flex items-center justify-center">
+            <AnimatePresence mode="wait">
+              {message.text && (
+                <motion.div 
+                  key={message.type}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className={`flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.15em] py-2 px-4 rounded-full ${
+                    message.type === 'error' 
+                      ? 'text-red-600 bg-red-50/50' 
+                      : 'text-emerald-600 bg-emerald-50/50'
+                  }`}
+                >
+                  {message.type === 'error' ? <AlertCircle size={14} /> : <CheckCircle2 size={14} />}
+                  <span>{message.text}</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
               <form className="space-y-5" onSubmit={handleLogin}>
                 <InputGroup 
                   label="Email Professionnel" 
                   type="email" 
                   icon={Mail} 
                   placeholder="votre@email.cd" 
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
                   required 
                 />
 
@@ -104,11 +155,12 @@ export default function Login() {
                   <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1 mb-1 italic group-focus-within:text-indigo-600 transition-colors">
                     Mot de passe
                   </label>
-                  
                   <div className="relative">
                     <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-600 transition-all" size={16} />
                     <input 
                       type={showPassword ? "text" : "password"}
+                      value={formData.password}
+                      onChange={(e) => setFormData({...formData, password: e.target.value})}
                       placeholder="••••••••"
                       required
                       className="w-full pl-10 pr-12 py-3 bg-slate-50/50 border border-slate-100 rounded-lg outline-none focus:border-indigo-600 focus:bg-white focus:ring-4 focus:ring-indigo-50/50 transition-all font-bold text-slate-900 text-sm placeholder:text-slate-200"
@@ -121,7 +173,6 @@ export default function Login() {
                       {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
-
                   <div className="flex justify-end mt-2">
                     <Link href="/forgot-password" className="text-[9px] font-bold text-indigo-500 hover:text-indigo-700 uppercase tracking-tighter">
                       Mot de passe oublié ?
@@ -130,11 +181,7 @@ export default function Login() {
                 </div>
 
                 <div className="flex items-center gap-3 cursor-pointer group py-2">
-                  <input 
-                    type="checkbox" 
-                    id="remember" 
-                    className="h-4 w-4 rounded border-slate-200 text-indigo-600 focus:ring-indigo-50" 
-                  />
+                  <input type="checkbox" id="remember" className="h-4 w-4 rounded border-slate-200 text-indigo-600 focus:ring-indigo-50" />
                   <label htmlFor="remember" className="text-[10px] text-slate-500 font-bold uppercase tracking-tight cursor-pointer">
                     Se souvenir de moi
                   </label>
@@ -169,7 +216,12 @@ export default function Login() {
   );
 }
 
-function InputGroup({ label, icon: Icon, ...props }: InputGroupProps) {
+interface InputGroupProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  label: string;
+  icon: LucideIcon;
+}
+
+function InputGroup({ label, icon: Icon, className, ...props }: InputGroupProps) {
   return (
     <div className="flex flex-col gap-1 w-full group/input">
       <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1 italic group-focus-within/input:text-indigo-600 transition-colors">
@@ -178,7 +230,11 @@ function InputGroup({ label, icon: Icon, ...props }: InputGroupProps) {
       <div className="relative">
         <Icon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within/input:text-indigo-600 transition-all" size={16} />
         <input 
-          className="w-full pl-10 pr-4 py-3 bg-slate-50/50 border border-slate-100 rounded-lg outline-none focus:border-indigo-600 focus:bg-white focus:ring-4 focus:ring-indigo-50/50 transition-all font-bold text-slate-900 text-sm placeholder:text-slate-200 placeholder:font-normal"
+          // Utilisation de cn() ici pour supprimer l'erreur de valeur non lue
+          className={cn(
+            "w-full pl-10 pr-4 py-3 bg-slate-50/50 border border-slate-100 rounded-lg outline-none focus:border-indigo-600 focus:bg-white focus:ring-4 focus:ring-indigo-50/50 transition-all font-bold text-slate-900 text-sm placeholder:text-slate-200 placeholder:font-normal",
+            className
+          )}
           {...props}
         />
       </div>

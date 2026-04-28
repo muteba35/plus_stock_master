@@ -46,11 +46,13 @@ const PASSWORD_REQUIREMENTS = [
     test: (pw: string) => /[^A-Za-z0-9]/.test(pw) 
   },
 ];
+
 export default function Register() {
   const router = useRouter();
   
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false); // AJOUTÉ
   const [isBlocked, setIsBlocked] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -86,7 +88,6 @@ export default function Register() {
     setFormData(prev => ({ ...prev, [name]: value }));
     if (error) setError(null);
 
-    // Afficher les prérequis dès qu'on commence à taper le mot de passe
     if (name === "password") {
       setShowRequirements(value.length > 0);
     }
@@ -96,7 +97,6 @@ export default function Register() {
     e.preventDefault();
     if (!acceptedTerms || isBlocked || isLoading) return;
     
-    // Vérification basique de correspondance des mots de passe
     if (formData.password !== formData.confirmPassword) {
       setError("Les mots de passe ne correspondent pas.");
       return;
@@ -106,27 +106,48 @@ export default function Register() {
     setError(null);
 
     try {
-      const response = await axios.post("http://localhost:5000/api/auth/register", formData);
-      if (response.data.success) {
-        setTimeout(() => router.push("/verify-email"), 2000);
-      }
-    } catch (err) {
-      const axiosError = err as AxiosError<ApiErrorResponse>;
-      const errorMessage = axiosError.response?.data?.message || "Une erreur est survenue.";
-      if (axiosError.response?.status === 429) {
-        setIsBlocked(true);
-      }
-      setError(errorMessage);
-    } finally {
-      setIsLoading(false);
-    }
+  setIsLoading(true);
+  setError(""); // On vide les erreurs précédentes
+
+  const response = await axios.post("http://localhost:5000/api/auth/register", formData);
+  
+  console.log("Réponse du serveur :", response.data);
+
+  // Vérifie si ton backend renvoie success: true ou si c'est juste le statut 200/201
+  if (response.status === 200 || response.status === 201 || response.data.success) {
+    setIsSuccess(true); 
+    setIsLoading(false); 
+
+    // CORRECTION ICI : 
+    // On récupère l'email soit de la réponse, soit directement du formulaire
+    const userEmail = response.data.user?.email || response.data.email || formData.email;
+    localStorage.setItem("userEmailForVerify", userEmail);
+
+    setTimeout(() => {
+      setIsSuccess(false); 
+      router.push("/verify-email"); // Redirection vers ta nouvelle page
+    }, 3000);
+  }
+} catch (err) {
+  const axiosError = err as AxiosError<ApiErrorResponse>;
+  const errorMessage = axiosError.response?.data?.message || "Une erreur est survenue.";
+  
+  if (axiosError.response?.status === 429) {
+    setIsBlocked(true);
+  }
+  
+  setError(errorMessage);
+  setIsLoading(false); // On arrête le loader en cas d'erreur
+}
   };
 
   return (
     <>
       <AuthNavbar />
 
-      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6 pt-32 relative overflow-hidden font-sans selection:bg-indigo-100">
+     
+      
+       <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6 pt-32 relative overflow-hidden font-sans selection:bg-indigo-100">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -157,6 +178,7 @@ export default function Register() {
             </div>
           </div>
 
+         
           {/* --- PANNEAU DROIT --- */}
           <div className="flex-1 bg-white p-8 lg:p-12 overflow-y-auto">
             <div className="max-w-[460px] mx-auto">
@@ -166,7 +188,23 @@ export default function Register() {
                 <div className="h-1 w-8 bg-indigo-600 rounded-full mt-3" />
               </header>
 
-             <AnimatePresence mode="wait">
+            <AnimatePresence>
+            {isSuccess && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0, y: -10 }}
+                animate={{ opacity: 1, height: "auto", y: 0 }}
+                exit={{ opacity: 0, height: 0, y: -10 }}
+                className="mb-6 p-4 bg-green-50 border-l-4 border-green-600 flex items-center gap-3 overflow-hidden"
+              >
+                <Check size={18} className="shrink-0 text-green-600" />
+                <span className="text-xs font-black uppercase tracking-tight text-green-700">
+                  Inscription réussie avec succès !
+                </span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+              <AnimatePresence mode="wait">
               {error && (
                 <motion.div 
                   initial={{ opacity: 0, height: 0, y: -10 }}
@@ -182,6 +220,8 @@ export default function Register() {
                 </motion.div>
               )}
               </AnimatePresence>
+
+              
               
               <form className="space-y-4" onSubmit={handleRegister}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -305,7 +345,7 @@ export default function Register() {
 
                 <div className="relative group/btn-container overflow-hidden rounded-lg">
                   <button 
-                    disabled={isLoading || !acceptedTerms}
+                    disabled={isLoading || isSuccess || !acceptedTerms}
                     type="submit"
                     className={`w-full py-3.5 rounded-lg font-black text-[11px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] 
                       bg-[#090E1A] hover:bg-indigo-600 text-white disabled:opacity-30
