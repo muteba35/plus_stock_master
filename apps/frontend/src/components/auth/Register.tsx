@@ -118,7 +118,7 @@ export default function Register() {
     setIsSuccess(true); 
     setIsLoading(false); 
 
-    // CORRECTION ICI : 
+    //   CORRECTION ICI : 
     // On récupère l'email soit de la réponse, soit directement du formulaire
     const userEmail = response.data.user?.email || response.data.email || formData.email;
     localStorage.setItem("userEmailForVerify", userEmail);

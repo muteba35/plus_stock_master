@@ -12,12 +12,12 @@ export default function VerifyCode() {
   const [isLoading, setIsLoading] = useState(false);
   const [isResending, setIsLoadingResending] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false); 
-  const [timer, setTimer] = useState(0); // Initialisé à 0 pour permettre le premier clic
+  const [isBlocked, setIsBlocked] = useState(false); // BLOQUAGE SÉCURITÉ
+  const [timer, setTimer] = useState(0); 
   const [error, setError] = useState("");
   const [email, setEmail] = useState("");
   const inputs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // 1. Récupération de l'email au montage
   useEffect(() => {
     const savedEmail = localStorage.getItem("temp_login_email");
     if (!savedEmail) {
@@ -28,7 +28,6 @@ export default function VerifyCode() {
     if (inputs.current[0]) inputs.current[0].focus();
   }, [router]);
 
-  // 2. Gestion du compte à rebours (ne s'active que si timer > 0)
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (timer > 0) {
@@ -36,7 +35,7 @@ export default function VerifyCode() {
         setTimer((prev) => prev - 1);
       }, 1000);
     } else {
-      setResendSuccess(false); // Cache le message de succès quand le temps est écoulé
+      setResendSuccess(false);
     }
     return () => clearInterval(interval);
   }, [timer]);
@@ -80,9 +79,15 @@ export default function VerifyCode() {
 
       localStorage.setItem("token", data.token);
       localStorage.removeItem("temp_login_email");
-      router.push("/register"); 
+      router.push("/dashboard"); // Changé vers dashboard si connexion réussie
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erreur de vérification";
+      
+      // DÉTECTION DU RATE LIMITER
+      if (msg.toLowerCase().includes("15 minutes")) {
+        setIsBlocked(true);
+      }
+      
       setError(msg);
       setIsLoading(false);
     }
@@ -106,12 +111,17 @@ export default function VerifyCode() {
         throw new Error(data.message || "Impossible de renvoyer le code.");
       }
 
-      // LE TIMER SE DÉCLENCHE UNIQUEMENT ICI
       setResendSuccess(true);
       setTimer(45); 
 
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erreur lors du renvoi";
+      
+      // DÉTECTION DU RATE LIMITER SUR LE RENVOI
+      if (msg.toLowerCase().includes("15 minutes")) {
+        setIsBlocked(true);
+      }
+      
       setError(msg);
     } finally {
       setIsLoadingResending(false);
@@ -133,6 +143,7 @@ export default function VerifyCode() {
           animate={{ opacity: 1, scale: 1 }}
           className="w-full max-w-[420px] bg-white rounded-[2.5rem] shadow-[0_32px_64px_-12px_rgba(15,23,42,0.1)] border border-slate-100 p-10 text-center"
         >
+          {/* Logo Section */}
           <div className="flex flex-col items-center gap-3 mb-8">
             <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-indigo-100">
               <Package2 size={32} />
@@ -159,11 +170,12 @@ export default function VerifyCode() {
                   key={index}
                   type="text"
                   maxLength={1}
+                  disabled={isBlocked} // DÉSACTIVE LES INPUTS SI BLOQUÉ
                   ref={(el) => { inputs.current[index] = el; }}
                   value={data}
                   onChange={(e) => handleChange(e.target, index)}
                   onKeyDown={(e) => handleKeyDown(e, index)}
-                  className="w-full h-12 text-center text-xl font-black text-slate-900 bg-slate-50 border-2 border-slate-100 rounded-xl outline-none focus:border-indigo-600 focus:bg-white focus:ring-4 focus:ring-indigo-50 transition-all uppercase"
+                  className="w-full h-12 text-center text-xl font-black text-slate-900 bg-slate-50 border-2 border-slate-100 rounded-xl outline-none focus:border-indigo-600 focus:bg-white focus:ring-4 focus:ring-indigo-50 transition-all uppercase disabled:opacity-50"
                 />
               ))}
             </div>
@@ -173,17 +185,17 @@ export default function VerifyCode() {
                 <motion.div 
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center justify-center gap-2 text-red-600 text-[10px] font-black uppercase tracking-widest"
+                  className="flex items-center justify-center gap-2 text-red-600 text-[10px] font-black uppercase tracking-widest leading-tight"
                 >
-                  <AlertCircle size={14} />
-                  {error}
+                  <AlertCircle size={14} className="shrink-0" />
+                  <span>{error}</span>
                 </motion.div>
               )}
             </AnimatePresence>
 
             <button 
-              disabled={isLoading || otp.some(v => v === "")}
-              className="w-full py-4 bg-[#090E1A] hover:bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.25em] transition-all duration-300 flex items-center justify-center gap-3 shadow-xl active:scale-[0.98] disabled:opacity-30"
+              disabled={isLoading || isBlocked || otp.some(v => v === "")}
+              className="w-full py-4 bg-[#090E1A] hover:bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.25em] transition-all duration-300 flex items-center justify-center gap-3 shadow-xl active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed"
             >
               {isLoading ? <Loader2 size={18} className="animate-spin" /> : (
                 <>Valider le code <ArrowRight size={16} /></>
@@ -193,13 +205,13 @@ export default function VerifyCode() {
 
           <div className="mt-8 pt-8 border-t border-slate-50 flex flex-col items-center">
             <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mb-3">
-              Vous n'avez pas reçu le code ?
+              Vous n`avez pas reçu le code ?
             </p>
             <button 
               type="button"
               onClick={handleResend}
-              disabled={isResending || timer > 0}
-              className="inline-flex items-center gap-2 text-indigo-600 font-black text-[10px] uppercase tracking-widest hover:text-indigo-800 transition-colors disabled:opacity-50"
+              disabled={isResending || isBlocked || timer > 0} // BLOQUÉ AUSSI ICI
+              className="inline-flex items-center gap-2 text-indigo-600 font-black text-[10px] uppercase tracking-widest hover:text-indigo-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isResending ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} className={timer > 0 ? "animate-spin" : ""} />}
               {timer > 0 ? `Attendre ${timer}s` : "Renvoyer un nouveau code"}
@@ -214,7 +226,7 @@ export default function VerifyCode() {
                   className="mt-3 flex items-center gap-1.5 text-emerald-600 text-[9px] font-black uppercase tracking-wider"
                 >
                   <CheckCircle2 size={12} />
-                  Nouveau code otp envoyé !
+                  Nouveau code envoyé !
                 </motion.div>
               )}
             </AnimatePresence>

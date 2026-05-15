@@ -2,38 +2,65 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mail, ArrowRight, Loader2, CheckCircle2, Package2, ArrowLeft, RefreshCw } from "lucide-react";
+import { Mail, ArrowRight, Loader2, CheckCircle2, Package2, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import AuthNavbar from "../AuthNavbar";
+import axios, { AxiosError } from "axios";
+import toast, { Toaster } from 'react-hot-toast';
 
 export default function ForgotPassword() {
+  const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSent, setIsSent] = useState(false);
   const [isResending, setIsResending] = useState(false);
 
+  // Fonction principale
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // Simulation d'envoi d'email
-    setTimeout(() => {
+
+    try {
+      const { data } = await axios.post("http://localhost:5000/api/auth/forgot-password", { 
+        email 
+      });
+
+      if (data.status === "success") {
+        setIsSent(true);
+        toast.success("Lien envoyé avec succès !");
+      }
+    } catch (error) {
+      const err = error as AxiosError<{message: string}>;
+      const message = err.response?.data?.message || "Une erreur est survenue.";
+      toast.error(message);
+    } finally {
       setIsLoading(false);
-      setIsSent(true);
-    }, 2000);
+    }
   };
 
-  const handleResend = () => {
+  // Fonction de renvoi
+  const handleResend = async () => {
+    if (!email) return toast.error("Veuillez saisir votre email d'abord.");
+    
     setIsResending(true);
-    // Simulation de renvoi
-    setTimeout(() => setIsResending(false), 2000);
+    try {
+      await axios.post("http://localhost:5000/api/auth/resend-forgot-password", { email });
+      toast.success("Nouveau lien de récupération envoyé !");
+    } catch (error) {
+      const err = error as AxiosError<{message: string}>;
+      const message = err.response?.data?.message || "Impossible de renvoyer le lien.";
+      toast.error(message);
+    } finally {
+      setIsResending(false);
+    }
   };
 
   return (
     <>
+      <Toaster position="top-right" />
       <AuthNavbar />
       
       <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6 pt-32 selection:bg-indigo-100 font-sans relative overflow-hidden">
         
-        {/* Décoration de fond dynamique */}
         <div className="absolute inset-0 -z-10 overflow-hidden opacity-60">
           <motion.div 
             animate={{ scale: [1, 1.15, 1], rotate: [0, 5, 0] }}
@@ -51,12 +78,7 @@ export default function ForgotPassword() {
         >
           <AnimatePresence mode="wait">
             {!isSent ? (
-              <motion.div
-                key="form"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-              >
+              <motion.div key="form" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
                 <header className="text-center mb-10">
                   <div className="flex flex-col items-center gap-3 mb-8">
                     <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-indigo-100">
@@ -70,12 +92,6 @@ export default function ForgotPassword() {
                         Pro Edition
                       </span>
                     </div>
-                  </div>
-
-                  <div className="flex items-center justify-center gap-4 mb-10">
-                    <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
-                    <div className="h-1.5 w-1.5 rounded-full bg-slate-200 shrink-0" />
-                    <div className="h-[1px] w-full bg-gradient-to-l from-transparent via-slate-200 to-transparent" />
                   </div>
 
                   <h2 className="text-3xl font-black text-slate-950 uppercase tracking-tighter leading-none mb-4">
@@ -96,48 +112,53 @@ export default function ForgotPassword() {
                       <input 
                         type="email"
                         required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
                         placeholder="jean@boutique.cd"
                         className="w-full pl-12 pr-4 py-4 bg-slate-50/50 border border-slate-100 rounded-2xl outline-none focus:border-indigo-600 focus:bg-white focus:ring-8 focus:ring-indigo-50/40 transition-all font-bold text-slate-900 text-sm placeholder:text-slate-300"
                       />
                     </div>
                   </div>
 
-                  <button 
-                    disabled={isLoading}
-                    type="submit"
-                    className="w-full py-4.5 bg-[#090E1A] hover:bg-indigo-600 text-white rounded-2xl font-black text-[11px] uppercase tracking-[0.25em] transition-all duration-300 flex items-center justify-center gap-3 shadow-xl active:scale-[0.98] disabled:opacity-50 group"
-                  >
-                    {isLoading ? <Loader2 size={20} className="animate-spin" /> : (
-                      <>
-                        Envoyer le lien
-                        <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-                      </>
-                    )}
-                  </button>
+                  <div className="flex flex-col gap-4">
+                    <button 
+                      disabled={isLoading || isResending}
+                      type="submit"
+                      className="w-full py-4.5 bg-[#090E1A] hover:bg-indigo-600 text-white rounded-2xl font-black text-[11px] uppercase tracking-[0.25em] transition-all duration-300 flex items-center justify-center gap-3 shadow-xl active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed group"
+                    >
+                      {isLoading ? <Loader2 size={20} className="animate-spin" /> : (
+                        <>
+                          Envoyer le lien
+                          <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                        </>
+                      )}
+                    </button>
+
+                    <div className="flex justify-center">
+                      <button 
+                        type="button"
+                        onClick={handleResend}
+                        disabled={isResending || isLoading}
+                        className="inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-slate-900 hover:text-indigo-600 transition-colors group disabled:opacity-30 disabled:cursor-not-allowed"
+                      >
+                        <RefreshCw size={14} className={`${isResending ? 'animate-spin' : 'group-hover:rotate-180'} transition-transform duration-500`} />
+                        {isResending ? "Renvoi en cours..." : "Renvoyer un autre lien"}
+                      </button>
+                    </div>
+                  </div>
                 </form>
               </motion.div>
             ) : (
-              <motion.div
-                key="success"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="text-center py-6"
-              >
+              <motion.div key="success" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-6">
                 <div className="w-24 h-24 bg-green-50 rounded-full flex items-center justify-center text-green-500 mx-auto mb-8 relative">
                   <CheckCircle2 size={48} className="relative z-10" />
-                  <motion.div 
-                    animate={{ scale: [1, 1.4, 1], opacity: [0.3, 0, 0.3] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                    className="absolute inset-0 bg-green-200 rounded-full"
-                  />
+                  <motion.div animate={{ scale: [1, 1.4, 1], opacity: [0.3, 0, 0.3] }} transition={{ duration: 2, repeat: Infinity }} className="absolute inset-0 bg-green-200 rounded-full" />
                 </div>
                 
-                <h2 className="text-3xl font-black text-slate-950 uppercase tracking-tighter mb-4 leading-tight">
-                  Lien Envoyé !
-                </h2>
+                <h2 className="text-3xl font-black text-slate-950 uppercase tracking-tighter mb-4 leading-tight">Lien Envoyé !</h2>
                 <p className="text-slate-500 text-sm font-medium leading-relaxed mb-10 px-2">
-                  Un email contenant les instructions de récupération vous a été envoyé. 
-                  <span className="block mt-2 font-bold text-indigo-600/80 italic">Vérifiez vos courriers indésirables(spams).</span>
+                  Un email a été envoyé à <strong className="text-slate-900">{email}</strong>. 
+                  <span className="block mt-2 font-bold text-indigo-600/80 italic">Pensez à vérifier vos spams.</span>
                 </p>
 
                 <div className="space-y-4">
@@ -150,8 +171,8 @@ export default function ForgotPassword() {
 
                   <button 
                     onClick={handleResend}
-                    disabled={isResending}
-                    className="w-full py-4 border border-slate-100 hover:border-indigo-100 hover:bg-indigo-50/30 text-slate-500 hover:text-indigo-600 rounded-2xl font-bold text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                    disabled={isResending || isLoading}
+                    className="w-full py-4 border border-slate-100 hover:border-indigo-100 hover:bg-indigo-50/30 text-slate-500 hover:text-indigo-600 rounded-2xl font-bold text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed"
                   >
                     {isResending ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
                     {isResending ? "Renvoi en cours..." : "Renvoyer le lien"}
@@ -162,8 +183,9 @@ export default function ForgotPassword() {
                   <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-loose">
                     Erreur d`adresse ? <br />
                     <button 
+                      disabled={isLoading || isResending}
                       onClick={() => setIsSent(false)} 
-                      className="text-indigo-600 hover:underline inline-flex items-center gap-1"
+                      className="text-indigo-600 hover:underline font-black disabled:opacity-30 disabled:cursor-not-allowed"
                     >
                       Saisir un autre email
                     </button>

@@ -11,9 +11,6 @@ import AuthNavbar from "../AuthNavbar";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
-/**
- * Utilitaire pour fusionner les classes Tailwind proprement
- */
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
@@ -24,6 +21,7 @@ export default function Login() {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isBlocked, setIsBlocked] = useState<boolean>(false); // État pour bloquer le bouton
   
   const [message, setMessage] = useState<{ text: string; type: "error" | "success" | null }>({
     text: "",
@@ -58,8 +56,13 @@ export default function Login() {
       }
 
     } catch (err: unknown) {
-      // Correction de "Unexpected any" : on vérifie si err est une instance de Error
       const errorMessage = err instanceof Error ? err.message : "Une erreur est survenue";
+      
+      // SI LE MESSAGE CONTIENT "15 MINUTES", ON BLOQUE LE BOUTON
+      if (errorMessage.toLowerCase().includes("15 minutes")) {
+        setIsBlocked(true);
+      }
+      
       setMessage({ text: errorMessage, type: "error" });
     } finally {
       setIsLoading(false);
@@ -71,8 +74,6 @@ export default function Login() {
       <AuthNavbar />
 
       <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6 pt-32 selection:bg-indigo-100 font-sans relative overflow-hidden">
-        
-        {/* Background Decor */}
         <div className="absolute inset-0 -z-10 overflow-hidden opacity-60">
           <motion.div 
             animate={{ scale: [1, 1.1, 1] }}
@@ -120,26 +121,27 @@ export default function Login() {
                 <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-4">Ravis de vous revoir sur StockMaster</p>
               </header>
 
-               <div className="min-h-[28px] mb-6 flex items-center justify-center">
-            <AnimatePresence mode="wait">
-              {message.text && (
-                <motion.div 
-                  key={message.type}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  className={`flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.15em] py-2 px-4 rounded-full ${
-                    message.type === 'error' 
-                      ? 'text-red-600 bg-red-50/50' 
-                      : 'text-emerald-600 bg-emerald-50/50'
-                  }`}
-                >
-                  {message.type === 'error' ? <AlertCircle size={14} /> : <CheckCircle2 size={14} />}
-                  <span>{message.text}</span>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+              <div className="min-h-[28px] mb-6 flex items-center justify-center">
+                <AnimatePresence mode="wait">
+                  {message.text && (
+                    <motion.div 
+                      key={message.type}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      className={`flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.15em] py-2 px-4 rounded-full ${
+                        message.type === 'error' 
+                          ? 'text-red-600 bg-red-50/50' 
+                          : 'text-emerald-600 bg-emerald-50/50'
+                      }`}
+                    >
+                      {message.type === 'error' ? <AlertCircle size={14} /> : <CheckCircle2 size={14} />}
+                      <span>{message.text}</span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
               <form className="space-y-5" onSubmit={handleLogin}>
                 <InputGroup 
                   label="Email Professionnel" 
@@ -188,9 +190,9 @@ export default function Login() {
                 </div>
 
                 <button 
-                  disabled={isLoading}
+                  disabled={isLoading || isBlocked} // BLOQUÉ SI CHARGEMENT OU BANNISSEMENT
                   type="submit"
-                  className="w-full py-4 bg-[#090E1A] hover:bg-indigo-600 text-white rounded-lg font-black text-[11px] uppercase tracking-[0.2em] transition-all duration-300 flex items-center justify-center gap-2 mt-4 shadow-lg active:scale-[0.98] disabled:opacity-30"
+                  className="w-full py-4 bg-[#090E1A] hover:bg-indigo-600 text-white rounded-lg font-black text-[11px] uppercase tracking-[0.2em] transition-all duration-300 flex items-center justify-center gap-2 mt-4 shadow-lg active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed"
                 >
                   {isLoading ? (
                     <Loader2 size={18} className="animate-spin" />
@@ -230,7 +232,6 @@ function InputGroup({ label, icon: Icon, className, ...props }: InputGroupProps)
       <div className="relative">
         <Icon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within/input:text-indigo-600 transition-all" size={16} />
         <input 
-          // Utilisation de cn() ici pour supprimer l'erreur de valeur non lue
           className={cn(
             "w-full pl-10 pr-4 py-3 bg-slate-50/50 border border-slate-100 rounded-lg outline-none focus:border-indigo-600 focus:bg-white focus:ring-4 focus:ring-indigo-50/50 transition-all font-bold text-slate-900 text-sm placeholder:text-slate-200 placeholder:font-normal",
             className

@@ -1,10 +1,7 @@
-import ResetPassword from "../../src/components/auth/ResetPassword";
+// apps/frontend/app/reset-password/page.tsx
+import { redirect } from "next/navigation";
 
-export const metadata = {
-  title: "Réinitialisation | StockMaster Pro",
-  description: "Sécurisez votre accès en créant un nouveau mot de passe pour votre compte StockMaster.",
-};
-
-export default function ResetPasswordPage() {
-  return <ResetPassword />;
+export default function ResetPasswordRootPage() {
+  // Si quelqu'un arrive ici sans token, on le renvoie au début du flux
+  redirect("/forgot-password");
 }
