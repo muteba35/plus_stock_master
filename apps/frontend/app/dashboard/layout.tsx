@@ -20,7 +20,25 @@ import {
   User,
   Menu,
   X,
+  CircleDollarSign,
+  ChevronRight
 } from "lucide-react";
+
+// Types pour la structure de navigation
+interface SubMenuItem {
+  name: string;
+  href: string;
+  permission?: string; // Restriction par permission spécifique
+}
+
+interface NavigationItem {
+  name: string;
+  href?: string;
+  icon: React.ComponentType<{ size: number; className?: string }>;
+  module: string; // Module global
+  permission?: string; // Restriction sur le parent entier
+  subMenu?: SubMenuItem[];
+}
 
 export default function DashboardLayout({
   children,
@@ -31,9 +49,25 @@ export default function DashboardLayout({
   const router = useRouter();
 
   // ==========================================
+  // VOS PERMISSIONS UTILISATEUR COMPLÈTES
+  // ==========================================
+  const [userPermissions] = useState<string[]>([
+    "VOIR_RESUME_VENTES",
+    "VOIR_ALERTES_STOCK",
+    "EFFECTUER_VENTE",
+    "APPLIQUER_REMISE",
+    "ANNULER_VENTE",
+  ]);
+
+  // Fonction stricte de vérification de permission
+  const hasPermission = (permission?: string) => {
+    if (!permission) return true; // Si pas de permission requise, libre d'accès
+    return userPermissions.includes(permission);
+  };
+
+  // ==========================================
   // STATES
   // ==========================================
-
   const [user] = useState({
     prenom: "Propriétaire",
     role: "proprietaire",
@@ -46,20 +80,25 @@ export default function DashboardLayout({
   });
 
   const [showUserMenu, setShowUserMenu] = useState(false);
-
-  // Sidebar desktop
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-
-  // Sidebar mobile
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-
   const [searchQuery, setSearchQuery] = useState("");
-
   const [darkMode, setDarkMode] = useState(false);
 
-  // ==========================================
-  // DARK MODE
-  // ==========================================
+  const [openSubMenus, setOpenSubMenus] = useState<Record<string, boolean>>({
+    Caisse: false,
+    Inventaire: false,
+    "Mon Équipe": false,
+    Finances: false,
+    Paramètres: false,
+  });
+
+  const toggleSubMenu = (menuName: string) => {
+    setOpenSubMenus((prev) => ({
+      ...prev,
+      [menuName]: !prev[menuName],
+    }));
+  };
 
   const toggleDarkMode = () => {
     if (darkMode) {
@@ -71,58 +110,88 @@ export default function DashboardLayout({
     }
   };
 
-  // ==========================================
-  // LOGOUT
-  // ==========================================
-
   const handleLogout = () => {
-    document.cookie =
-      "stockmaster_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-
+    document.cookie = "stockmaster_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     localStorage.removeItem("token");
-
     router.push("/login");
   };
 
   // ==========================================
-  // NAVIGATION
+  // ARCHITECTURE & INTEGRATION DES PERMISSIONS
   // ==========================================
-
-  const navigation = [
+  const navigation: NavigationItem[] = [
     {
       name: "Vue d'ensemble",
       href: "/dashboard",
       icon: LayoutDashboard,
+      module: "DASHBOARD",
+      permission: "VOIR_RESUME_VENTES",
     },
     {
-      name: "Produits & Stock",
-      href: "/dashboard/produits",
-      icon: Boxes,
-    },
-    {
-      name: "Nouvelle Vente",
-      href: "/dashboard/ventes",
+      name: "Caisse",
       icon: ShoppingCart,
+      module: "VENTE",
+      permission: "EFFECTUER_VENTE", // Il faut au moins avoir accès à la caisse pour voir ce menu
+      subMenu: [
+        { name: "Accueil Caisse", href: "/dashboard/caisse" }, // Libre si le parent est OK
+        { name: "Historique Ventes", href: "/dashboard/caisse/ventes" },
+        { name: "Factures", href: "/dashboard/caisse/factures" },
+        { name: "Retours clients", href: "/dashboard/caisse/retours", permission: "ANNULER_VENTE" }, // Droits sensibles
+      ],
+    },
+    {
+      name: "Inventaire",
+      icon: Boxes,
+      module: "INVENTAIRE",
+      subMenu: [
+        { name: "Vue Globale", href: "/dashboard/inventaire" },
+        { name: "Gestion Produits", href: "/dashboard/inventaire/produits" },
+        { name: "Catégories", href: "/dashboard/inventaire/categories" },
+        { name: "Mouvements Stock", href: "/dashboard/inventaire/stock" },
+        { name: "Alertes Rupture", href: "/dashboard/inventaire/alertes", permission: "VOIR_ALERTES_STOCK" }, // Lié à l'alerte stock
+      ],
     },
     {
       name: "Mon Équipe",
-      href: "/dashboard/equipe",
       icon: Users2,
+      module: "EQUIPE",
+      subMenu: [
+        { name: "Vue d'ensemble", href: "/dashboard/equipe" },
+        { name: "Employés", href: "/dashboard/equipe/employes" },
+        { name: "Rôles", href: "/dashboard/equipe/roles" },
+        { name: "Permissions", href: "/dashboard/equipe/permissions" },
+      ],
+    },
+    {
+      name: "Finances",
+      icon: CircleDollarSign,
+      module: "FINANCES",
+      subMenu: [
+        { name: "Tableau de bord", href: "/dashboard/finances" },
+        { name: "Analyse Ventes", href: "/dashboard/finances/ventes" },
+        { name: "Bénéfices & Pertes", href: "/dashboard/finances/benefices" },
+        { name: "Rapports d'activité", href: "/dashboard/finances/rapports" },
+        { name: "Exportations", href: "/dashboard/finances/exportations" },
+      ],
     },
     {
       name: "Paramètres",
-      href: "/dashboard/parametres",
       icon: Settings,
+      module: "PARAMETRES",
+      subMenu: [
+        { name: "Général", href: "/dashboard/parametres" },
+        { name: "Ma Boutique", href: "/dashboard/parametres/boutique" },
+        { name: "Devises & Taxes", href: "/dashboard/parametres/devise" },
+        { name: "Abonnement", href: "/dashboard/parametres/abonnement" },
+        { name: "Sécurité", href: "/dashboard/parametres/securite" },
+      ],
     },
   ];
 
   return (
-    <div className="flex min-h-screen bg-[#F1F5F9] overflow-hidden relative font-sans antialiased text-slate-800 selection:bg-indigo-100">
+    <div className="flex h-screen bg-[#F1F5F9] overflow-hidden relative font-sans antialiased text-slate-800 selection:bg-indigo-100">
 
-      {/* ==========================================
-          OVERLAY MOBILE
-      ========================================== */}
-
+      {/* OVERLAY MOBILE */}
       {isMobileSidebarOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
@@ -130,55 +199,34 @@ export default function DashboardLayout({
         />
       )}
 
-      {/* ==========================================
-          SIDEBAR
-      ========================================== */}
-
+      {/* SIDEBAR */}
       <aside
         className={`
           fixed lg:static top-0 left-0 z-50 h-screen
-          ${isSidebarOpen ? "w-64" : "w-20"}
-          bg-[#1C2434]
-          text-slate-200
-          flex flex-col justify-between
-          border-r border-slate-800/60
-          shadow-2xl
-          transition-all duration-300
-
-          ${
-            isMobileSidebarOpen
-              ? "translate-x-0"
-              : "-translate-x-full lg:translate-x-0"
-          }
+          ${isSidebarOpen ? "w-64" : "lg:w-20"}
+          bg-[#1C2434] text-slate-200 flex flex-col justify-between
+          border-r border-slate-800/60 shadow-2xl transition-all duration-300
+          ${isMobileSidebarOpen ? "translate-x-0 w-64" : "-translate-x-full lg:translate-x-0"}
         `}
       >
-        <div>
-          {/* ==========================================
-              LOGO
-          ========================================== */}
-
-          <div className="p-6 border-b border-slate-800/60 bg-[#141C2F] h-20 flex items-center justify-between">
-            
+        <div className="flex flex-col flex-1 overflow-y-auto custom-scrollbar">
+          {/* LOGO */}
+          <div className="p-6 border-b border-slate-800/60 bg-[#141C2F] h-20 flex items-center justify-between shrink-0">
             <div className="flex items-center space-x-3 overflow-hidden">
               <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-600/20 shrink-0">
                 <Boxes size={20} className="-rotate-6" />
               </div>
-
-              {isSidebarOpen && (
+              {(isSidebarOpen || isMobileSidebarOpen) && (
                 <div className="flex flex-col items-start">
                   <h1 className="text-lg font-black tracking-tight leading-none text-white">
-                    STOCK
-                    <span className="text-indigo-500">MASTER</span>
+                    STOCK<span className="text-indigo-500">MASTER</span>
                   </h1>
-
                   <span className="text-[8px] font-bold text-slate-500 uppercase tracking-[0.2em] mt-1">
                     Pro Edition
                   </span>
                 </div>
               )}
             </div>
-
-            {/* CLOSE MOBILE */}
             <button
               onClick={() => setIsMobileSidebarOpen(false)}
               className="lg:hidden text-slate-400 hover:text-white"
@@ -187,146 +235,146 @@ export default function DashboardLayout({
             </button>
           </div>
 
-          {/* ==========================================
-              BOUTIQUE
-          ========================================== */}
-
-          <div
-            className={`mx-4 mt-6 p-3 bg-slate-900/50 rounded-2xl border border-slate-800/40 flex items-center ${
-              isSidebarOpen ? "space-x-3" : "justify-center"
-            }`}
-          >
+          {/* BOUTIQUE */}
+          <div className={`mx-4 mt-6 p-3 bg-slate-900/50 rounded-2xl border border-slate-800/40 flex items-center shrink-0 ${
+            isSidebarOpen || isMobileSidebarOpen ? "space-x-3" : "lg:justify-center"
+          }`}>
             <div className="w-8 h-8 bg-indigo-500/10 rounded-lg flex items-center justify-center text-indigo-400 border border-indigo-500/20 shrink-0">
               <Store size={16} />
             </div>
-
-            {isSidebarOpen && (
+            {(isSidebarOpen || isMobileSidebarOpen) && (
               <div className="overflow-hidden">
-                <p className="text-xs font-bold text-white truncate">
-                  {boutique.nom}
-                </p>
-
-                <p className="text-[10px] text-slate-500 truncate font-medium">
-                  {boutique.secteur}
-                </p>
+                <p className="text-xs font-bold text-white truncate">{boutique.nom}</p>
+                <p className="text-[10px] text-slate-500 truncate font-medium">{boutique.secteur}</p>
               </div>
             )}
           </div>
 
-          {/* ==========================================
-              NAVIGATION
-          ========================================== */}
-
-          <nav className="p-4 mt-4 space-y-1.5">
+          {/* NAVIGATION */}
+          <nav className="p-4 mt-4 space-y-1.5 flex-1">
             {navigation.map((item) => {
-              const IconComponent = item.icon;
+              // Filtrage niveau Parent
+              if (!hasPermission(item.permission)) return null;
 
-              const isActive = pathname === item.href;
+              // Filtrage intelligent : Si le parent a des sous-menus, on regarde si l'user a au moins accès à UN sous-menu
+              const hasSubMenu = item.subMenu && item.subMenu.length > 0;
+              const allowedSubMenus = item.subMenu?.filter(sub => hasPermission(sub.permission)) || [];
+              
+              // Si le menu a des enfants mais qu'aucun n'est autorisé pour cet utilisateur, on cache le menu complet
+              if (hasSubMenu && allowedSubMenus.length === 0) return null;
+
+              const IconComponent = item.icon;
+              const isMenuOpen = openSubMenus[item.name];
+              const isChildActive = hasSubMenu && allowedSubMenus.some(sub => pathname === sub.href);
+              const isParentActive = item.href ? pathname === item.href : isChildActive;
 
               return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  onClick={() => setIsMobileSidebarOpen(false)}
-                  title={!isSidebarOpen ? item.name : ""}
-                  className={`
-                    flex items-center px-4 py-3 rounded-xl
-                    text-xs font-black uppercase tracking-wider
-                    transition-all duration-300 relative group
+                <div key={item.name} className="w-full">
+                  {hasSubMenu ? (
+                    <button
+                      onClick={() => (isSidebarOpen || isMobileSidebarOpen) ? toggleSubMenu(item.name) : setIsSidebarOpen(true)}
+                      className={`
+                        w-full flex items-center justify-between px-4 py-3 rounded-xl
+                        text-xs font-black uppercase tracking-wider transition-all duration-300 group
+                        ${isSidebarOpen || isMobileSidebarOpen ? "" : "lg:justify-center"}
+                        ${isParentActive 
+                          ? "bg-slate-800 text-white border-l-4 border-indigo-500 rounded-l-none" 
+                          : "text-slate-400 hover:bg-slate-800/40 hover:text-white"
+                        }
+                      `}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <IconComponent size={18} className={`shrink-0 transition-transform ${isParentActive ? "text-indigo-400 scale-110" : "group-hover:text-indigo-400"}`} />
+                        {(isSidebarOpen || isMobileSidebarOpen) && <span>{item.name}</span>}
+                      </div>
 
-                    ${
-                      isSidebarOpen
-                        ? "space-x-3"
-                        : "justify-center"
-                    }
-
-                    ${
-                      isActive
-                        ? "bg-indigo-600 text-white shadow-xl shadow-indigo-600/20"
-                        : "text-slate-400 hover:bg-slate-800/50 hover:text-white"
-                    }
-                  `}
-                >
-                  {isActive && isSidebarOpen && (
-                    <span className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-white rounded-r-md" />
+                      {(isSidebarOpen || isMobileSidebarOpen) && (
+                        <ChevronDown 
+                          size={14} 
+                          className={`text-slate-500 transition-transform duration-200 ${isMenuOpen ? "rotate-180 text-white" : ""}`} 
+                        />
+                      )}
+                    </button>
+                  ) : (
+                    <Link
+                      href={item.href || "#"}
+                      onClick={() => setIsMobileSidebarOpen(false)}
+                      className={`
+                        flex items-center px-4 py-3 rounded-xl text-xs font-black uppercase tracking-wider
+                        transition-all duration-300 relative group ${isSidebarOpen || isMobileSidebarOpen ? "space-x-3" : "lg:justify-center"}
+                        ${isParentActive
+                          ? "bg-indigo-600 text-white shadow-xl shadow-indigo-600/20"
+                          : "text-slate-400 hover:bg-slate-800/50 hover:text-white"
+                        }
+                      `}
+                    >
+                      <IconComponent size={18} className="shrink-0" />
+                      {(isSidebarOpen || isMobileSidebarOpen) && <span>{item.name}</span>}
+                    </Link>
                   )}
 
-                  <IconComponent
-                    size={18}
-                    className={`shrink-0 transition-transform duration-300 ${
-                      isActive
-                        ? "scale-110"
-                        : "group-hover:scale-110 group-hover:text-indigo-400"
-                    }`}
-                  />
+                  {/* RENDU DES SOUS-MENUS FILTRÉS */}
+                  {hasSubMenu && isMenuOpen && (isSidebarOpen || isMobileSidebarOpen) && (
+                    <div className="mt-1 ml-6 pl-3 border-l border-slate-800/70 space-y-1 transition-all duration-300">
+                      {allowedSubMenus.map((sub) => {
+                        const isSubActive = pathname === sub.href;
 
-                  {isSidebarOpen && (
-                    <span>{item.name}</span>
+                        return (
+                          <Link
+                            key={sub.name}
+                            href={sub.href}
+                            onClick={() => setIsMobileSidebarOpen(false)}
+                            className={`
+                              flex items-center space-x-2 py-2 px-3 rounded-lg text-[11px] font-bold tracking-wide transition-colors
+                              ${isSubActive 
+                                ? "text-indigo-400 bg-indigo-500/5 font-black" 
+                                : "text-slate-400 hover:text-white hover:bg-slate-800/30"
+                              }
+                            `}
+                          >
+                            <ChevronRight size={10} className={isSubActive ? "text-indigo-400" : "text-slate-600"} />
+                            <span>{sub.name}</span>
+                          </Link>
+                        );
+                      })}
+                    </div>
                   )}
-                </Link>
+                </div>
               );
             })}
           </nav>
         </div>
 
-        {/* ==========================================
-            FOOTER SIDEBAR
-        ========================================== */}
-
-        <div className="p-4 border-t border-slate-800/60 bg-[#141C2F]/40">
+        {/* FOOTER SIDEBAR - ZONE DÉCONNEXION RE-STYLISÉE PREMIUM */}
+        <div className="p-4 border-t border-slate-800/60 bg-[#141C2F]/60 shrink-0">
           <button
             onClick={handleLogout}
-            title={!isSidebarOpen ? "Déconnexion" : ""}
+            title={!isSidebarOpen ? "Se déconnecter" : ""}
             className={`
-              w-full flex items-center py-3 rounded-xl
-              text-xs font-black uppercase tracking-wider
-              text-rose-400 hover:bg-rose-50/10
-              transition-all duration-300 group
-
-              ${
-                isSidebarOpen
-                  ? "space-x-3 px-4"
-                  : "justify-center"
-              }
+              w-full flex items-center rounded-xl text-xs font-black uppercase tracking-wider
+              text-rose-400 bg-rose-500/5 border border-rose-500/10 hover:bg-rose-500/20 hover:border-rose-500/30
+              transition-all duration-300 group py-3
+              ${isSidebarOpen || isMobileSidebarOpen ? "space-x-3 px-4" : "lg:justify-center px-0"}
             `}
           >
-            <LogOut
-              size={18}
-              className="shrink-0 group-hover:translate-x-1 transition-transform"
-            />
-
-            {isSidebarOpen && <span>Déconnexion</span>}
+            <LogOut size={18} className="shrink-0 group-hover:translate-x-1 transition-transform duration-200 text-rose-400" />
+            {(isSidebarOpen || isMobileSidebarOpen) && <span>Déconnexion</span>}
           </button>
         </div>
       </aside>
 
-      {/* ==========================================
-          CONTENU PRINCIPAL
-      ========================================== */}
-
+      {/* CONTENU PRINCIPAL RE-STYLISÉ */}
       <div className="flex-1 flex flex-col min-w-0">
-
-        {/* ==========================================
-            HEADER
-        ========================================== */}
-
-        <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-3 sm:px-4 md:px-6 lg:px-8 shadow-sm sticky top-0 z-30">
-
-          {/* ==========================================
-              LEFT
-          ========================================== */}
-
+        {/* HEADER BAR */}
+        <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-4 sm:px-6 lg:px-8 shadow-sm sticky top-0 z-30 shrink-0">
           <div className="flex items-center gap-3 flex-1 min-w-0">
-
-            {/* MOBILE MENU */}
             <button
               onClick={() => setIsMobileSidebarOpen(true)}
-              className="lg:hidden p-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-600 shrink-0"
+              className="lg:hidden p-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-600 shrink-0 hover:bg-slate-200/60 transition-colors"
             >
               <Menu size={18} />
             </button>
 
-            {/* DESKTOP SIDEBAR BUTTON */}
             <button
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
               className="hidden lg:flex p-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-600 hover:bg-slate-200/60 transition-colors shrink-0"
@@ -334,15 +382,10 @@ export default function DashboardLayout({
               <Menu size={18} />
             </button>
 
-            {/* SEARCH */}
+            {/* BARRE DE RECHERCHE */}
             <div className="hidden sm:block w-full max-w-[220px] md:max-w-[260px] lg:max-w-[320px]">
               <div className="relative flex items-center bg-white border border-slate-200 rounded-xl px-3 py-2 group focus-within:border-indigo-500 focus-within:ring-4 focus-within:ring-indigo-50 transition-all duration-200 shadow-sm">
-
-                <Search
-                  size={16}
-                  className="text-slate-500 group-focus-within:text-indigo-600 transition-colors shrink-0"
-                />
-
+                <Search size={16} className="text-slate-500 group-focus-within:text-indigo-600 transition-colors shrink-0" />
                 <input
                   type="text"
                   placeholder="Rechercher..."
@@ -354,111 +397,59 @@ export default function DashboardLayout({
             </div>
           </div>
 
-          {/* ==========================================
-              RIGHT
-          ========================================== */}
-
+          {/* ACTIONS DROITE */}
           <div className="flex items-center gap-2 sm:gap-4 ml-auto">
-
-            {/* DARK MODE */}
             <button
               onClick={toggleDarkMode}
               className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200/70 text-slate-600 transition-colors shrink-0"
             >
-              {darkMode ? (
-                <Sun size={20} className="text-amber-500 animate-pulse" />
-              ) : (
-                <Moon size={20} className="text-slate-600" />
-              )}
+              {darkMode ? <Sun size={20} className="text-amber-500 animate-pulse" /> : <Moon size={20} className="text-slate-600" />}
             </button>
 
-            {/* NOTIFICATIONS */}
             <button className="w-10 h-10 flex items-center justify-center relative rounded-full bg-slate-100 hover:bg-slate-200/70 text-slate-600 transition-colors shrink-0">
               <Bell size={20} />
-
               <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white" />
             </button>
 
-            {/* SEPARATOR */}
             <div className="hidden sm:block w-px h-8 bg-slate-200" />
 
-            {/* PROFILE */}
+            {/* PROFIL DROP DOWN */}
             <div className="relative">
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 className="flex items-center gap-2 sm:gap-3 py-1.5 focus:outline-none group"
               >
                 <div className="text-right hidden lg:block">
-                  <p className="text-sm font-bold text-slate-800 leading-tight group-hover:text-indigo-600 transition-colors">
-                    {user.prenom}
-                  </p>
-
-                  <p className="text-[11px] text-slate-400 font-medium tracking-wide mt-0.5 capitalize">
-                    {user.role}
-                  </p>
+                  <p className="text-sm font-bold text-slate-800 leading-tight group-hover:text-indigo-600 transition-colors">{user.prenom}</p>
+                  <p className="text-[11px] text-slate-400 font-medium tracking-wide mt-0.5 capitalize">{user.role}</p>
                 </div>
 
                 <div className="w-11 h-11 rounded-full overflow-hidden border border-slate-200 bg-slate-100 flex items-center justify-center text-slate-600 font-black shadow-inner shrink-0">
                   {user.avatar ? (
-                    <img
-                      src={user.avatar}
-                      alt={user.prenom}
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={user.avatar} alt={user.prenom} className="w-full h-full object-cover" />
                   ) : (
                     <span className="text-sm text-indigo-600 bg-indigo-50 w-full h-full flex items-center justify-center">
                       {user.prenom.charAt(0).toUpperCase()}
                     </span>
                   )}
                 </div>
-
-                <ChevronDown
-                  size={16}
-                  className={`hidden sm:block text-slate-400 group-hover:text-slate-600 transition-transform duration-300 ${
-                    showUserMenu
-                      ? "rotate-180 text-indigo-600"
-                      : ""
-                  }`}
-                />
+                <ChevronDown size={16} className={`hidden sm:block text-slate-400 group-hover:text-slate-600 transition-transform duration-300 ${showUserMenu ? "rotate-180 text-indigo-600" : ""}`} />
               </button>
 
-              {/* USER MENU */}
               {showUserMenu && (
                 <>
-                  <div
-                    className="fixed inset-0 z-20"
-                    onClick={() => setShowUserMenu(false)}
-                  />
-
+                  <div className="fixed inset-0 z-20" onClick={() => setShowUserMenu(false)} />
                   <div className="absolute right-0 mt-3 w-52 bg-white border border-slate-200 rounded-xl shadow-xl py-2 z-30">
-
-                    <Link
-                      href="/dashboard/parametres"
-                      onClick={() => setShowUserMenu(false)}
-                      className="flex items-center space-x-2.5 px-4 py-3 text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-colors uppercase tracking-wider"
-                    >
+                    <Link href="/dashboard/parametres" onClick={() => setShowUserMenu(false)} className="flex items-center space-x-2.5 px-4 py-3 text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-colors uppercase tracking-wider">
                       <User size={16} />
                       <span>Mon Profil</span>
                     </Link>
-
-                    <Link
-                      href="/dashboard/parametres"
-                      onClick={() => setShowUserMenu(false)}
-                      className="flex items-center space-x-2.5 px-4 py-3 text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-colors uppercase tracking-wider"
-                    >
+                    <Link href="/dashboard/parametres" onClick={() => setShowUserMenu(false)} className="flex items-center space-x-2.5 px-4 py-3 text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-colors uppercase tracking-wider">
                       <Settings size={16} />
                       <span>Paramètres</span>
                     </Link>
-
                     <div className="h-px bg-slate-100 my-1" />
-
-                    <button
-                      onClick={() => {
-                        setShowUserMenu(false);
-                        handleLogout();
-                      }}
-                      className="w-full flex items-center space-x-2.5 px-4 py-3 text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors uppercase tracking-wider text-left"
-                    >
+                    <button onClick={() => { setShowUserMenu(false); handleLogout(); }} className="w-full flex items-center space-x-2.5 px-4 py-3 text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors uppercase tracking-wider text-left">
                       <LogOut size={16} />
                       <span>Se déconnecter</span>
                     </button>
@@ -469,11 +460,8 @@ export default function DashboardLayout({
           </div>
         </header>
 
-        {/* ==========================================
-            MAIN CONTENT
-        ========================================== */}
-
-        <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 lg:p-8 bg-[#F1F5F9]">
+        {/* MAIN CONTENT */}
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-[#F1F5F9]">
           {children}
         </main>
       </div>
