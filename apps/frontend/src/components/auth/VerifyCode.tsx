@@ -77,9 +77,16 @@ export default function VerifyCode() {
         throw new Error(data.message || "Code invalide ou expiré");
       }
 
+      // 🎯 MODIFICATION : Enregistrement du jeton dans un cookie lisible par le middleware
+      // Configure une validité de 7 jours (7 jours * 24h * 60m * 60s)
+      document.cookie = `stockmaster_token=${data.token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax; Secure`;
+
+      // On garde la copie dans le localStorage au cas où
       localStorage.setItem("token", data.token);
       localStorage.removeItem("temp_login_email");
-      router.push("/dashboard"); // Changé vers dashboard si connexion réussie
+      
+      // L'aiguillage va maintenant fonctionner parfaitement grâce au cookie !
+      router.push("/dashboard"); 
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erreur de vérification";
       
