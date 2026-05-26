@@ -18,7 +18,9 @@ app.use(cors({
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
-app.use(express.json());
+// CONFIGURATION DES BODY PARSERS (Avec limite augmentée pour le Base64)
+app.use(express.json({ limit: '10mb' })); 
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // Route de test
 app.get("/", (req, res) => {
