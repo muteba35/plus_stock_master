@@ -2,243 +2,490 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Loader2, RefreshCw, Package2, AlertCircle, CheckCircle2 } from "lucide-react";
+import {
+  ArrowRight,
+  Loader2,
+  RefreshCw,
+  Package2,
+  AlertCircle,
+  CheckCircle2,
+  ShieldCheck,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import AuthNavbar from "../AuthNavbar";
 
 export default function VerifyCode() {
   const router = useRouter();
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+
+  const [otp, setOtp] = useState<string[]>(["", "", "", "", "", ""]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isResending, setIsLoadingResending] = useState(false);
-  const [resendSuccess, setResendSuccess] = useState(false); 
-  const [isBlocked, setIsBlocked] = useState(false); // BLOQUAGE SÉCURITÉ
-  const [timer, setTimer] = useState(0); 
+  const [isResending, setIsResending] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [timer, setTimer] = useState(0);
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [email, setEmail] = useState("");
+
   const inputs = useRef<(HTMLInputElement | null)[]>([]);
 
+  // Vérification email temporaire
   useEffect(() => {
     const savedEmail = localStorage.getItem("temp_login_email");
+
     if (!savedEmail) {
       router.push("/login");
-    } else {
-      setEmail(savedEmail);
+      return;
     }
-    if (inputs.current[0]) inputs.current[0].focus();
+
+    setEmail(savedEmail);
+
+    const timeout = setTimeout(() => {
+      inputs.current[0]?.focus();
+    }, 100);
+
+    return () => clearTimeout(timeout);
   }, [router]);
 
+  // Timer resend
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (timer > 0) {
-      interval = setInterval(() => {
-        setTimer((prev) => prev - 1);
-      }, 1000);
-    } else {
+    if (timer <= 0) {
       setResendSuccess(false);
+      return;
     }
+
+    const interval = setInterval(() => {
+      setTimer((prev) => prev - 1);
+    }, 1000);
+
     return () => clearInterval(interval);
   }, [timer]);
 
-  const handleChange = (element: HTMLInputElement, index: number) => {
-    if (isNaN(Number(element.value))) return false;
+  const handleChange = (
+    element: HTMLInputElement,
+    index: number
+  ) => {
+    const value = element.value;
+
+    if (isNaN(Number(value))) return;
+
     const newOtp = [...otp];
-    newOtp[index] = element.value;
+    newOtp[index] = value.slice(-1);
+
     setOtp(newOtp);
     setError("");
-    
-    if (element.value !== "" && index < 5) {
+
+    if (value && index < 5) {
       inputs.current[index + 1]?.focus();
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
-    if (e.key === "Backspace" && !otp[index] && index > 0) {
-      inputs.current[index - 1]?.focus();
+  const handleKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    index: number
+  ) => {
+    if (e.key === "Backspace") {
+      if (otp[index]) {
+        const newOtp = [...otp];
+        newOtp[index] = "";
+        setOtp(newOtp);
+      } else if (index > 0) {
+        const newOtp = [...otp];
+        newOtp[index - 1] = "";
+        setOtp(newOtp);
+        inputs.current[index - 1]?.focus();
+      }
     }
   };
 
-  const handleVerify = async (e: React.FormEvent) => {
+  // Gestion collage OTP optimisée pour React
+  const handlePaste = (
+    e: React.ClipboardEvent<HTMLInputElement>
+  ) => {
     e.preventDefault();
+
+    const pastedData = e.clipboardData
+      .getData("text")
+      .trim()
+      .replace(/\D/g, "");
+
+    if (pastedData.length !== 6) return;
+
+    const otpArray = pastedData.split("").slice(0, 6);
+    setOtp(otpArray);
+
+    inputs.current[5]?.focus();
+  };
+
+  const handleVerify = async (
+    e: React.FormEvent<HTMLFormElement>
+  ) => {
+    e.preventDefault();
+
     setIsLoading(true);
     setError("");
+    setSuccessMessage("");
 
     try {
       const fullOtp = otp.join("");
-      const response = await fetch("http://localhost:5000/api/auth/verify-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, otp: fullOtp }),
-      });
+
+      const response = await fetch(
+        "http://localhost:5000/api/auth/verify-otp",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email,
+            otp: fullOtp,
+          }),
+        }
+      );
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Code invalide ou expiré");
+        throw new Error(
+          data.message || "Code invalide ou expiré"
+        );
       }
 
-      // 🎯 MODIFICATION : Enregistrement du jeton dans un cookie lisible par le middleware
-      // Configure une validité de 7 jours (7 jours * 24h * 60m * 60s)
-      document.cookie = `stockmaster_token=${data.token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax; Secure`;
+      // Cookie middleware Next.js
+      document.cookie = `stockmaster_token=${
+        data.token
+      }; path=/; max-age=${
+        7 * 24 * 60 * 60
+      }; SameSite=Lax`;
 
-      // On garde la copie dans le localStorage au cas où
+      // Token localStorage
       localStorage.setItem("token", data.token);
+
+      // ==========================================
+      // RÉCUPÉRATION SÉCURISÉE DES DONNÉES DU LOGIN
+      // ==========================================
+      const tempUserInfoStr = localStorage.getItem("temp_user_info");
+      const fallbackUser = tempUserInfoStr ? JSON.parse(tempUserInfoStr) : null;
+
+      // Unification complète du profil (CORRIGÉ : Priorité à data.user en direct)
+      const finalUserProfile = data.user ? {
+        id: data.user._id || data.user.id || fallbackUser?.id,
+        nom: data.user.nom || fallbackUser?.nom,
+        prenom: data.user.prenom || fallbackUser?.prenom,
+        email: data.user.email || fallbackUser?.email,
+        telephone: data.user.telephone || fallbackUser?.telephone,
+        role: data.user.role || fallbackUser?.role,
+        avatar: data.user.avatar || fallbackUser?.avatar || "",
+        boutiqueActive: data.user.boutiqueActive || fallbackUser?.boutiqueActive || "",
+      } : fallbackUser;
+
+      if (finalUserProfile) {
+        localStorage.setItem(
+          "user_profile",
+          JSON.stringify(finalUserProfile)
+        );
+      }
+
+      // Permissions (Priorité API en direct, sinon fallback)
+      const permissions = data.permissions || data.user?.permissions || fallbackUser?.permissions || [
+        "VOIR_RESUME_VENTES",
+        "VOIR_ALERTES_STOCK",
+        "EFFECTUER_VENTE",
+        "APPLIQUER_REMISE",
+        "ANNULER_VENTE",
+      ];
+
+      localStorage.setItem(
+        "user_permissions",
+        JSON.stringify(permissions)
+      );
+
+      // Nettoyage des stores temporaires
       localStorage.removeItem("temp_login_email");
-      
-      // L'aiguillage va maintenant fonctionner parfaitement grâce au cookie !
-      router.push("/dashboard"); 
+      localStorage.removeItem("temp_user_info");
+
+      setSuccessMessage(
+        "Vérification réussie. Redirection..."
+      );
+
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 1200);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Erreur de vérification";
-      
-      // DÉTECTION DU RATE LIMITER
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "Erreur de vérification";
+
       if (msg.toLowerCase().includes("15 minutes")) {
         setIsBlocked(true);
       }
-      
+
       setError(msg);
+    } finally {
       setIsLoading(false);
     }
   };
 
   const handleResend = async () => {
-    setIsLoadingResending(true);
+    setIsResending(true);
     setError("");
     setResendSuccess(false);
-    
+
     try {
-      const response = await fetch("http://localhost:5000/api/auth/resend-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
+      const response = await fetch(
+        "http://localhost:5000/api/auth/resend-otp",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email }),
+        }
+      );
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Impossible de renvoyer le code.");
+        throw new Error(
+          data.message ||
+            "Impossible de renvoyer le code."
+        );
       }
 
-      setResendSuccess(true);
-      setTimer(45); 
+      setOtp(["", "", "", "", "", ""]);
+      inputs.current[0]?.focus();
 
+      setResendSuccess(true);
+      setTimer(45);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Erreur lors du renvoi";
-      
-      // DÉTECTION DU RATE LIMITER SUR LE RENVOI
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "Erreur lors du renvoi";
+
       if (msg.toLowerCase().includes("15 minutes")) {
         setIsBlocked(true);
       }
-      
+
       setError(msg);
     } finally {
-      setIsLoadingResending(false);
+      setIsResending(false);
     }
   };
 
   return (
     <>
       <AuthNavbar />
-      
-      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6 pt-32 selection:bg-indigo-100 font-sans relative overflow-hidden">
-        <div className="absolute inset-0 -z-10 overflow-hidden opacity-60">
-          <div className="absolute top-[-10%] left-[-5%] w-[40%] h-[40%] bg-indigo-50 rounded-full blur-[100px]" />
-          <div className="absolute bottom-[-10%] right-[-5%] w-[40%] h-[40%] bg-blue-50 rounded-full blur-[100px]" />
+
+      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6 pt-32 relative overflow-hidden font-sans">
+        {/* Background */}
+        <div className="absolute inset-0 -z-10 overflow-hidden opacity-70">
+          <motion.div
+            animate={{
+              scale: [1, 1.1, 1],
+            }}
+            transition={{
+              duration: 10,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+            className="absolute top-[-10%] left-[-5%] w-[40%] h-[40%] bg-indigo-50 rounded-full blur-[120px]"
+          />
+
+          <motion.div
+            animate={{
+              scale: [1.1, 1, 1.1],
+            }}
+            transition={{
+              duration: 12,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+            className="absolute bottom-[-10%] right-[-5%] w-[40%] h-[40%] bg-blue-50 rounded-full blur-[120px]"
+          />
         </div>
 
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="w-full max-w-[420px] bg-white rounded-[2.5rem] shadow-[0_32px_64px_-12px_rgba(15,23,42,0.1)] border border-slate-100 p-10 text-center"
+        <motion.div
+          initial={{ opacity: 0, y: 25 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-[460px] bg-white rounded-[2.5rem] border border-slate-100 shadow-[0_25px_80px_-12px_rgba(15,23,42,0.08)] p-10"
         >
-          {/* Logo Section */}
-          <div className="flex flex-col items-center gap-3 mb-8">
-            <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-indigo-100">
-              <Package2 size={32} />
+          {/* Header */}
+          <div className="flex flex-col items-center text-center mb-10">
+            <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-indigo-600 to-indigo-700 flex items-center justify-center text-white shadow-2xl shadow-indigo-100 border border-indigo-500/20">
+              <Package2 size={36} strokeWidth={1.8} />
             </div>
-            <div className="flex flex-col leading-none">
-              <span className="text-xl font-black tracking-tighter text-slate-900 uppercase">
-                STOCK<span className="text-indigo-600">MASTER</span>
-              </span>
-              <span className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-1">
-                Pro Edition
-              </span>
+
+            <div className="mt-5">
+              <h1 className="text-2xl font-black tracking-tighter uppercase text-slate-950">
+                STOCK
+                <span className="text-indigo-600">
+                  MASTER
+                </span>
+              </h1>
+
+              <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-slate-400 mt-1">
+                PRO EDITION
+              </p>
             </div>
           </div>
 
-          <h2 className="text-2xl font-black text-slate-950 uppercase tracking-tighter mb-3">Vérification</h2>
-          <p className="text-slate-500 text-xs font-medium leading-relaxed mb-8 px-2">
-            Entrez le code envoyé à <span className="text-indigo-600 font-bold">{email}</span>.
-          </p>
+          {/* Title */}
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-indigo-50 text-indigo-700 text-[10px] font-black uppercase tracking-[0.2em] mb-5">
+              <ShieldCheck size={14} />
+              Authentification sécurisée
+            </div>
 
-          <form onSubmit={handleVerify} className="space-y-6">
-            <div className="flex justify-between gap-2">
-              {otp.map((data, index) => (
+            <h2 className="text-3xl font-black tracking-tight text-slate-950 uppercase">
+              Vérification OTP
+            </h2>
+
+            <p className="text-slate-500 text-sm mt-4 leading-relaxed">
+              Entrez le code envoyé à
+              <br />
+              <span className="font-bold text-indigo-600 break-all">
+                {email}
+              </span>
+            </p>
+          </div>
+
+          {/* Messages */}
+          <div className="min-h-[32px] mb-6 flex justify-center">
+            <AnimatePresence mode="wait">
+              {error && (
+                <motion.div
+                  key="error"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.15em] py-2 px-4 rounded-full bg-red-50 text-red-600"
+                >
+                  <AlertCircle size={14} />
+                  <span>{error}</span>
+                </motion.div>
+              )}
+
+              {successMessage && (
+                <motion.div
+                  key="success"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.15em] py-2 px-4 rounded-full bg-emerald-50 text-emerald-600"
+                >
+                  <CheckCircle2 size={14} />
+                  <span>{successMessage}</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Form */}
+          <form
+            onSubmit={handleVerify}
+            className="space-y-8"
+          >
+            {/* OTP */}
+            <div className="flex justify-between gap-3">
+              {otp.map((digit, index) => (
                 <input
                   key={index}
+                  ref={(el) => {
+                    inputs.current[index] = el;
+                  }}
                   type="text"
+                  inputMode="numeric"
                   maxLength={1}
-                  disabled={isBlocked} // DÉSACTIVE LES INPUTS SI BLOQUÉ
-                  ref={(el) => { inputs.current[index] = el; }}
-                  value={data}
-                  onChange={(e) => handleChange(e.target, index)}
-                  onKeyDown={(e) => handleKeyDown(e, index)}
-                  className="w-full h-12 text-center text-xl font-black text-slate-900 bg-slate-50 border-2 border-slate-100 rounded-xl outline-none focus:border-indigo-600 focus:bg-white focus:ring-4 focus:ring-indigo-50 transition-all uppercase disabled:opacity-50"
+                  value={digit}
+                  disabled={isBlocked}
+                  onPaste={handlePaste}
+                  onChange={(e) =>
+                    handleChange(e.target, index)
+                  }
+                  onKeyDown={(e) =>
+                    handleKeyDown(e, index)
+                  }
+                  className="w-full h-14 rounded-2xl border-2 border-slate-100 bg-slate-50 text-center text-xl font-black text-slate-950 outline-none transition-all focus:border-indigo-600 focus:bg-white focus:ring-4 focus:ring-indigo-50 disabled:opacity-40"
                 />
               ))}
             </div>
 
-            <AnimatePresence>
-              {error && (
-                <motion.div 
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center justify-center gap-2 text-red-600 text-[10px] font-black uppercase tracking-widest leading-tight"
-                >
-                  <AlertCircle size={14} className="shrink-0" />
-                  <span>{error}</span>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            <button 
-              disabled={isLoading || isBlocked || otp.some(v => v === "")}
-              className="w-full py-4 bg-[#090E1A] hover:bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.25em] transition-all duration-300 flex items-center justify-center gap-3 shadow-xl active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed"
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={
+                isLoading ||
+                isBlocked ||
+                otp.some((v) => v === "")
+              }
+              className="w-full py-4 bg-[#090E1A] hover:bg-indigo-600 rounded-2xl text-white font-black text-[11px] uppercase tracking-[0.2em] transition-all duration-300 flex items-center justify-center gap-3 shadow-xl active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed"
             >
-              {isLoading ? <Loader2 size={18} className="animate-spin" /> : (
-                <>Valider le code <ArrowRight size={16} /></>
+              {isLoading ? (
+                <Loader2
+                  size={18}
+                  className="animate-spin"
+                />
+              ) : (
+                <>
+                  Vérifier le code
+                  <ArrowRight size={16} />
+                </>
               )}
             </button>
           </form>
 
-          <div className="mt-8 pt-8 border-t border-slate-50 flex flex-col items-center">
-            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mb-3">
+          {/* Resend */}
+          <div className="mt-10 pt-8 border-t border-slate-100 text-center">
+            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-4">
               Vous n`avez pas reçu le code ?
             </p>
-            <button 
+
+            <button
               type="button"
               onClick={handleResend}
-              disabled={isResending || isBlocked || timer > 0} // BLOQUÉ AUSSI ICI
-              className="inline-flex items-center gap-2 text-indigo-600 font-black text-[10px] uppercase tracking-widest hover:text-indigo-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={
+                isResending ||
+                isBlocked ||
+                timer > 0
+              }
+              className="inline-flex items-center gap-2 text-indigo-600 hover:text-indigo-800 font-black text-[10px] uppercase tracking-[0.15em] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {isResending ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} className={timer > 0 ? "animate-spin" : ""} />}
-              {timer > 0 ? `Attendre ${timer}s` : "Renvoyer un nouveau code"}
+              {isResending ? (
+                <Loader2
+                  size={14}
+                  className="animate-spin"
+                />
+              ) : (
+                <RefreshCw
+                  size={14}
+                  className={
+                    timer > 0 ? "animate-spin" : ""
+                  }
+                />
+              )}
+
+              {timer > 0
+                ? `Attendre ${timer}s`
+                : "Renvoyer un code"}
             </button>
 
             <AnimatePresence>
               {resendSuccess && (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: 5 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
-                  className="mt-3 flex items-center gap-1.5 text-emerald-600 text-[9px] font-black uppercase tracking-wider"
+                  className="mt-4 flex items-center justify-center gap-2 text-emerald-600 text-[10px] font-black uppercase tracking-[0.15em]"
                 >
-                  <CheckCircle2 size={12} />
-                  Nouveau code envoyé !
+                  <CheckCircle2 size={13} />
+                  Nouveau code envoyé
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
-        </motion.div> 
+        </motion.div>
       </div>
     </>
   );

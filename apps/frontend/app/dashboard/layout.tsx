@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -21,22 +21,33 @@ import {
   Menu,
   X,
   CircleDollarSign,
-  ChevronRight
+  ChevronRight,
 } from "lucide-react";
 
-// Types pour la structure de navigation
+// ==========================================
+// TYPES
+// ==========================================
+
+interface UserProfile {
+  prenom: string;
+  role: string;
+  avatar?: string;
+  nom?: string;
+  email?: string;
+}
+
 interface SubMenuItem {
   name: string;
   href: string;
-  permission?: string; // Restriction par permission spécifique
+  permission?: string;
 }
 
 interface NavigationItem {
   name: string;
   href?: string;
   icon: React.ComponentType<{ size: number; className?: string }>;
-  module: string; // Module global
-  permission?: string; // Restriction sur le parent entier
+  module: string;
+  permission?: string;
   subMenu?: SubMenuItem[];
 }
 
@@ -48,36 +59,29 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const router = useRouter();
 
-  // ==========================================
-  // VOS PERMISSIONS UTILISATEUR COMPLÈTES
-  // ==========================================
-  const [userPermissions] = useState<string[]>([
+  // Valeurs par défaut pour le rendu Serveur (SSR)
+  const defaultPermissions = [
     "VOIR_RESUME_VENTES",
     "VOIR_ALERTES_STOCK",
     "EFFECTUER_VENTE",
     "APPLIQUER_REMISE",
     "ANNULER_VENTE",
-  ]);
+  ];
 
-  // Fonction stricte de vérification de permission
-  const hasPermission = (permission?: string) => {
-    if (!permission) return true; // Si pas de permission requise, libre d'accès
-    return userPermissions.includes(permission);
+  const defaultProfile: UserProfile = {
+    prenom: "Chargement...",
+    role: "Utilisateur",
+    avatar: "",
+    nom: "",
+    email: "",
   };
 
   // ==========================================
   // STATES
   // ==========================================
-  const [user] = useState({
-    prenom: "Propriétaire",
-    role: "proprietaire",
-    avatar: "",
-  });
-
-  const [boutique] = useState({
-    nom: "Ma Super Boutique",
-    secteur: "Commerce Général",
-  });
+  const [userPermissions, setUserPermissions] = useState<string[]>(defaultPermissions);
+  const [user, setUser] = useState<UserProfile>(defaultProfile);
+  const [isMounted, setIsMounted] = useState(false);
 
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -92,6 +96,73 @@ export default function DashboardLayout({
     Finances: false,
     Paramètres: false,
   });
+
+  // ==========================================
+  // SYNCHRONISATION CLIENT (localStorage + Events)
+  // ==========================================
+  useEffect(() => {
+    setIsMounted(true);
+
+    // 1. Récupération des permissions
+    try {
+      const storedPermissions = localStorage.getItem("user_permissions");
+      if (storedPermissions) {
+        setUserPermissions(JSON.parse(storedPermissions));
+      }
+    } catch (error) {
+      console.error("Erreur permissions:", error);
+    }
+
+    // 2. Fonction isolée pour charger le profil
+    const loadProfile = () => {
+      try {
+        const storedProfile = localStorage.getItem("user_profile");
+
+        if (storedProfile) {
+          const parsedProfile = JSON.parse(storedProfile);
+          const userData = parsedProfile.user || parsedProfile;
+
+          setUser({
+            prenom: userData.prenom || userData.firstName || userData.first_name || defaultProfile.prenom,
+            nom: userData.nom || userData.lastName || userData.last_name || defaultProfile.nom,
+            role: userData.role || defaultProfile.role,
+            avatar: userData.avatar || defaultProfile.avatar,
+            email: userData.email || defaultProfile.email,
+          });
+        } else {
+          setUser(defaultProfile);
+        }
+      } catch (error) {
+        console.error("Erreur de parsing du profil dans le localStorage :", error);
+        setUser(defaultProfile);
+      }
+    };
+
+    // Chargement initial au changement de route
+    loadProfile();
+
+    // Écouteurs d'événements pour la mise à jour réactive et instantanée
+    window.addEventListener("userProfileUpdated", loadProfile);
+    window.addEventListener("storage", loadProfile); // Pour la synchronisation multi-onglets
+
+    return () => {
+      window.removeEventListener("userProfileUpdated", loadProfile);
+      window.removeEventListener("storage", loadProfile);
+    };
+  }, [pathname]);
+
+  const boutique = {
+    nom: "Ma Super Boutique",
+    secteur: "Commerce Général",
+  };
+
+  // ==========================================
+  // HELPERS
+  // ==========================================
+  const hasPermission = (permission?: string) => {
+    if (!permission) return true;
+    return userPermissions.includes(permission);
+  };
 
   const toggleSubMenu = (menuName: string) => {
     setOpenSubMenus((prev) => ({
@@ -113,11 +184,13 @@ export default function DashboardLayout({
   const handleLogout = () => {
     document.cookie = "stockmaster_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     localStorage.removeItem("token");
+    localStorage.removeItem("user_permissions");
+    localStorage.removeItem("user_profile");
     router.push("/login");
   };
 
   // ==========================================
-  // ARCHITECTURE & INTEGRATION DES PERMISSIONS
+  // NAVIGATION DATA
   // ==========================================
   const navigation: NavigationItem[] = [
     {
@@ -131,12 +204,12 @@ export default function DashboardLayout({
       name: "Caisse",
       icon: ShoppingCart,
       module: "VENTE",
-      permission: "EFFECTUER_VENTE", // Il faut au moins avoir accès à la caisse pour voir ce menu
+      permission: "EFFECTUER_VENTE",
       subMenu: [
-        { name: "Accueil Caisse", href: "/dashboard/caisse" }, // Libre si le parent est OK
+        { name: "Accueil Caisse", href: "/dashboard/caisse" },
         { name: "Historique Ventes", href: "/dashboard/caisse/ventes" },
         { name: "Factures", href: "/dashboard/caisse/factures" },
-        { name: "Retours clients", href: "/dashboard/caisse/retours", permission: "ANNULER_VENTE" }, // Droits sensibles
+        { name: "Retours clients", href: "/dashboard/caisse/retours", permission: "ANNULER_VENTE" },
       ],
     },
     {
@@ -148,7 +221,7 @@ export default function DashboardLayout({
         { name: "Gestion Produits", href: "/dashboard/inventaire/produits" },
         { name: "Catégories", href: "/dashboard/inventaire/categories" },
         { name: "Mouvements Stock", href: "/dashboard/inventaire/stock" },
-        { name: "Alertes Rupture", href: "/dashboard/inventaire/alertes", permission: "VOIR_ALERTES_STOCK" }, // Lié à l'alerte stock
+        { name: "Alertes Rupture", href: "/dashboard/inventaire/alertes", permission: "VOIR_ALERTES_STOCK" },
       ],
     },
     {
@@ -188,9 +261,12 @@ export default function DashboardLayout({
     },
   ];
 
+  if (!isMounted) {
+    return <div className="flex h-screen bg-[#F1F5F9] items-center justify-center font-sans">Chargement...</div>;
+  }
+
   return (
     <div className="flex h-screen bg-[#F1F5F9] overflow-hidden relative font-sans antialiased text-slate-800 selection:bg-indigo-100">
-
       {/* OVERLAY MOBILE */}
       {isMobileSidebarOpen && (
         <div
@@ -206,7 +282,11 @@ export default function DashboardLayout({
           ${isSidebarOpen ? "w-64" : "lg:w-20"}
           bg-[#1C2434] text-slate-200 flex flex-col justify-between
           border-r border-slate-800/60 shadow-2xl transition-all duration-300
-          ${isMobileSidebarOpen ? "translate-x-0 w-64" : "-translate-x-full lg:translate-x-0"}
+          ${
+            isMobileSidebarOpen
+              ? "translate-x-0 w-64"
+              : "-translate-x-full lg:translate-x-0"
+          }
         `}
       >
         <div className="flex flex-col flex-1 overflow-y-auto custom-scrollbar">
@@ -216,6 +296,7 @@ export default function DashboardLayout({
               <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-600/20 shrink-0">
                 <Boxes size={20} className="-rotate-6" />
               </div>
+
               {(isSidebarOpen || isMobileSidebarOpen) && (
                 <div className="flex flex-col items-start">
                   <h1 className="text-lg font-black tracking-tight leading-none text-white">
@@ -227,6 +308,7 @@ export default function DashboardLayout({
                 </div>
               )}
             </div>
+
             <button
               onClick={() => setIsMobileSidebarOpen(false)}
               className="lg:hidden text-slate-400 hover:text-white"
@@ -236,12 +318,15 @@ export default function DashboardLayout({
           </div>
 
           {/* BOUTIQUE */}
-          <div className={`mx-4 mt-6 p-3 bg-slate-900/50 rounded-2xl border border-slate-800/40 flex items-center shrink-0 ${
-            isSidebarOpen || isMobileSidebarOpen ? "space-x-3" : "lg:justify-center"
-          }`}>
+          <div
+            className={`mx-4 mt-6 p-3 bg-slate-900/50 rounded-2xl border border-slate-800/40 flex items-center shrink-0 ${
+              isSidebarOpen || isMobileSidebarOpen ? "space-x-3" : "lg:justify-center"
+            }`}
+          >
             <div className="w-8 h-8 bg-indigo-500/10 rounded-lg flex items-center justify-center text-indigo-400 border border-indigo-500/20 shrink-0">
               <Store size={16} />
             </div>
+
             {(isSidebarOpen || isMobileSidebarOpen) && (
               <div className="overflow-hidden">
                 <p className="text-xs font-bold text-white truncate">{boutique.nom}</p>
@@ -253,45 +338,54 @@ export default function DashboardLayout({
           {/* NAVIGATION */}
           <nav className="p-4 mt-4 space-y-1.5 flex-1">
             {navigation.map((item) => {
-              // Filtrage niveau Parent
               if (!hasPermission(item.permission)) return null;
 
-              // Filtrage intelligent : Si le parent a des sous-menus, on regarde si l'user a au moins accès à UN sous-menu
               const hasSubMenu = item.subMenu && item.subMenu.length > 0;
-              const allowedSubMenus = item.subMenu?.filter(sub => hasPermission(sub.permission)) || [];
-              
-              // Si le menu a des enfants mais qu'aucun n'est autorisé pour cet utilisateur, on cache le menu complet
+              const allowedSubMenus = item.subMenu?.filter((sub) => hasPermission(sub.permission)) || [];
+
               if (hasSubMenu && allowedSubMenus.length === 0) return null;
 
               const IconComponent = item.icon;
               const isMenuOpen = openSubMenus[item.name];
-              const isChildActive = hasSubMenu && allowedSubMenus.some(sub => pathname === sub.href);
+              const isChildActive = hasSubMenu && allowedSubMenus.some((sub) => pathname === sub.href);
               const isParentActive = item.href ? pathname === item.href : isChildActive;
 
               return (
                 <div key={item.name} className="w-full">
                   {hasSubMenu ? (
                     <button
-                      onClick={() => (isSidebarOpen || isMobileSidebarOpen) ? toggleSubMenu(item.name) : setIsSidebarOpen(true)}
+                      onClick={() =>
+                        isSidebarOpen || isMobileSidebarOpen
+                          ? toggleSubMenu(item.name)
+                          : setIsSidebarOpen(true)
+                      }
                       className={`
                         w-full flex items-center justify-between px-4 py-3 rounded-xl
                         text-xs font-black uppercase tracking-wider transition-all duration-300 group
                         ${isSidebarOpen || isMobileSidebarOpen ? "" : "lg:justify-center"}
-                        ${isParentActive 
-                          ? "bg-slate-800 text-white border-l-4 border-indigo-500 rounded-l-none" 
-                          : "text-slate-400 hover:bg-slate-800/40 hover:text-white"
+                        ${
+                          isParentActive
+                            ? "bg-slate-800 text-white border-l-4 border-indigo-500 rounded-l-none"
+                            : "text-slate-400 hover:bg-slate-800/40 hover:text-white"
                         }
                       `}
                     >
                       <div className="flex items-center space-x-3">
-                        <IconComponent size={18} className={`shrink-0 transition-transform ${isParentActive ? "text-indigo-400 scale-110" : "group-hover:text-indigo-400"}`} />
+                        <IconComponent
+                          size={18}
+                          className={`shrink-0 transition-transform ${
+                            isParentActive ? "text-indigo-400 scale-110" : "group-hover:text-indigo-400"
+                          }`}
+                        />
                         {(isSidebarOpen || isMobileSidebarOpen) && <span>{item.name}</span>}
                       </div>
 
                       {(isSidebarOpen || isMobileSidebarOpen) && (
-                        <ChevronDown 
-                          size={14} 
-                          className={`text-slate-500 transition-transform duration-200 ${isMenuOpen ? "rotate-180 text-white" : ""}`} 
+                        <ChevronDown
+                          size={14}
+                          className={`text-slate-500 transition-transform duration-200 ${
+                            isMenuOpen ? "rotate-180 text-white" : ""
+                          }`}
                         />
                       )}
                     </button>
@@ -301,10 +395,13 @@ export default function DashboardLayout({
                       onClick={() => setIsMobileSidebarOpen(false)}
                       className={`
                         flex items-center px-4 py-3 rounded-xl text-xs font-black uppercase tracking-wider
-                        transition-all duration-300 relative group ${isSidebarOpen || isMobileSidebarOpen ? "space-x-3" : "lg:justify-center"}
-                        ${isParentActive
-                          ? "bg-indigo-600 text-white shadow-xl shadow-indigo-600/20"
-                          : "text-slate-400 hover:bg-slate-800/50 hover:text-white"
+                        transition-all duration-300 relative group ${
+                          isSidebarOpen || isMobileSidebarOpen ? "space-x-3" : "lg:justify-center"
+                        }
+                        ${
+                          isParentActive
+                            ? "bg-indigo-600 text-white shadow-xl shadow-indigo-600/20"
+                            : "text-slate-400 hover:bg-slate-800/50 hover:text-white"
                         }
                       `}
                     >
@@ -313,7 +410,6 @@ export default function DashboardLayout({
                     </Link>
                   )}
 
-                  {/* RENDU DES SOUS-MENUS FILTRÉS */}
                   {hasSubMenu && isMenuOpen && (isSidebarOpen || isMobileSidebarOpen) && (
                     <div className="mt-1 ml-6 pl-3 border-l border-slate-800/70 space-y-1 transition-all duration-300">
                       {allowedSubMenus.map((sub) => {
@@ -326,13 +422,17 @@ export default function DashboardLayout({
                             onClick={() => setIsMobileSidebarOpen(false)}
                             className={`
                               flex items-center space-x-2 py-2 px-3 rounded-lg text-[11px] font-bold tracking-wide transition-colors
-                              ${isSubActive 
-                                ? "text-indigo-400 bg-indigo-500/5 font-black" 
-                                : "text-slate-400 hover:text-white hover:bg-slate-800/30"
+                              ${
+                                isSubActive
+                                  ? "text-indigo-400 bg-indigo-50/5 font-black"
+                                  : "text-slate-400 hover:text-white hover:bg-slate-800/30"
                               }
                             `}
                           >
-                            <ChevronRight size={10} className={isSubActive ? "text-indigo-400" : "text-slate-600"} />
+                            <ChevronRight
+                              size={10}
+                              className={isSubActive ? "text-indigo-400" : "text-slate-600"}
+                            />
                             <span>{sub.name}</span>
                           </Link>
                         );
@@ -345,8 +445,8 @@ export default function DashboardLayout({
           </nav>
         </div>
 
-        {/* FOOTER SIDEBAR - ZONE DÉCONNEXION RE-STYLISÉE PREMIUM */}
-        <div className="p-4 border-t border-slate-800/60 bg-[#141C2F]/60 shrink-0">
+        {/* FOOTER SIDEBAR */}
+        <div className="p-4 border-t border-slate-800/60 bg-[#141C2F]/60 shrink-0 space-y-3">
           <button
             onClick={handleLogout}
             title={!isSidebarOpen ? "Se déconnecter" : ""}
@@ -363,9 +463,8 @@ export default function DashboardLayout({
         </div>
       </aside>
 
-      {/* CONTENU PRINCIPAL RE-STYLISÉ */}
+      {/* CONTENU PRINCIPAL */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* HEADER BAR */}
         <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-4 sm:px-6 lg:px-8 shadow-sm sticky top-0 z-30 shrink-0">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <button
@@ -382,7 +481,7 @@ export default function DashboardLayout({
               <Menu size={18} />
             </button>
 
-            {/* BARRE DE RECHERCHE */}
+            {/* SEARCH */}
             <div className="hidden sm:block w-full max-w-[220px] md:max-w-[260px] lg:max-w-[320px]">
               <div className="relative flex items-center bg-white border border-slate-200 rounded-xl px-3 py-2 group focus-within:border-indigo-500 focus-within:ring-4 focus-within:ring-indigo-50 transition-all duration-200 shadow-sm">
                 <Search size={16} className="text-slate-500 group-focus-within:text-indigo-600 transition-colors shrink-0" />
@@ -397,7 +496,7 @@ export default function DashboardLayout({
             </div>
           </div>
 
-          {/* ACTIONS DROITE */}
+          {/* RIGHT ACTIONS */}
           <div className="flex items-center gap-2 sm:gap-4 ml-auto">
             <button
               onClick={toggleDarkMode}
@@ -413,15 +512,19 @@ export default function DashboardLayout({
 
             <div className="hidden sm:block w-px h-8 bg-slate-200" />
 
-            {/* PROFIL DROP DOWN */}
+            {/* PROFILE */}
             <div className="relative">
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 className="flex items-center gap-2 sm:gap-3 py-1.5 focus:outline-none group"
               >
                 <div className="text-right hidden lg:block">
-                  <p className="text-sm font-bold text-slate-800 leading-tight group-hover:text-indigo-600 transition-colors">{user.prenom}</p>
-                  <p className="text-[11px] text-slate-400 font-medium tracking-wide mt-0.5 capitalize">{user.role}</p>
+                  <p className="text-sm font-bold text-slate-800 leading-tight group-hover:text-indigo-600 transition-colors">
+                    {user.prenom} {user.nom}
+                  </p>
+                  <p className="text-[11px] text-slate-400 font-medium tracking-wide mt-0.5 capitalize">
+                    {user.role}
+                  </p>
                 </div>
 
                 <div className="w-11 h-11 rounded-full overflow-hidden border border-slate-200 bg-slate-100 flex items-center justify-center text-slate-600 font-black shadow-inner shrink-0">
@@ -429,27 +532,61 @@ export default function DashboardLayout({
                     <img src={user.avatar} alt={user.prenom} className="w-full h-full object-cover" />
                   ) : (
                     <span className="text-sm text-indigo-600 bg-indigo-50 w-full h-full flex items-center justify-center">
-                      {user.prenom.charAt(0).toUpperCase()}
+                      {user.prenom?.charAt(0)?.toUpperCase()}
                     </span>
                   )}
                 </div>
-                <ChevronDown size={16} className={`hidden sm:block text-slate-400 group-hover:text-slate-600 transition-transform duration-300 ${showUserMenu ? "rotate-180 text-indigo-600" : ""}`} />
+
+                <ChevronDown
+                  size={16}
+                  className={`hidden sm:block text-slate-400 group-hover:text-slate-600 transition-transform duration-300 ${
+                    showUserMenu ? "rotate-180 text-indigo-600" : ""
+                  }`}
+                />
               </button>
 
               {showUserMenu && (
                 <>
                   <div className="fixed inset-0 z-20" onClick={() => setShowUserMenu(false)} />
-                  <div className="absolute right-0 mt-3 w-52 bg-white border border-slate-200 rounded-xl shadow-xl py-2 z-30">
-                    <Link href="/dashboard/parametres" onClick={() => setShowUserMenu(false)} className="flex items-center space-x-2.5 px-4 py-3 text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-colors uppercase tracking-wider">
+                  <div className="absolute right-0 mt-3 w-56 bg-white border border-slate-200 rounded-xl shadow-xl py-2 z-30">
+                    <div className="px-4 py-2.5 border-b border-slate-100 bg-slate-50/50 rounded-t-xl">
+                      <p className="text-xs font-black text-slate-800 truncate uppercase tracking-wider">
+                        {user.prenom} {user.nom}
+                      </p>
+                      {user.email && (
+                        <p className="text-[10px] text-slate-500 truncate lowercase font-semibold mt-0.5">
+                          {user.email}
+                        </p>
+                      )}
+                    </div>
+
+                    <Link
+                      href="/dashboard/profil"
+                      onClick={() => setShowUserMenu(false)}
+                      className="flex items-center space-x-2.5 px-4 py-3 text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-colors uppercase tracking-wider"
+                    >
                       <User size={16} />
                       <span>Mon Profil</span>
                     </Link>
-                    <Link href="/dashboard/parametres" onClick={() => setShowUserMenu(false)} className="flex items-center space-x-2.5 px-4 py-3 text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-colors uppercase tracking-wider">
+
+                    <Link
+                      href="/dashboard/parametres"
+                      onClick={() => setShowUserMenu(false)}
+                      className="flex items-center space-x-2.5 px-4 py-3 text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-colors uppercase tracking-wider"
+                    >
                       <Settings size={16} />
                       <span>Paramètres</span>
                     </Link>
+
                     <div className="h-px bg-slate-100 my-1" />
-                    <button onClick={() => { setShowUserMenu(false); handleLogout(); }} className="w-full flex items-center space-x-2.5 px-4 py-3 text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors uppercase tracking-wider text-left">
+
+                    <button
+                      onClick={() => {
+                        setShowUserMenu(false);
+                        handleLogout();
+                      }}
+                      className="w-full flex items-center space-x-2.5 px-4 py-3 text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors uppercase tracking-wider text-left"
+                    >
                       <LogOut size={16} />
                       <span>Se déconnecter</span>
                     </button>
@@ -461,9 +598,7 @@ export default function DashboardLayout({
         </header>
 
         {/* MAIN CONTENT */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-[#F1F5F9]">
-          {children}
-        </main>
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-[#F1F5F9]">{children}</main>
       </div>
     </div>
   );
