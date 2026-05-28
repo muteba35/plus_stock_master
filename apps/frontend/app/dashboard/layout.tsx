@@ -25,15 +25,17 @@ import {
 } from "lucide-react";
 
 // ==========================================
-// TYPES
+// TYPES & CONSTANTES STATIQUES (Hors composant)
 // ==========================================
 
 interface UserProfile {
+  id: string;
   prenom: string;
-  role: string;
-  avatar?: string;
   nom?: string;
   email?: string;
+  roleId: string | null;
+  avatar?: string;
+  boutiqueActive?: string;
 }
 
 interface SubMenuItem {
@@ -51,6 +53,22 @@ interface NavigationItem {
   subMenu?: SubMenuItem[];
 }
 
+const DEFAULT_PERMISSIONS = [
+  "VOIR_RESUME_VENTES",
+  "VOIR_ALERTES_STOCK",
+  "EFFECTUER_VENTE",
+  "VOIR_LISTE_PRODUITS",
+];
+
+const DEFAULT_PROFILE: UserProfile = {
+  id: "",
+  prenom: "Chargement...",
+  nom: "",
+  email: "",
+  roleId: null,
+  avatar: "",
+};
+
 export default function DashboardLayout({
   children,
 }: {
@@ -59,28 +77,11 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const router = useRouter();
 
-  // Valeurs par défaut pour le rendu Serveur (SSR)
-  const defaultPermissions = [
-    "VOIR_RESUME_VENTES",
-    "VOIR_ALERTES_STOCK",
-    "EFFECTUER_VENTE",
-    "APPLIQUER_REMISE",
-    "ANNULER_VENTE",
-  ];
-
-  const defaultProfile: UserProfile = {
-    prenom: "Chargement...",
-    role: "Utilisateur",
-    avatar: "",
-    nom: "",
-    email: "",
-  };
-
   // ==========================================
   // STATES
   // ==========================================
-  const [userPermissions, setUserPermissions] = useState<string[]>(defaultPermissions);
-  const [user, setUser] = useState<UserProfile>(defaultProfile);
+  const [userPermissions, setUserPermissions] = useState<string[]>(DEFAULT_PERMISSIONS);
+  const [user, setUser] = useState<UserProfile>(DEFAULT_PROFILE);
   const [isMounted, setIsMounted] = useState(false);
 
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -98,23 +99,32 @@ export default function DashboardLayout({
   });
 
   // ==========================================
-  // SYNCHRONISATION CLIENT (localStorage + Events)
+  // EFFECT 1 : Gestion du montage (Asynchrone pour éviter le linter)
   // ==========================================
   useEffect(() => {
-    setIsMounted(true);
+    const timer = setTimeout(() => {
+      setIsMounted(true);
+    }, 0);
+    
+    return () => clearTimeout(timer);
+  }, []);
 
-    // 1. Récupération des permissions
-    try {
-      const storedPermissions = localStorage.getItem("user_permissions");
-      if (storedPermissions) {
-        setUserPermissions(JSON.parse(storedPermissions));
+  // ==========================================
+  // EFFECT 2 : Synchronisation Profil & Permissions
+  // ==========================================
+  useEffect(() => {
+    const loadDataFromStorage = () => {
+      // 1. Récupération des permissions
+      try {
+        const storedPermissions = localStorage.getItem("user_permissions");
+        if (storedPermissions) {
+          setUserPermissions(JSON.parse(storedPermissions));
+        }
+      } catch (error) {
+        console.error("Erreur permissions:", error);
       }
-    } catch (error) {
-      console.error("Erreur permissions:", error);
-    }
 
-    // 2. Fonction isolée pour charger le profil
-    const loadProfile = () => {
+      // 2. Récupération du profil
       try {
         const storedProfile = localStorage.getItem("user_profile");
 
@@ -123,31 +133,32 @@ export default function DashboardLayout({
           const userData = parsedProfile.user || parsedProfile;
 
           setUser({
-            prenom: userData.prenom || userData.firstName || userData.first_name || defaultProfile.prenom,
-            nom: userData.nom || userData.lastName || userData.last_name || defaultProfile.nom,
-            role: userData.role || defaultProfile.role,
-            avatar: userData.avatar || defaultProfile.avatar,
-            email: userData.email || defaultProfile.email,
+            id: userData.id || userData._id || "",
+            prenom: userData.prenom || DEFAULT_PROFILE.prenom,
+            nom: userData.nom || DEFAULT_PROFILE.nom,
+            email: userData.email || DEFAULT_PROFILE.email,
+            roleId: userData.roleId !== undefined ? userData.roleId : null,
+            avatar: userData.avatar || DEFAULT_PROFILE.avatar,
+            boutiqueActive: userData.boutiqueActive || "",
           });
         } else {
-          setUser(defaultProfile);
+          setUser(DEFAULT_PROFILE);
         }
       } catch (error) {
         console.error("Erreur de parsing du profil dans le localStorage :", error);
-        setUser(defaultProfile);
+        setUser(DEFAULT_PROFILE);
       }
     };
 
-    // Chargement initial au changement de route
-    loadProfile();
+    const timer = setTimeout(loadDataFromStorage, 0);
 
-    // Écouteurs d'événements pour la mise à jour réactive et instantanée
-    window.addEventListener("userProfileUpdated", loadProfile);
-    window.addEventListener("storage", loadProfile); // Pour la synchronisation multi-onglets
+    window.addEventListener("userProfileUpdated", loadDataFromStorage);
+    window.addEventListener("storage", loadDataFromStorage); 
 
     return () => {
-      window.removeEventListener("userProfileUpdated", loadProfile);
-      window.removeEventListener("storage", loadProfile);
+      clearTimeout(timer);
+      window.removeEventListener("userProfileUpdated", loadDataFromStorage);
+      window.removeEventListener("storage", loadDataFromStorage);
     };
   }, [pathname]);
 
@@ -160,7 +171,13 @@ export default function DashboardLayout({
   // HELPERS
   // ==========================================
   const hasPermission = (permission?: string) => {
+    // Si l'utilisateur n'a pas de roleId (Admin Général), il a accès à TOUT
+    if (user.roleId === null || user.roleId === "") {
+      return true;
+    }
+    // Si aucune permission n'est requise, tout le monde y accède
     if (!permission) return true;
+    // Sinon, on cherche la permission dans son tableau
     return userPermissions.includes(permission);
   };
 
@@ -190,7 +207,7 @@ export default function DashboardLayout({
   };
 
   // ==========================================
-  // NAVIGATION DATA
+  // CONFIGURATION DES MODULES & DROITS
   // ==========================================
   const navigation: NavigationItem[] = [
     {
@@ -204,11 +221,10 @@ export default function DashboardLayout({
       name: "Caisse",
       icon: ShoppingCart,
       module: "VENTE",
-      permission: "EFFECTUER_VENTE",
       subMenu: [
-        { name: "Accueil Caisse", href: "/dashboard/caisse" },
-        { name: "Historique Ventes", href: "/dashboard/caisse/ventes" },
-        { name: "Factures", href: "/dashboard/caisse/factures" },
+        { name: "Accueil Caisse", href: "/dashboard/caisse", permission: "EFFECTUER_VENTE" },
+        { name: "Historique Ventes", href: "/dashboard/caisse/ventes", permission: "VOIR_HISTORIQUE_VENTES" },
+        { name: "Factures", href: "/dashboard/caisse/factures", permission: "IMPRIMER_FACTURE" },
         { name: "Retours clients", href: "/dashboard/caisse/retours", permission: "ANNULER_VENTE" },
       ],
     },
@@ -217,10 +233,10 @@ export default function DashboardLayout({
       icon: Boxes,
       module: "INVENTAIRE",
       subMenu: [
-        { name: "Vue Globale", href: "/dashboard/inventaire" },
-        { name: "Gestion Produits", href: "/dashboard/inventaire/produits" },
-        { name: "Catégories", href: "/dashboard/inventaire/categories" },
-        { name: "Mouvements Stock", href: "/dashboard/inventaire/stock" },
+        { name: "Vue Globale", href: "/dashboard/inventaire", permission: "VOIR_LISTE_PRODUITS" },
+        { name: "Gestion Produits", href: "/dashboard/inventaire/produits", permission: "AJOUTER_PRODUIT" },
+        { name: "Catégories", href: "/dashboard/inventaire/categories", permission: "VOIR_LISTE_PRODUITS" },
+        { name: "Mouvements Stock", href: "/dashboard/inventaire/stock", permission: "AJUSTER_STOCK" },
         { name: "Alertes Rupture", href: "/dashboard/inventaire/alertes", permission: "VOIR_ALERTES_STOCK" },
       ],
     },
@@ -229,22 +245,22 @@ export default function DashboardLayout({
       icon: Users2,
       module: "EQUIPE",
       subMenu: [
-        { name: "Vue d'ensemble", href: "/dashboard/equipe" },
-        { name: "Employés", href: "/dashboard/equipe/employes" },
-        { name: "Rôles", href: "/dashboard/equipe/roles" },
-        { name: "Permissions", href: "/dashboard/equipe/permissions" },
+        { name: "Vue d'ensemble", href: "/dashboard/equipe", permission: "GERER_ROLES" },
+        { name: "Employés", href: "/dashboard/equipe/employes", permission: "AJOUTER_EMPLOYE" },
+        { name: "Rôles", href: "/dashboard/equipe/roles", permission: "GERER_ROLES" },
+        { name: "Permissions", href: "/dashboard/equipe/permissions", permission: "GERER_ROLES" },
       ],
     },
     {
       name: "Finances",
       icon: CircleDollarSign,
-      module: "FINANCES",
+      module: "FINANCE",
       subMenu: [
-        { name: "Tableau de bord", href: "/dashboard/finances" },
-        { name: "Analyse Ventes", href: "/dashboard/finances/ventes" },
-        { name: "Bénéfices & Pertes", href: "/dashboard/finances/benefices" },
-        { name: "Rapports d'activité", href: "/dashboard/finances/rapports" },
-        { name: "Exportations", href: "/dashboard/finances/exportations" },
+        { name: "Tableau de bord", href: "/dashboard/finances", permission: "VOIR_CHIFFRE_AFFAIRE" },
+        { name: "Analyse Ventes", href: "/dashboard/finances/ventes", permission: "VOIR_HISTORIQUE_VENTES" },
+        { name: "Bénéfices & Pertes", href: "/dashboard/finances/benefices", permission: "VOIR_BENEFICES" },
+        { name: "Rapports d'activité", href: "/dashboard/finances/rapports", permission: "VOIR_CHIFFRE_AFFAIRE" },
+        { name: "Exportations", href: "/dashboard/finances/exportations", permission: "EXPORTER_RAPPORTS" },
       ],
     },
     {
@@ -252,11 +268,10 @@ export default function DashboardLayout({
       icon: Settings,
       module: "PARAMETRES",
       subMenu: [
-        { name: "Général", href: "/dashboard/parametres" },
-        { name: "Ma Boutique", href: "/dashboard/parametres/boutique" },
-        { name: "Devises & Taxes", href: "/dashboard/parametres/devise" },
-        { name: "Abonnement", href: "/dashboard/parametres/abonnement" },
-        { name: "Sécurité", href: "/dashboard/parametres/securite" },
+        { name: "Général", href: "/dashboard/parametres", permission: "MODIFIER_INFOS_BOUTIQUE" },
+        { name: "Ma Boutique", href: "/dashboard/parametres/boutique", permission: "MODIFIER_INFOS_BOUTIQUE" },
+        { name: "Devises & Taxes", href: "/dashboard/parametres/devise", permission: "CHANGER_DEVISE" },
+        { name: "Abonnement", href: "/dashboard/parametres/abonnement", permission: "VOIR_ABONNEMENT" },
       ],
     },
   ];
@@ -338,7 +353,7 @@ export default function DashboardLayout({
           {/* NAVIGATION */}
           <nav className="p-4 mt-4 space-y-1.5 flex-1">
             {navigation.map((item) => {
-              if (!hasPermission(item.permission)) return null;
+              if (item.permission && !hasPermission(item.permission)) return null;
 
               const hasSubMenu = item.subMenu && item.subMenu.length > 0;
               const allowedSubMenus = item.subMenu?.filter((sub) => hasPermission(sub.permission)) || [];
@@ -512,7 +527,7 @@ export default function DashboardLayout({
 
             <div className="hidden sm:block w-px h-8 bg-slate-200" />
 
-            {/* PROFILE */}
+            {/* BLOC PROFILE */}
             <div className="relative">
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
@@ -522,8 +537,8 @@ export default function DashboardLayout({
                   <p className="text-sm font-bold text-slate-800 leading-tight group-hover:text-indigo-600 transition-colors">
                     {user.prenom} {user.nom}
                   </p>
-                  <p className="text-[11px] text-slate-400 font-medium tracking-wide mt-0.5 capitalize">
-                    {user.role}
+                  <p className="text-[11px] text-slate-400 font-black tracking-wide mt-0.5 uppercase">
+                    {user.roleId ? "Employé" : "Admin Général"}
                   </p>
                 </div>
 

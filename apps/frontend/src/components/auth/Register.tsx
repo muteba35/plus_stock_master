@@ -52,7 +52,7 @@ export default function Register() {
   
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false); // AJOUTÉ
+  const [isSuccess, setIsSuccess] = useState(false); 
   const [isBlocked, setIsBlocked] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -106,48 +106,42 @@ export default function Register() {
     setError(null);
 
     try {
-  setIsLoading(true);
-  setError(""); // On vide les erreurs précédentes
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+      const response = await axios.post(`${apiUrl}/api/auth/register`, formData);
+      
+      console.log("Réponse du serveur :", response.data);
 
-  const response = await axios.post("http://localhost:5000/api/auth/register", formData);
-  
-  console.log("Réponse du serveur :", response.data);
+      if (response.status === 200 || response.status === 201 || response.data.success) {
+        setIsSuccess(true); 
+        setIsLoading(false); 
 
-  // Vérifie si ton backend renvoie success: true ou si c'est juste le statut 200/201
-  if (response.status === 200 || response.status === 201 || response.data.success) {
-    setIsSuccess(true); 
-    setIsLoading(false); 
+        // Récupération sécurisée de l'email pour l'étape suivante
+        const userEmail = response.data.user?.email || response.data.email || formData.email;
+        localStorage.setItem("userEmailForVerify", userEmail);
 
-    //   CORRECTION ICI : 
-    // On récupère l'email soit de la réponse, soit directement du formulaire
-    const userEmail = response.data.user?.email || response.data.email || formData.email;
-    localStorage.setItem("userEmailForVerify", userEmail);
-
-    setTimeout(() => {
-      setIsSuccess(false); 
-      router.push("/verify-email"); // Redirection vers ta nouvelle page
-    }, 3000);
-  }
-} catch (err) {
-  const axiosError = err as AxiosError<ApiErrorResponse>;
-  const errorMessage = axiosError.response?.data?.message || "Une erreur est survenue.";
-  
-  if (axiosError.response?.status === 429) {
-    setIsBlocked(true);
-  }
-  
-  setError(errorMessage);
-  setIsLoading(false); // On arrête le loader en cas d'erreur
-}
+        setTimeout(() => {
+          setIsSuccess(false); 
+          router.push("/verify-email"); 
+        }, 3000);
+      }
+    } catch (err) {
+      const axiosError = err as AxiosError<ApiErrorResponse>;
+      const errorMessage = axiosError.response?.data?.message || "Une erreur est survenue.";
+      
+      if (axiosError.response?.status === 429) {
+        setIsBlocked(true);
+      }
+      
+      setError(errorMessage);
+      setIsLoading(false); 
+    }
   };
 
   return (
     <>
       <AuthNavbar />
-
-     
       
-       <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6 pt-32 relative overflow-hidden font-sans selection:bg-indigo-100">
+      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6 pt-32 relative overflow-hidden font-sans selection:bg-indigo-100">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -155,30 +149,30 @@ export default function Register() {
         >
           {/* --- PANNEAU GAUCHE --- */}
           <div className="lg:w-[320px] bg-[#090E1A] p-10 flex flex-col items-center justify-center relative shrink-0 border-r border-slate-800/40 text-center">
-             <div className="relative z-10 flex flex-col items-center w-full">
+            <div className="relative z-10 flex flex-col items-center w-full">
               <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-xl flex items-center justify-center text-white shadow-xl mb-6">
                 <Package2 size={32} strokeWidth={1.5} />
               </div>
               <h1 className="text-2xl font-black text-white tracking-tighter uppercase">
                 STOCK<span className="text-indigo-400">MASTER</span>
               </h1>
-               <div className="flex items-center gap-3 w-full my-8">
+              <div className="flex items-center gap-3 w-full my-8">
                 <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-slate-700" />
                 <div className="w-1.5 h-1.5 rounded-full bg-indigo-500/50" />
                 <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-slate-700" />
               </div>
               
+              {/* 🛡️ Correction de l'apostrophe pour le build Next.js */}
               <p className="text-slate-500 text-[11px] font-medium leading-relaxed max-w-[200px] opacity-80 italic">
-                Donnez vie à votre projet. Créez votre compte <span className="text-slate-300">professionnel</span> et rejoignez l`élite.
+                Donnez vie à votre projet. Créez votre compte <span className="text-slate-300">professionnel</span> et rejoignez {"l'élite"}.
               </p>
-              </div>
+            </div>
 
             <div className="absolute bottom-8 text-slate-800 text-[8px] font-black uppercase tracking-[0.2em]">
               RDC • Connexion Sécurisée
             </div>
           </div>
 
-         
           {/* --- PANNEAU DROIT --- */}
           <div className="flex-1 bg-white p-8 lg:p-12 overflow-y-auto">
             <div className="max-w-[460px] mx-auto">
@@ -188,40 +182,38 @@ export default function Register() {
                 <div className="h-1 w-8 bg-indigo-600 rounded-full mt-3" />
               </header>
 
-            <AnimatePresence>
-            {isSuccess && (
-              <motion.div 
-                initial={{ opacity: 0, height: 0, y: -10 }}
-                animate={{ opacity: 1, height: "auto", y: 0 }}
-                exit={{ opacity: 0, height: 0, y: -10 }}
-                className="mb-6 p-4 bg-green-50 border-l-4 border-green-600 flex items-center gap-3 overflow-hidden"
-              >
-                <Check size={18} className="shrink-0 text-green-600" />
-                <span className="text-xs font-black uppercase tracking-tight text-green-700">
-                  Inscription réussie avec succès !
-                </span>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-              <AnimatePresence mode="wait">
-              {error && (
-                <motion.div 
-                  initial={{ opacity: 0, height: 0, y: -10 }}
-                  animate={{ opacity: 1, height: "auto", y: 0 }}
-                  exit={{ opacity: 0, height: 0, y: -10 }}
-                  className="mb-6 p-4 bg-red-50 border-l-4 border-red-600 flex items-center gap-3 overflow-hidden"
-                  style={{ color: "#dc2626" }} 
-                >
-                  <AlertCircle size={18} className="shrink-0" style={{ color: "#dc2626" }} />
-                  <span className="text-xs font-black uppercase tracking-tight" style={{ color: "#dc2626" }}>
-                    {error}
-                  </span>
-                </motion.div>
-              )}
+              <AnimatePresence>
+                {isSuccess && (
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0, y: -10 }}
+                    animate={{ opacity: 1, height: "auto", y: 0 }}
+                    exit={{ opacity: 0, height: 0, y: -10 }}
+                    className="mb-6 p-4 bg-green-50 border-l-4 border-green-600 flex items-center gap-3 overflow-hidden"
+                  >
+                    <Check size={18} className="shrink-0 text-green-600" />
+                    <span className="text-xs font-black uppercase tracking-tight text-green-700">
+                      Inscription réussie avec succès !
+                    </span>
+                  </motion.div>
+                )}
               </AnimatePresence>
 
-              
+              <AnimatePresence mode="wait">
+                {error && (
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0, y: -10 }}
+                    animate={{ opacity: 1, height: "auto", y: 0 }}
+                    exit={{ opacity: 0, height: 0, y: -10 }}
+                    className="mb-6 p-4 bg-red-50 border-l-4 border-red-600 flex items-center gap-3 overflow-hidden"
+                    style={{ color: "#dc2626" }} 
+                  >
+                    <AlertCircle size={18} className="shrink-0" style={{ color: "#dc2626" }} />
+                    <span className="text-xs font-black uppercase tracking-tight" style={{ color: "#dc2626" }}>
+                      {error}
+                    </span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
               
               <form className="space-y-4" onSubmit={handleRegister}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -231,9 +223,8 @@ export default function Register() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <InputGroup label="Email Pro" name="email" type="email" icon={Mail} placeholder="jean@boutique.cd" required onChange={handleChange} />
-                  <InputGroup label="Téléphone" name="telephone" type="tel" maxLength={9} icon={Phone} placeholder="+243..." onChange={handleChange} />
+                  <InputGroup label="Téléphone" name="telephone" type="tel" maxLength={9} icon={Phone} placeholder="099123456" onChange={handleChange} />
                 </div>
-
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <InputGroup label="Boutique" name="nomBoutique" icon={Store} placeholder="Nom" required onChange={handleChange} />
@@ -260,7 +251,7 @@ export default function Register() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                   <div className="flex flex-col gap-1.5">
+                  <div className="flex flex-col gap-1.5">
                     <label className="text-[10px] font-black uppercase text-slate-400 italic ml-1">Devise</label>
                     <div className="relative">
                       <Coins className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 z-10" size={16} />
@@ -338,8 +329,9 @@ export default function Register() {
                     />
                     <Check className="absolute h-3 w-3 text-white opacity-0 peer-checked:opacity-100 pointer-events-none" strokeWidth={4} />
                   </div>
+                  {/* 🛡️ Correction de l'apostrophe pour le build Next.js */}
                   <label htmlFor="terms" className="text-[10px] text-slate-500 font-bold uppercase tracking-tight cursor-pointer">
-                    J`accepte les <Link href="#" className="text-indigo-600 hover:underline">Conditions Génerales</Link>
+                    {"J'accepte"} les <Link href="#" className="text-indigo-600 hover:underline">Conditions Générales</Link>
                   </label>
                 </div>
 
@@ -383,7 +375,8 @@ export default function Register() {
                   )}
                 </div>
               </form>
-                <footer className="mt-8 pt-6 border-t border-slate-50 text-center">
+
+              <footer className="mt-8 pt-6 border-t border-slate-50 text-center">
                 <p className="text-slate-400 font-bold text-[10px] uppercase tracking-[0.1em]">
                   Déjà un compte ? <Link href="/login" className="text-indigo-600 hover:text-indigo-800 ml-1">Se connecter</Link>
                 </p>

@@ -39,7 +39,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
 const nameRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ\s-]{2,}$/;
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])[A-Za-z\d[^A-Za-z0-9]]{8,}$/;
 const phoneRegex = /^[0-9]{9}$/;
 
 const convertToBase64 = (file: File): Promise<string> => {
@@ -74,12 +74,9 @@ export default function ProfilePage() {
   const pwdHasLower = /[a-z]/.test(newPassword);
   const pwdHasUpper = /[A-Z]/.test(newPassword);
   const pwdHasNumber = /\d/.test(newPassword);
-  const pwdHasSpecial = /[@$!%*?&]/.test(newPassword);
+  const pwdHasSpecial = /[^A-Za-z0-9]/.test(newPassword);
 
-  // Vérification robuste du rôle pour éviter les blocages liés à la casse ou aux accents
-  const isOwner = userData?.role 
-    ? ["propriétaire", "proprietaire", "owner"].includes(userData.role.toLowerCase().trim())
-    : false;
+  const isOwner = userData?.role === "Propriétaire / Développeur";
 
   useEffect(() => {
     const fetchConnectedUser = async () => {
@@ -116,6 +113,16 @@ export default function ProfilePage() {
     if (userData) {
       setEditFormData({ ...userData });
       setIsEditing(true);
+      setProfileMessage({ type: "", text: "" });
+    }
+  };
+
+  const handleCancelClick = () => {
+    if (userData) {
+      setEditFormData({ ...userData });
+      setIsEditing(false);
+      setSelectedImage(null);
+      setPreviewUrl(null);
       setProfileMessage({ type: "", text: "" });
     }
   };
@@ -188,14 +195,20 @@ export default function ProfilePage() {
         }
 
         const updatedData = await response.json();
+        
+        // Stockage du nouveau profil et envoi du signal pour le Layout
+        localStorage.setItem("user_profile", JSON.stringify(updatedData));
+        window.dispatchEvent(new Event("userProfileUpdated"));
+        
         setUserData(updatedData);
+        setEditFormData(updatedData);
+        
         setIsEditing(false);
         setSelectedImage(null);
         setPreviewUrl(null);
         setProfileMessage({ type: "success", text: "Profil mis à jour avec succès !" });
         setTimeout(() => setProfileMessage({ type: "", text: "" }), 3000);
       } catch (error) {
-        // Suppression du type 'any' pour corriger l'erreur ESLint
         const errorMessage = error instanceof Error ? error.message : "Erreur lors de la sauvegarde.";
         setProfileMessage({ type: "error", text: errorMessage });
       }
@@ -264,7 +277,7 @@ export default function ProfilePage() {
   if (!userData || !editFormData) {
     return (
       <div className="p-6 text-center text-sm font-semibold text-rose-600 bg-rose-50 rounded-2xl border border-rose-200">
-        Impossible de charger les informations de l'utilisateur connecté. Veuillez vous reconnecter.
+        Impossible de charger les informations de lutilisateur connecté. Veuillez vous reconnecter.
       </div>
     );
   }
@@ -320,7 +333,7 @@ export default function ProfilePage() {
             <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center justify-center md:justify-start gap-2 capitalize">
               {userData.firstName} {userData.lastName}
             </h2>
-            <p className="text-xs text-indigo-600 font-bold bg-indigo-50 px-2.5 py-0.5 rounded-md inline-block capitalize">
+            <p className="text-xs text-indigo-600 font-bold bg-indigo-50 px-2.5 py-0.5 rounded-md inline-block">
               {userData.role}
             </p>
             <div className="flex items-center gap-1.5 text-slate-400 text-xs font-medium pt-1">
@@ -346,22 +359,32 @@ export default function ProfilePage() {
             </button>
           </div>
 
-          <button 
-            onClick={isEditing ? handleSaveProfile : handleEditClick}
-            className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl border border-slate-200 transition-all ${
-              isEditing ? "bg-emerald-600 text-white border-emerald-600 shadow-sm" : "bg-white text-slate-700 hover:bg-slate-50"
-            }`}
-          >
-            {isEditing ? (
-              <>
-                <Check size={13} /> Enregistrer
-              </>
-            ) : (
-              <>
-                <Edit2 size={12} /> Éditer
-              </>
+          <div className="flex items-center gap-2">
+            {isEditing && (
+              <button 
+                onClick={handleCancelClick}
+                className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl border border-rose-200 bg-white text-rose-600 hover:bg-rose-50 transition-all shadow-sm"
+              >
+                <X size={13} /> Annuler
+              </button>
             )}
-          </button>
+            <button 
+              onClick={isEditing ? handleSaveProfile : handleEditClick}
+              className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl border border-slate-200 transition-all ${
+                isEditing ? "bg-emerald-600 text-white border-emerald-600 shadow-sm" : "bg-white text-slate-700 hover:bg-slate-50"
+              }`}
+            >
+              {isEditing ? (
+                <>
+                  <Check size={13} /> Enregistrer
+                </>
+              ) : (
+                <>
+                  <Edit2 size={12} /> Éditer
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -621,7 +644,7 @@ export default function ProfilePage() {
                     {pwdHasNumber ? <Check size={14} /> : <X size={14} />} 1 chiffre
                   </div>
                   <div className={`flex items-center gap-2 text-xs font-medium ${pwdHasSpecial ? "text-emerald-600" : "text-rose-500"}`}>
-                    {pwdHasSpecial ? <Check size={14} /> : <X size={14} />} 1 caractère spécial (@$!%*?&)
+                    {pwdHasSpecial ? <Check size={14} /> : <X size={14} />} 1 caractère spécial (@$!%*?&#-_...)
                   </div>
                 </div>
               )}

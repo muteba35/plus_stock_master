@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -47,11 +46,10 @@ export default function Login() {
   });
 
   // ==========================================
-  // LOGIN
+  // LOGIN (Flux sécurisé aligné avec le Backend 2FA)
   // ==========================================
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
     setIsLoading(true);
 
     setMessage({
@@ -72,7 +70,6 @@ export default function Login() {
       );
 
       const data = await response.json();
-
       console.log("LOGIN RESPONSE :", data);
 
       if (!response.ok) {
@@ -81,79 +78,33 @@ export default function Login() {
         );
       }
 
-      if (data.success) {
+      // Si le premier facteur est validé et que l'OTP est envoyé
+      if (data.success && data.requiresOTP) {
 
-        // ==========================================
-        // STOCKAGE EMAIL TEMPORAIRE OTP
-        // ==========================================
+        // 1. Stockage de l'email pour l'écran de vérification OTP
         localStorage.setItem(
           "temp_login_email",
-          formData.email
+          data.email || formData.email
         );
 
-        // ==========================================
-        // STOCKAGE UTILISATEUR TEMPORAIRE
-        // ==========================================
-        if (data.data?.user) {
-
-          const userProfile = {
-            id: data.data.user._id,
-            nom: data.data.user.nom,
-            prenom: data.data.user.prenom,
-            email: data.data.user.email,
-            telephone: data.data.user.telephone,
-            role: data.data.user.role,
-            avatar: data.data.user.avatar || "",
-            boutiqueActive:
-              data.data.user.boutiqueActive || "",
-          };
-
-          // TEMP
-          localStorage.setItem(
-            "temp_user_info",
-            JSON.stringify(userProfile)
-          );
-
-          // IMPORTANT
-          // POUR AFFICHAGE DIRECT DASHBOARD (sera validé après l'OTP)
-          localStorage.setItem(
-            "user_profile",
-            JSON.stringify(userProfile)
-          );
-        }
-
-        // ==========================================
-        // TOKEN
-        // ==========================================
-        if (data.token) {
-          localStorage.setItem("token", data.token);
-        }
-
-        // ==========================================
-        // PERMISSIONS
-        // ==========================================
-        if (data.permissions) {
-          localStorage.setItem(
-            "user_permissions",
-            JSON.stringify(data.permissions)
-          );
-        }
+        // 2. Sauvegarde de l'état de la boutique pour la future redirection post-OTP
+        localStorage.setItem(
+          "temp_has_boutique",
+          String(data.hasBoutique)
+        );
 
         setMessage({
-          text: "Code de vérification envoyé...",
+          text: "Identifiants valides. Code de sécurité envoyé !",
           type: "success",
         });
 
-        // ==========================================
-        // REDIRECTION VERS L'OTP
-        // ==========================================
+        // 3. Redirection vers l'écran de saisie du code OTP
         setTimeout(() => {
           router.push("/verify-code");
         }, 1500);
       }
 
     } catch (err: unknown) {
-
       console.error(err);
 
       const errorMessage =
@@ -161,9 +112,8 @@ export default function Login() {
           ? err.message
           : "Une erreur est survenue";
 
-      if (
-        errorMessage.toLowerCase().includes("15 minutes")
-      ) {
+      // Désactive le bouton si le compte est détecté comme bloqué
+      if (errorMessage.toLowerCase().includes("bloqué")) {
         setIsBlocked(true);
       }
 

@@ -61,10 +61,7 @@ export default function VerifyCode() {
     return () => clearInterval(interval);
   }, [timer]);
 
-  const handleChange = (
-    element: HTMLInputElement,
-    index: number
-  ) => {
+  const handleChange = (element: HTMLInputElement, index: number) => {
     const value = element.value;
 
     if (isNaN(Number(value))) return;
@@ -99,9 +96,7 @@ export default function VerifyCode() {
   };
 
   // Gestion collage OTP optimisée pour React
-  const handlePaste = (
-    e: React.ClipboardEvent<HTMLInputElement>
-  ) => {
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     e.preventDefault();
 
     const pastedData = e.clipboardData
@@ -117,9 +112,8 @@ export default function VerifyCode() {
     inputs.current[5]?.focus();
   };
 
-  const handleVerify = async (
-    e: React.FormEvent<HTMLFormElement>
-  ) => {
+  // Fonction de vérification OTP modifiée avec gestion du Rate Limiter (429)
+  const handleVerify = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     setIsLoading(true);
@@ -145,82 +139,65 @@ export default function VerifyCode() {
 
       const data = await response.json();
 
+      // Interception des erreurs (Code faux, expiré ou trop de tentatives)
       if (!response.ok) {
-        throw new Error(
-          data.message || "Code invalide ou expiré"
-        );
+        if (response.status === 429 || data.message?.toLowerCase().includes("tentatives")) {
+          setIsBlocked(true);
+          setError(data.message || "Trop de tentatives infructueuses.");
+          
+          // Laisse l'utilisateur lire le message de sécurité pendant 2.5s avant redirection
+          setTimeout(() => {
+            router.push("/login");
+          }, 2500);
+          return;
+        }
+        
+        throw new Error(data.message || "Code invalide ou expiré");
       }
 
-      // Cookie middleware Next.js
+      // Cookie middleware Next.js (7 jours)
       document.cookie = `stockmaster_token=${
         data.token
-      }; path=/; max-age=${
-        7 * 24 * 60 * 60
-      }; SameSite=Lax`;
+      }; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
 
       // Token localStorage
       localStorage.setItem("token", data.token);
 
-      // ==========================================
-      // RÉCUPÉRATION SÉCURISÉE DES DONNÉES DU LOGIN
-      // ==========================================
+      // Récupération des données utilisateur de transition
       const tempUserInfoStr = localStorage.getItem("temp_user_info");
       const fallbackUser = tempUserInfoStr ? JSON.parse(tempUserInfoStr) : null;
 
-      // Unification complète du profil (CORRIGÉ : Priorité à data.user en direct)
+      // Unification complète du profil basée sur l'architecture par permissions
       const finalUserProfile = data.user ? {
-        id: data.user._id || data.user.id || fallbackUser?.id,
+        id: data.user.id || fallbackUser?.id,
         nom: data.user.nom || fallbackUser?.nom,
         prenom: data.user.prenom || fallbackUser?.prenom,
         email: data.user.email || fallbackUser?.email,
         telephone: data.user.telephone || fallbackUser?.telephone,
-        role: data.user.role || fallbackUser?.role,
+        role: data.user.roleId ? "Employé" : "Admin Général",
         avatar: data.user.avatar || fallbackUser?.avatar || "",
-        boutiqueActive: data.user.boutiqueActive || fallbackUser?.boutiqueActive || "",
+        boutiqueActive: data.user.boutiqueActive?._id || data.user.boutiqueActive || fallbackUser?.boutiqueActive || "",
       } : fallbackUser;
 
       if (finalUserProfile) {
-        localStorage.setItem(
-          "user_profile",
-          JSON.stringify(finalUserProfile)
-        );
+        localStorage.setItem("user_profile", JSON.stringify(finalUserProfile));
       }
 
-      // Permissions (Priorité API en direct, sinon fallback)
-      const permissions = data.permissions || data.user?.permissions || fallbackUser?.permissions || [
-        "VOIR_RESUME_VENTES",
-        "VOIR_ALERTES_STOCK",
-        "EFFECTUER_VENTE",
-        "APPLIQUER_REMISE",
-        "ANNULER_VENTE",
-      ];
-
-      localStorage.setItem(
-        "user_permissions",
-        JSON.stringify(permissions)
-      );
+      // Enregistrement des permissions transmises par le backend
+      const permissions = data.permissions || fallbackUser?.permissions || [];
+      localStorage.setItem("user_permissions", JSON.stringify(permissions));
 
       // Nettoyage des stores temporaires
       localStorage.removeItem("temp_login_email");
       localStorage.removeItem("temp_user_info");
 
-      setSuccessMessage(
-        "Vérification réussie. Redirection..."
-      );
+      setSuccessMessage("Vérification réussie. Redirection...");
 
       setTimeout(() => {
         router.push("/dashboard");
       }, 1200);
     } catch (err: unknown) {
-      const msg =
-        err instanceof Error
-          ? err.message
-          : "Erreur de vérification";
-
-      if (msg.toLowerCase().includes("15 minutes")) {
-        setIsBlocked(true);
-      }
-
+      const msg = err instanceof Error ? err.message : "Erreur de vérification";
       setError(msg);
     } finally {
       setIsLoading(false);
@@ -247,28 +224,24 @@ export default function VerifyCode() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(
-          data.message ||
-            "Impossible de renvoyer le code."
-        );
+        throw new Error(data.message || "Impossible de renvoyer le code.");
       }
 
       setOtp(["", "", "", "", "", ""]);
       inputs.current[0]?.focus();
 
       setResendSuccess(true);
-      setTimer(45);
+      setTimer(45); // Cooldown aligné sur le backend
     } catch (err: unknown) {
-      const msg =
-        err instanceof Error
-          ? err.message
-          : "Erreur lors du renvoi";
-
-      if (msg.toLowerCase().includes("15 minutes")) {
-        setIsBlocked(true);
-      }
-
+      const msg = err instanceof Error ? err.message : "Erreur lors du renvoi";
       setError(msg);
+
+      if (msg.toLowerCase().includes("bloqué") || msg.toLowerCase().includes("tentative")) {
+        setIsBlocked(true);
+        setTimeout(() => {
+          router.push("/login");
+        }, 4000);
+      }
     } finally {
       setIsResending(false);
     }
@@ -279,29 +252,16 @@ export default function VerifyCode() {
       <AuthNavbar />
 
       <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6 pt-32 relative overflow-hidden font-sans">
-        {/* Background */}
+        {/* Background Shapes */}
         <div className="absolute inset-0 -z-10 overflow-hidden opacity-70">
           <motion.div
-            animate={{
-              scale: [1, 1.1, 1],
-            }}
-            transition={{
-              duration: 10,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
+            animate={{ scale: [1, 1.1, 1] }}
+            transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
             className="absolute top-[-10%] left-[-5%] w-[40%] h-[40%] bg-indigo-50 rounded-full blur-[120px]"
           />
-
           <motion.div
-            animate={{
-              scale: [1.1, 1, 1.1],
-            }}
-            transition={{
-              duration: 12,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
+            animate={{ scale: [1.1, 1, 1.1] }}
+            transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
             className="absolute bottom-[-10%] right-[-5%] w-[40%] h-[40%] bg-blue-50 rounded-full blur-[120px]"
           />
         </div>
@@ -319,12 +279,8 @@ export default function VerifyCode() {
 
             <div className="mt-5">
               <h1 className="text-2xl font-black tracking-tighter uppercase text-slate-950">
-                STOCK
-                <span className="text-indigo-600">
-                  MASTER
-                </span>
+                STOCK<span className="text-indigo-600">MASTER</span>
               </h1>
-
               <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-slate-400 mt-1">
                 PRO EDITION
               </p>
@@ -351,18 +307,18 @@ export default function VerifyCode() {
             </p>
           </div>
 
-          {/* Messages */}
-          <div className="min-h-[32px] mb-6 flex justify-center">
+          {/* Messages Alerts */}
+          <div className="min-h-[48px] mb-6 flex justify-center">
             <AnimatePresence mode="wait">
               {error && (
                 <motion.div
                   key="error"
-                  initial={{ opacity: 0, scale: 0.9 }}
+                  initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.15em] py-2 px-4 rounded-full bg-red-50 text-red-600"
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="flex items-start gap-2.5 text-xs font-semibold py-3 px-4 rounded-2xl bg-red-50 text-red-600 border border-red-100/50 w-full text-center justify-center leading-relaxed"
                 >
-                  <AlertCircle size={14} />
+                  <AlertCircle size={16} className="shrink-0 mt-0.5" />
                   <span>{error}</span>
                 </motion.div>
               )}
@@ -370,12 +326,12 @@ export default function VerifyCode() {
               {successMessage && (
                 <motion.div
                   key="success"
-                  initial={{ opacity: 0, scale: 0.9 }}
+                  initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.15em] py-2 px-4 rounded-full bg-emerald-50 text-emerald-600"
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="flex items-center gap-2.5 text-xs font-bold py-3 px-4 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100/50 w-full text-center justify-center"
                 >
-                  <CheckCircle2 size={14} />
+                  <CheckCircle2 size={16} className="shrink-0" />
                   <span>{successMessage}</span>
                 </motion.div>
               )}
@@ -383,11 +339,8 @@ export default function VerifyCode() {
           </div>
 
           {/* Form */}
-          <form
-            onSubmit={handleVerify}
-            className="space-y-8"
-          >
-            {/* OTP */}
+          <form onSubmit={handleVerify} className="space-y-8">
+            {/* OTP Grid Inputs */}
             <div className="flex justify-between gap-3">
               {otp.map((digit, index) => (
                 <input
@@ -399,34 +352,23 @@ export default function VerifyCode() {
                   inputMode="numeric"
                   maxLength={1}
                   value={digit}
-                  disabled={isBlocked}
+                  disabled={isBlocked || isLoading}
                   onPaste={handlePaste}
-                  onChange={(e) =>
-                    handleChange(e.target, index)
-                  }
-                  onKeyDown={(e) =>
-                    handleKeyDown(e, index)
-                  }
-                  className="w-full h-14 rounded-2xl border-2 border-slate-100 bg-slate-50 text-center text-xl font-black text-slate-950 outline-none transition-all focus:border-indigo-600 focus:bg-white focus:ring-4 focus:ring-indigo-50 disabled:opacity-40"
+                  onChange={(e) => handleChange(e.target, index)}
+                  onKeyDown={(e) => handleKeyDown(e, index)}
+                  className="w-full h-14 rounded-2xl border-2 border-slate-100 bg-slate-50 text-center text-xl font-black text-slate-950 outline-none transition-all focus:border-indigo-600 focus:bg-white focus:ring-4 focus:ring-indigo-50 disabled:opacity-40 transition-opacity"
                 />
               ))}
             </div>
 
-            {/* Submit */}
+            {/* Submit Button */}
             <button
               type="submit"
-              disabled={
-                isLoading ||
-                isBlocked ||
-                otp.some((v) => v === "")
-              }
+              disabled={isLoading || isBlocked || otp.some((v) => v === "")}
               className="w-full py-4 bg-[#090E1A] hover:bg-indigo-600 rounded-2xl text-white font-black text-[11px] uppercase tracking-[0.2em] transition-all duration-300 flex items-center justify-center gap-3 shadow-xl active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed"
             >
               {isLoading ? (
-                <Loader2
-                  size={18}
-                  className="animate-spin"
-                />
+                <Loader2 size={18} className="animate-spin" />
               ) : (
                 <>
                   Vérifier le code
@@ -436,39 +378,28 @@ export default function VerifyCode() {
             </button>
           </form>
 
-          {/* Resend */}
+          {/* Resend Actions */}
           <div className="mt-10 pt-8 border-t border-slate-100 text-center">
             <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-4">
-              Vous n`avez pas reçu le code ?
+              {"Vous n'avez pas reçu le code ?"}
             </p>
 
             <button
               type="button"
               onClick={handleResend}
-              disabled={
-                isResending ||
-                isBlocked ||
-                timer > 0
-              }
+              disabled={isResending || isBlocked || timer > 0}
               className="inline-flex items-center gap-2 text-indigo-600 hover:text-indigo-800 font-black text-[10px] uppercase tracking-[0.15em] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {isResending ? (
-                <Loader2
-                  size={14}
-                  className="animate-spin"
-                />
+                <Loader2 size={14} className="animate-spin" />
               ) : (
                 <RefreshCw
                   size={14}
-                  className={
-                    timer > 0 ? "animate-spin" : ""
-                  }
+                  className={timer > 0 ? "animate-spin" : ""}
                 />
               )}
 
-              {timer > 0
-                ? `Attendre ${timer}s`
-                : "Renvoyer un code"}
+              {timer > 0 ? `Attendre ${timer}s` : "Renvoyer un code"}
             </button>
 
             <AnimatePresence>
