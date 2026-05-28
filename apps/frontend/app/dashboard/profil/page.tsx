@@ -22,11 +22,13 @@ import {
 } from "lucide-react";
 
 interface UserProfile {
+  id: string;
   firstName: string;
   lastName: string;
   email: string;
   phone: string;
-  role: string;
+  roleId: string | null; // null signifie que c'est l'Admin Général (Règle d'Or)
+  role: string;          // Libellé dynamique renvoyé par le backend ("Propriétaire", "RH", etc.)
   bio: string;
   country: string;
   city: string;
@@ -76,7 +78,8 @@ export default function ProfilePage() {
   const pwdHasNumber = /\d/.test(newPassword);
   const pwdHasSpecial = /[^A-Za-z0-9]/.test(newPassword);
 
-  const isOwner = userData?.role === "Propriétaire / Développeur";
+  // ÉVALUATION DE LA RÈGLE D'OR : Si pas de roleId, c'est le créateur/propriétaire de la boutique
+  const isOwner = userData?.roleId === null;
 
   useEffect(() => {
     const fetchConnectedUser = async () => {
@@ -180,6 +183,7 @@ export default function ProfilePage() {
           avatar: base64Avatar
         };
 
+        // CORRECTION ICI : Ajout du body JSON.stringify(payload)
         const response = await fetch(`${API_URL}/auth/profile`, {
           method: "PUT",
           headers: {
@@ -196,7 +200,7 @@ export default function ProfilePage() {
 
         const updatedData = await response.json();
         
-        // Stockage du nouveau profil et envoi du signal pour le Layout
+        // Sauvegarde locale et déclenchement du signal pour le Layout
         localStorage.setItem("user_profile", JSON.stringify(updatedData));
         window.dispatchEvent(new Event("userProfileUpdated"));
         
@@ -277,7 +281,7 @@ export default function ProfilePage() {
   if (!userData || !editFormData) {
     return (
       <div className="p-6 text-center text-sm font-semibold text-rose-600 bg-rose-50 rounded-2xl border border-rose-200">
-        Impossible de charger les informations de lutilisateur connecté. Veuillez vous reconnecter.
+        Impossible de charger les informations de l&apos;utilisateur connecté. Veuillez vous reconnecter.
       </div>
     );
   }
@@ -484,7 +488,7 @@ export default function ProfilePage() {
 
           <div className="space-y-1.5 md:col-span-2">
             <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1">
-              <FileText size={12} /> Biographie / Rôle d`exploitation {!isOwner && isEditing && <Lock size={10} className="text-slate-400 inline" />}
+              <FileText size={12} /> Biographie / Rôle d&apos;exploitation {!isOwner && isEditing && <Lock size={10} className="text-slate-400 inline" />}
             </label>
             {isEditing ? (
               <textarea 
@@ -506,7 +510,7 @@ export default function ProfilePage() {
         <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-[#fcfdfe]">
           <div>
             <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Adresse & Données Fiscales</h3>
-            <p className="text-[11px] text-slate-400 font-medium">Localisation et informations réglementaires de l`entreprise</p>
+            <p className="text-[11px] text-slate-400 font-medium">Localisation et informations réglementaires de l&apos;entreprise</p>
           </div>
         </div>
 
@@ -584,7 +588,7 @@ export default function ProfilePage() {
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
         <div className="p-5 border-b border-slate-100 bg-[#fcfdfe]">
           <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Sécurité & Authentification</h3>
-          <p className="text-[11px] text-slate-400 font-medium">Mettez à jour vos identifiants d`accès régulièrement pour protéger la caisse</p>
+          <p className="text-[11px] text-slate-400 font-medium">Mettez à jour vos identifiants d&apos;accès régulièrement pour protéger la caisse</p>
         </div>
 
         <form onSubmit={handlePasswordUpdate} className="p-6 space-y-5 layout-form max-w-xl">

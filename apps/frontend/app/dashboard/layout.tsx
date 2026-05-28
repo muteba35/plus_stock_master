@@ -248,7 +248,6 @@ export default function DashboardLayout({
         { name: "Vue d'ensemble", href: "/dashboard/equipe", permission: "GERER_ROLES" },
         { name: "Employés", href: "/dashboard/equipe/employes", permission: "AJOUTER_EMPLOYE" },
         { name: "Rôles", href: "/dashboard/equipe/roles", permission: "GERER_ROLES" },
-        { name: "Permissions", href: "/dashboard/equipe/permissions", permission: "GERER_ROLES" },
       ],
     },
     {
