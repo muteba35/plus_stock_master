@@ -35,7 +35,7 @@ const permissions = [
   { nom: "CREER_DEPARTEMENT", module: "EQUIPE", description: "Permet d'ajouter un nouveau département" },
   { nom: "MODIFIER_DEPARTEMENT", module: "EQUIPE", description: "Permet de modifier les informations d'un département existant" },
   { nom: "SUPPRIMER_DEPARTEMENT", module: "EQUIPE", description: "Autorise la suppression définitive d'un département" },
-  { nom: "VOIR_EMPLOYE", module: "EQUIPE", description: "Permet de voir tous les utilisateurs dans la boutique" },
+  { nom: "VOIR_EMPLOYES", module: "EQUIPE", description: "Permet de voir tous les utilisateurs dans la boutique" },
   { nom: "AJOUTER_EMPLOYE", module: "EQUIPE", description: "Permet d'insérer de nouveaux utilisateurs dans la boutique" },
   { nom: "MODIFIER_EMPLOYE", module: "EQUIPE", description: "Changer les accès ou infos d'un collègue" },
   { nom: "SUSPENDRE_EMPLOYE", module: "EQUIPE", description: "Suspendre l'accès d'un travailleur" },

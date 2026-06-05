@@ -27,6 +27,11 @@ const roleSchema = new mongoose.Schema({
     required: true,
     trim: true // ex: "Responsable Entrées", "Caissier"
   },
+  description: {
+    type: String,
+    trim: true,
+    default: ""
+  },
   boutiqueId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Boutique",

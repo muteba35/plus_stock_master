@@ -1,218 +1,324 @@
-import { Role, RolePermission, Permission, Utilisateur } from '../models/Utilisateur.js';
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
+import { Role, RolePermission, Permission, Utilisateur } from "../models/Utilisateur.js";
+
+const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
+
+const normalizePermissionIds = (permissions = []) => {
+  if (!Array.isArray(permissions)) return [];
+
+  return [...new Set(
+    permissions
+      .filter((permissionId) => typeof permissionId === "string")
+      .map((permissionId) => permissionId.trim())
+      .filter(Boolean)
+  )];
+};
+
+const validatePermissionIds = async (permissionIds) => {
+  const invalidFormatIds = permissionIds.filter((permissionId) => !isValidObjectId(permissionId));
+
+  if (invalidFormatIds.length > 0) {
+    return {
+      isValid: false,
+      message: "Une ou plusieurs permissions selectionnees sont invalides."
+    };
+  }
+
+  if (permissionIds.length === 0) {
+    return { isValid: true, validIds: [] };
+  }
+
+  const existingPermissions = await Permission.find({ _id: { $in: permissionIds } }).select("_id");
+  const existingIds = new Set(existingPermissions.map((permission) => permission._id.toString()));
+  const missingIds = permissionIds.filter((permissionId) => !existingIds.has(permissionId));
+
+  if (missingIds.length > 0) {
+    return {
+      isValid: false,
+      message: "Une ou plusieurs permissions selectionnees n'existent pas."
+    };
+  }
+
+  return { isValid: true, validIds: permissionIds };
+};
+
+const buildRoleResponse = async (role) => {
+  const liaisons = await RolePermission.find({ roleId: role._id }).populate("permissionId");
+  const permissionsAssociees = liaisons.map((liaison) => liaison.permissionId).filter(Boolean);
+  const employeesCount = await Utilisateur.countDocuments({ roleId: role._id });
+
+  return {
+    ...role.toObject(),
+    permissions: permissionsAssociees,
+    employeesCount
+  };
+};
 
 // ==========================================
-// 0. RÉCUPÉRER TOUTES LES PERMISSIONS DISPONIBLES ()
+// 0. RECUPERER TOUTES LES PERMISSIONS DISPONIBLES
 // ==========================================
-export const getAvailablePermissions = async (req, res) => {
+export const getAvailablePermissions = async (_req, res) => {
   try {
-    // Récupère toutes les permissions de la BDD triées par module
-    const permissions = await Permission.find().sort({ module: 1 });
-    
+    const permissions = await Permission.find().sort({ module: 1, nom: 1 });
+
     return res.status(200).json({
       success: true,
       permissions
     });
   } catch (error) {
     console.error("Erreur getAvailablePermissions :", error);
-    return res.status(500).json({ message: "Erreur lors de la récupération des permissions système." });
+    return res.status(500).json({ message: "Erreur lors de la recuperation des permissions systeme." });
   }
 };
 
 // ==========================================
-// 1. CRÉER UN RÔLE (Avec liaisons intermédiaires)
+// 1. CREER UN ROLE
 // ==========================================
 export const createRole = async (req, res) => {
   try {
-    const { nom, permissions } = req.body; // permissions = ["ID_MONGODB_1", "ID_MONGODB_2"]
-    const boutiqueId = req.user.boutiqueId; // Injecté par le middleware 'protect'
+    const { nom, description = "", permissions = [] } = req.body;
+    const boutiqueId = req.user?.boutiqueId;
+    const roleName = typeof nom === "string" ? nom.trim() : "";
+    const permissionIds = normalizePermissionIds(permissions);
 
-    if (!nom) {
-      return res.status(400).json({ message: "Le nom du rôle est requis." });
+    if (!boutiqueId || !isValidObjectId(boutiqueId)) {
+      return res.status(401).json({ message: "Boutique active introuvable dans la session." });
     }
 
-    // Sécurité : Éviter les doublons au sein de la même boutique
-    const roleExistant = await Role.findOne({ nom: nom.trim(), boutiqueId });
-    if (roleExistant) {
-      return res.status(400).json({ message: "Un rôle avec ce nom existe déjà dans votre boutique." });
+    if (!roleName) {
+      return res.status(400).json({ message: "Le nom du role est requis." });
     }
 
-    // 1. Création du rôle principal
-    const nouveauRole = await Role.create({
-      nom: nom.trim(),
+    const permissionValidation = await validatePermissionIds(permissionIds);
+    if (!permissionValidation.isValid) {
+      return res.status(400).json({ message: permissionValidation.message });
+    }
+
+    const roleExistant = await Role.findOne({
+      nom: roleName,
       boutiqueId
     });
 
-    // 2. Association des permissions dans la table intermédiaire RolePermission
-    if (permissions && Array.isArray(permissions) && permissions.length > 0) {
-      const rolePermissionsData = permissions.map(permId => ({
-        roleId: nouveauRole._id,
-        permissionId: permId
-      }));
-      
-      // Insertion de masse
-      await RolePermission.insertMany(rolePermissionsData);
+    if (roleExistant) {
+      return res.status(400).json({ message: "Un role avec ce nom existe deja dans votre boutique." });
     }
+
+    const nouveauRole = await Role.create({
+      nom: roleName,
+      description: typeof description === "string" ? description.trim() : "",
+      boutiqueId
+    });
+
+    if (permissionIds.length > 0) {
+      await RolePermission.insertMany(
+        permissionIds.map((permissionId) => ({
+          roleId: nouveauRole._id,
+          permissionId
+        }))
+      );
+    }
+
+    const roleAvecPermissions = await buildRoleResponse(nouveauRole);
 
     return res.status(201).json({
       success: true,
-      message: "Rôle créé avec succès !",
-      role: nouveauRole
+      message: "Role cree avec succes !",
+      role: roleAvecPermissions
     });
-
   } catch (error) {
     console.error("Erreur createRole :", error);
-    return res.status(500).json({ message: "Erreur lors de la création du rôle." });
+
+    if (error?.code === 11000) {
+      return res.status(400).json({ message: "Un role avec ce nom existe deja dans votre boutique." });
+    }
+
+    return res.status(500).json({ message: "Erreur lors de la creation du role." });
   }
 };
 
 // ==========================================
-// 2. RÉCUPÉRER TOUS LES RÔLES D'UNE BOUTIQUE
+// 2. RECUPERER TOUS LES ROLES D'UNE BOUTIQUE
 // ==========================================
 export const getRoles = async (req, res) => {
   try {
-    const boutiqueId = req.user.boutiqueId;
+    const boutiqueId = req.user?.boutiqueId;
 
-    // Trouver tous les rôles de la boutique
-    const roles = await Role.find({ boutiqueId });
+    if (!boutiqueId || !isValidObjectId(boutiqueId)) {
+      return res.status(401).json({ message: "Boutique active introuvable dans la session." });
+    }
 
-    // Lier dynamiquement les permissions pour chaque rôle
-    const rolesAvecPermissions = await Promise.all(
-      roles.map(async (role) => {
-        const liaisons = await RolePermission.find({ roleId: role._id }).populate("permissionId");
-        
-        // On extrait uniquement l'objet de la permission et on filtre les nuls si une permission a été supprimée
-        const permissionsAssociees = liaisons.map(l => l.permissionId).filter(Boolean);
-        
-        return {
-          ...role.toObject(),
-          permissions: permissionsAssociees
-        };
-      })
-    );
+    const roles = await Role.find({ boutiqueId }).sort({ createdAt: -1 });
+    const rolesAvecPermissions = await Promise.all(roles.map(buildRoleResponse));
 
     return res.status(200).json({
       success: true,
       roles: rolesAvecPermissions
     });
-
   } catch (error) {
     console.error("Erreur getRoles :", error);
-    return res.status(500).json({ message: "Erreur lors de la récupération des rôles." });
+    return res.status(500).json({ message: "Erreur lors de la recuperation des roles." });
   }
 };
 
 // ==========================================
-// 3. RÉCUPÉRER UN RÔLE SPÉCIFIQUE PAR SON ID
+// 3. RECUPERER UN ROLE SPECIFIQUE PAR SON ID
 // ==========================================
 export const getRoleById = async (req, res) => {
   try {
     const { id } = req.params;
-    const boutiqueId = req.user.boutiqueId;
+    const boutiqueId = req.user?.boutiqueId;
+
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ message: "Identifiant du role invalide." });
+    }
+
+    if (!boutiqueId || !isValidObjectId(boutiqueId)) {
+      return res.status(401).json({ message: "Boutique active introuvable dans la session." });
+    }
 
     const role = await Role.findOne({ _id: id, boutiqueId });
     if (!role) {
-      return res.status(404).json({ message: "Rôle introuvable dans votre boutique." });
+      return res.status(404).json({ message: "Role introuvable dans votre boutique." });
     }
-
-    const liaisons = await RolePermission.find({ roleId: role._id }).populate("permissionId");
-    const permissionsAssociees = liaisons.map(l => l.permissionId).filter(Boolean);
 
     return res.status(200).json({
       success: true,
-      role: {
-        ...role.toObject(),
-        permissions: permissionsAssociees
-      }
+      role: await buildRoleResponse(role)
     });
-
   } catch (error) {
     console.error("Erreur getRoleById :", error);
-    return res.status(500).json({ message: "Erreur lors de la récupération du rôle." });
+    return res.status(500).json({ message: "Erreur lors de la recuperation du role." });
   }
 };
 
 // ==========================================
-// 4. MODIFIER UN RÔLE ET SES PERMISSIONS
+// 4. MODIFIER UN ROLE ET SES PERMISSIONS
 // ==========================================
 export const updateRole = async (req, res) => {
   try {
     const { id } = req.params;
-    const { nom, permissions } = req.body; 
-    const boutiqueId = req.user.boutiqueId;
+    const { nom, description, permissions } = req.body;
+    const boutiqueId = req.user?.boutiqueId;
+    const roleName = typeof nom === "string" ? nom.trim() : "";
 
-    let role = await Role.findOne({ _id: id, boutiqueId });
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ message: "Identifiant du role invalide." });
+    }
+
+    if (!boutiqueId || !isValidObjectId(boutiqueId)) {
+      return res.status(401).json({ message: "Boutique active introuvable dans la session." });
+    }
+
+    const role = await Role.findOne({ _id: id, boutiqueId });
     if (!role) {
-      return res.status(404).json({ message: "Rôle introuvable." });
+      return res.status(404).json({ message: "Role introuvable." });
     }
 
-    if (nom && nom.trim() !== role.nom) {
-      const doublon = await Role.findOne({ nom: nom.trim(), boutiqueId, _id: { $ne: id } });
+    if (nom !== undefined && !roleName) {
+      return res.status(400).json({ message: "Le nom du role est requis." });
+    }
+
+    if (roleName && roleName !== role.nom) {
+      const doublon = await Role.findOne({
+        nom: roleName,
+        boutiqueId,
+        _id: { $ne: id }
+      });
+
       if (doublon) {
-        return res.status(400).json({ message: "Un autre rôle porte déjà ce nom dans votre boutique." });
+        return res.status(400).json({ message: "Un autre role porte deja ce nom dans votre boutique." });
       }
-      role.nom = nom.trim();
-      await role.save();
+
+      role.nom = roleName;
     }
 
-    // Synchronisation atomique des permissions
-    if (permissions && Array.isArray(permissions)) {
-      // Étape A : Vider les anciennes autorisations
+    if (description !== undefined) {
+      role.description = typeof description === "string" ? description.trim() : "";
+    }
+
+    if (permissions !== undefined) {
+      if (!Array.isArray(permissions)) {
+        return res.status(400).json({ message: "La liste des permissions est invalide." });
+      }
+
+      const permissionIds = normalizePermissionIds(permissions);
+      const permissionValidation = await validatePermissionIds(permissionIds);
+
+      if (!permissionValidation.isValid) {
+        return res.status(400).json({ message: permissionValidation.message });
+      }
+
       await RolePermission.deleteMany({ roleId: id });
 
-      // Étape B : Réinsérer le nouveau lot sélectionné sur le formulaire
-      if (permissions.length > 0) {
-        const rolePermissionsData = permissions.map(permId => ({
-          roleId: id,
-          permissionId: permId
-        }));
-        await RolePermission.insertMany(rolePermissionsData);
+      if (permissionIds.length > 0) {
+        await RolePermission.insertMany(
+          permissionIds.map((permissionId) => ({
+            roleId: id,
+            permissionId
+          }))
+        );
       }
     }
+
+    await role.save();
 
     return res.status(200).json({
       success: true,
-      message: "Rôle et permissions mis à jour avec succès !"
+      message: "Role et permissions mis a jour avec succes !",
+      role: await buildRoleResponse(role)
     });
-
   } catch (error) {
     console.error("Erreur updateRole :", error);
-    return res.status(500).json({ message: "Erreur lors de la modification du rôle." });
+
+    if (error?.code === 11000) {
+      return res.status(400).json({ message: "Un autre role porte deja ce nom dans votre boutique." });
+    }
+
+    return res.status(500).json({ message: "Erreur lors de la modification du role." });
   }
 };
 
 // ==========================================
-// 5. SUPPRIMER UN RÔLE
+// 5. SUPPRIMER UN ROLE
 // ==========================================
 export const deleteRole = async (req, res) => {
   try {
     const { id } = req.params;
-    const boutiqueId = req.user.boutiqueId;
+    const boutiqueId = req.user?.boutiqueId;
+
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ message: "Identifiant du role invalide." });
+    }
+
+    if (!boutiqueId || !isValidObjectId(boutiqueId)) {
+      return res.status(401).json({ message: "Boutique active introuvable dans la session." });
+    }
 
     const role = await Role.findOne({ _id: id, boutiqueId });
     if (!role) {
-      return res.status(404).json({ message: "Rôle introuvable." });
+      return res.status(404).json({ message: "Role introuvable." });
     }
 
-    // Sécurité critique : Bloquer la suppression si le rôle est utilisé par un employé
-    const utilisateurAvecCeRole = await Utilisateur.findOne({ roleId: id });
+    const utilisateurAvecCeRole = await Utilisateur.findOne({
+      roleId: id,
+      boutiqueActive: boutiqueId
+    });
+
     if (utilisateurAvecCeRole) {
-      return res.status(400).json({ 
-        message: "Action impossible : Ce rôle est actuellement attribué à un ou plusieurs employés." 
+      return res.status(400).json({
+        message: "Action impossible : ce role est actuellement attribue a un ou plusieurs employes."
       });
     }
 
-    // Nettoyage de la table intermédiaire puis suppression du rôle
     await RolePermission.deleteMany({ roleId: id });
-    await Role.deleteOne({ _id: id });
+    await Role.deleteOne({ _id: id, boutiqueId });
 
     return res.status(200).json({
       success: true,
-      message: "Rôle supprimé avec succès !"
+      message: "Role supprime avec succes !"
     });
-
   } catch (error) {
     console.error("Erreur deleteRole :", error);
-    return res.status(500).json({ message: "Erreur lors de la suppression du rôle." });
+    return res.status(500).json({ message: "Erreur lors de la suppression du role." });
   }
 };
