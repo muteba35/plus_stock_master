@@ -171,13 +171,10 @@ export default function DashboardLayout({
   // HELPERS
   // ==========================================
   const hasPermission = (permission?: string) => {
-    // Si l'utilisateur n'a pas de roleId (Admin Général), il a accès à TOUT
     if (user.roleId === null || user.roleId === "") {
       return true;
     }
-    // Si aucune permission n'est requise, tout le monde y accède
     if (!permission) return true;
-    // Sinon, on cherche la permission dans son tableau
     return userPermissions.includes(permission);
   };
 
@@ -240,16 +237,33 @@ export default function DashboardLayout({
         { name: "Alertes Rupture", href: "/dashboard/inventaire/alertes", permission: "VOIR_ALERTES_STOCK" },
       ],
     },
-    {
-      name: "Mon Équipe",
-      icon: Users2,
-      module: "EQUIPE",
-      subMenu: [
-        { name: "Vue d'ensemble", href: "/dashboard/equipe", permission: "GERER_ROLES" },
-        { name: "Employés", href: "/dashboard/equipe/employes", permission: "AJOUTER_EMPLOYE" },
-        { name: "Rôles", href: "/dashboard/equipe/roles", permission: "GERER_ROLES" },
-      ],
+   {
+  name: "Mon Équipe",
+  icon: Users2,
+  module: "EQUIPE",
+  subMenu: [
+    { 
+      name: "Vue d'ensemble", 
+      href: "/dashboard/equipe", 
+      permission: "VOIR_EQUIPE" // Permet à quiconque ayant un droit dans l'équipe d'y accéder
     },
+    { 
+      name: "Employés", 
+      href: "/dashboard/equipe/employes", 
+      permission: "VOIR_EMPLOYES" //
+    },
+    { 
+      name: "Départements", 
+      href: "/dashboard/equipe/departements", 
+      permission: "VOIR_DEPARTEMENTS" // Cohérent (Visualisation)
+    },
+    { 
+      name: "Rôles", 
+      href: "/dashboard/equipe/roles", 
+      permission: "VOIR_ROLES" // Cohérent avec la page RolesPage qu'on vient de faire
+    },
+  ],
+},
     {
       name: "Finances",
       icon: CircleDollarSign,

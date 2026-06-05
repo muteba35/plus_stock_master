@@ -18,7 +18,8 @@ import {
   Camera,
   Check,
   X,
-  Lock
+  Lock,
+  Building // <-- AJOUT DE L'ICÔNE POUR LE DÉPARTEMENT
 } from "lucide-react";
 
 interface UserProfile {
@@ -29,6 +30,8 @@ interface UserProfile {
   phone: string;
   roleId: string | null; // null signifie que c'est l'Admin Général (Règle d'Or)
   role: string;          // Libellé dynamique renvoyé par le backend ("Propriétaire", "RH", etc.)
+  departementId: string | null; // <-- AJOUT ICI
+  departement: string;          // <-- AJOUT ICI (Libellé dynamique ex: "Comptabilité")
   bio: string;
   country: string;
   city: string;
@@ -183,7 +186,6 @@ export default function ProfilePage() {
           avatar: base64Avatar
         };
 
-        // CORRECTION ICI : Ajout du body JSON.stringify(payload)
         const response = await fetch(`${API_URL}/auth/profile`, {
           method: "PUT",
           headers: {
@@ -200,7 +202,6 @@ export default function ProfilePage() {
 
         const updatedData = await response.json();
         
-        // Sauvegarde locale et déclenchement du signal pour le Layout
         localStorage.setItem("user_profile", JSON.stringify(updatedData));
         window.dispatchEvent(new Event("userProfileUpdated"));
         
@@ -337,9 +338,20 @@ export default function ProfilePage() {
             <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center justify-center md:justify-start gap-2 capitalize">
               {userData.firstName} {userData.lastName}
             </h2>
-            <p className="text-xs text-indigo-600 font-bold bg-indigo-50 px-2.5 py-0.5 rounded-md inline-block">
-              {userData.role}
-            </p>
+            
+            {/* BADGES ALIGNÉS DYNAMIQUEMENT */}
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
+              <p className="text-xs text-indigo-600 font-bold bg-indigo-50 px-2.5 py-0.5 rounded-md">
+                {userData.role}
+              </p>
+              {/* BADGE DEPARTEMENT (S'affiche si présent) */}
+              {userData.departement && (
+                <p className="text-xs text-slate-600 font-bold bg-slate-100 px-2.5 py-0.5 rounded-md flex items-center gap-1">
+                  <Building size={11} /> {userData.departement}
+                </p>
+              )}
+            </div>
+
             <div className="flex items-center gap-1.5 text-slate-400 text-xs font-medium pt-1">
               <MapPin size={13} className="text-slate-400" />
               <span>{userData.city || "Non spécifié"}, République Démocratique du Congo</span>
@@ -381,7 +393,7 @@ export default function ProfilePage() {
               {isEditing ? (
                 <>
                   <Check size={13} /> Enregistrer
-                </>
+                </                >
               ) : (
                 <>
                   <Edit2 size={12} /> Éditer
@@ -484,6 +496,16 @@ export default function ProfilePage() {
             ) : (
               <p className="text-xs font-bold text-slate-800 bg-slate-50/50 px-3 py-2 rounded-xl border border-slate-100">{userData.phone}</p>
             )}
+          </div>
+
+          {/* CHAMP DÉPARTEMENT EN LECTURE SEULE - SÉCURISÉ PAR CADENAS SI IS_EDITING */}
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1">
+              <Building size={12} /> Département {isEditing && <Lock size={10} className="text-slate-400 inline" />}
+            </label>
+            <p className="text-xs font-bold text-slate-800 bg-slate-50/50 px-3 py-2 rounded-xl border border-slate-100">
+              {userData.departement || "Non spécifié"}
+            </p>
           </div>
 
           <div className="space-y-1.5 md:col-span-2">
