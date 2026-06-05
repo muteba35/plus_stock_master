@@ -19,7 +19,7 @@ const permissionSchema = new mongoose.Schema({
 });
 
 // ==========================================
-// 2. SCHÉMA ROLE (Nettoyé - Sans le tableau de permissions)
+// 2. SCHÉMA ROLE (Nettoyé)
 // ==========================================
 const roleSchema = new mongoose.Schema({
   nom: { 
@@ -38,7 +38,7 @@ const roleSchema = new mongoose.Schema({
 roleSchema.index({ nom: 1, boutiqueId: 1 }, { unique: true });
 
 // ==========================================
-// 3. SCHÉMA INTERMÉDIAIRE : ROLE PERMISSION (Nouvelle table pivot)
+// 3. SCHÉMA INTERMÉDIAIRE : ROLE PERMISSION
 // ==========================================
 const rolePermissionSchema = new mongoose.Schema({
   roleId: {
@@ -57,7 +57,31 @@ const rolePermissionSchema = new mongoose.Schema({
 rolePermissionSchema.index({ roleId: 1, permissionId: 1 }, { unique: true });
 
 // ==========================================
-// 4. SCHÉMA UTILISATEUR
+// 4. SCHÉMA DÉPARTEMENT (Nouveau)
+// ==========================================
+const departementSchema = new mongoose.Schema({
+  nom: {
+    type: String,
+    required: [true, "Le nom du département est requis"],
+    trim: true // ex: "Finance", "Caisse", "Logistique", "Ressources Humaines"
+  },
+  boutiqueId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Boutique",
+    required: true // Chaque boutique gère ses propres départements
+  },
+  description: {
+    type: String,
+    trim: true,
+    default: ""
+  }
+}, { timestamps: true });
+
+// Index unique pour éviter d'avoir deux départements avec le même nom dans une même boutique
+departementSchema.index({ nom: 1, boutiqueId: 1 }, { unique: true });
+
+// ==========================================
+// 5. SCHÉMA UTILISATEUR (Mis à jour 🔄)
 // ==========================================
 const utilisateurSchema = new mongoose.Schema(
   {
@@ -83,6 +107,14 @@ const utilisateurSchema = new mongoose.Schema(
       ref: "Role",
       default: null
     },
+    
+    // Nouvelle liaison vers le département de l'employé
+    departementId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Departement",
+      default: null // Reste null pour le super-admin (propriétaire de la boutique)
+    },
+
     boutiqueActive: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Boutique",
@@ -114,7 +146,7 @@ const utilisateurSchema = new mongoose.Schema(
 );
 
 // ==========================================
-// 5. SCHÉMA BOUTIQUE (proprietaireId -> userId)
+// 6. SCHÉMA BOUTIQUE
 // ==========================================
 const boutiqueSchema = new mongoose.Schema(
   {
@@ -126,7 +158,7 @@ const boutiqueSchema = new mongoose.Schema(
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Utilisateur",
-      required: true, // 🎯 C'est ce lien qui définit le super-admin (propriétaire)
+      required: true,
     },
     secteurActivite: {
       type: String,
@@ -163,7 +195,8 @@ const boutiqueSchema = new mongoose.Schema(
 const Permission = mongoose.model("Permission", permissionSchema);
 const Role = mongoose.model("Role", roleSchema);
 const RolePermission = mongoose.model("RolePermission", rolePermissionSchema);
+const Departement = mongoose.model("Departement", departementSchema); // Initialisation du modèle
 const Utilisateur = mongoose.model("Utilisateur", utilisateurSchema);
 const Boutique = mongoose.model("Boutique", boutiqueSchema);
 
-export { Permission, Role, RolePermission, Utilisateur, Boutique };
+export { Permission, Role, RolePermission, Departement, Utilisateur, Boutique };

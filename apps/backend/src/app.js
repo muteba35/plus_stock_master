@@ -1,33 +1,29 @@
 import express from "express";
 import cors from "cors";
 import authRoutes from "./routes/auth.routes.js";
+import departementRoutes from "./routes/departement.routes.js";
+import roleRoutes from "./routes/role.routes.js"; 
 
 const app = express();
 
-/**
- * CONFIGURATION POUR RENDER (Trust Proxy)
- * Indispensable pour que 'express-rate-limit' récupère l'IP réelle du client
- * et non celle du proxy de Render.
- */
 app.set('trust proxy', 1);
 
-// CONFIGURATION UNIQUE DU CORS
 app.use(cors({
   origin: "*", 
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
-// CONFIGURATION DES BODY PARSERS (Avec limite augmentée pour le Base64)
 app.use(express.json({ limit: '10mb' })); 
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-// Route de test
 app.get("/", (req, res) => {
   res.send("Backend Plus Stock Master fonctionne !");
 });
 
-// Routes d'authentification
+// 2. Déclaration des points d'accès API distincts
 app.use("/api/auth", authRoutes);
+app.use("/api/departements", departementRoutes); // URL propre : /api/departements
+app.use("/api/roles", roleRoutes); // <-- 2. AJOUT DE LA ROUTE POUR LES RÔLES
 
 export default app;

@@ -574,7 +574,7 @@ export const verifyOTP = async (req, res) => {
     );
 
     // 9. Réponse Réussie
-    return res.status(200).json({
+     return res.status(200).json({
       success: true,
       token,
       user: {
@@ -585,6 +585,7 @@ export const verifyOTP = async (req, res) => {
         telephone: user.telephone,
         avatar: user.avatar || "",
         roleId: user.roleId, 
+        departementId: user.departementId || null, // <-- AJOUT ICI
         boutiqueActive: user.boutiqueActive 
       },
       permissions: finalPermissions, 
@@ -1059,12 +1060,12 @@ export const getMe = async (req, res) => {
         prenom: user.prenom,
         email: user.email,
         telephone: user.telephone || "",
-        roleId: user.roleId || null, // Permet à ton front de faire : data.user.roleId ? "Employé" : "Admin Général"
+        roleId: user.roleId || null, 
+        departementId: user.departementId || null, // <-- AJOUT ICI
         avatar: user.avatar || "",
-        // On renvoie l'ID de la boutique active pour que le front s'y retrouve
         boutiqueActive: user.boutiqueActive ? user.boutiqueActive._id : ""
       },
-      permissions: sesPermissions // Le bloc de badges textuels prêt à être consommé par la sidebar front
+      permissions: sesPermissions 
     });
 
   } catch (error) {
@@ -1093,14 +1094,19 @@ const formatProfileResponse = (user) => {
   if (!user) return null;
 
   // 1. On détermine le nom du rôle à afficher
-  let affichageRole = "Propriétaire"; // Valeur par défaut pour les Admins Généraux (sans roleId)
-  
+  let affichageRole = "Propriétaire"; 
   if (user.roleId) {
-    // Si roleId est un objet chargé (populé) et qu'il a un nom, on prend son nom (ex: "RH")
-    // Sinon, par sécurité, on écrit "Employé"
     affichageRole = typeof user.roleId === 'object' && user.roleId.nom 
       ? user.roleId.nom 
       : "Employé";
+  }
+
+  // 2. On détermine le nom du département à afficher <-- AJOUT ICI
+  let affichageDepartement = "Non spécifié";
+  if (user.departementId) {
+    affichageDepartement = typeof user.departementId === 'object' && user.departementId.nom
+      ? user.departementId.nom
+      : "Assigné";
   }
 
   return {
@@ -1109,20 +1115,18 @@ const formatProfileResponse = (user) => {
     nom: user.nom || "",
     email: user.email || "",
     
-    // Correction ici : Sécurisation contre le piège "typeof null === 'object'" de JavaScript
     roleId: (user.roleId && typeof user.roleId === 'object') ? user.roleId._id : user.roleId || null, 
+    departementId: (user.departementId && typeof user.departementId === 'object') ? user.departementId._id : user.departementId || null, // <-- AJOUT ICI
     avatar: user.avatar || "",
     boutiqueActive: user.boutiqueActive?._id || user.boutiqueActive || "",
     
-    // C'est ici que la magie opère : 'role' devient dynamique ("RH", "Comptable"...)
     role: affichageRole, 
+    departement: affichageDepartement, // <-- AJOUT ICI ("RH", "Ventes"...)
     
-    // Rétrocompatibilité et correspondance complète avec ton Front-End
     firstName: user.prenom || "",
     lastName: user.nom || "",
     phone: user.telephone || "",
     telephone: user.telephone || "",
-    // Dynamique : On prend la bio de la BDD, sinon on met une valeur par défaut
     bio: user.bio || "Gestionnaire principal de la plateforme commerciale.",
     country: user.boutiqueActive ? "République Démocratique du Congo" : "Non spécifié",
     city: user.city || "",
@@ -1145,9 +1149,12 @@ export const getProfile = async (req, res) => {
     }
     
     // Récupération de l'utilisateur avec ses liaisons
+     // Modifie la ligne de récupération :
+
     const user = await Utilisateur.findById(userId)
       .populate('boutiqueActive')
-      .populate('roleId');
+      .populate('roleId')
+      .populate('departementId'); // <-- AJOUT ICI
 
     if (!user) {
       return res.status(404).json({ error: "Utilisateur non trouvé" });
@@ -1227,7 +1234,7 @@ export const updateProfile = async (req, res) => {
       userId,
       { $set: donneesMiseAJour },
       { new: true, runValidators: true }
-    ).populate('boutiqueActive').populate('roleId');
+    ).populate('boutiqueActive').populate('roleId').populate('departementId'); 
 
     return res.status(200).json(formatProfileResponse(updatedUser));
     

@@ -25,16 +25,26 @@ const permissions = [
   { nom: "AJUSTER_STOCK", module: "INVENTAIRE", description: "Modifier manuellement les quantités en stock" },
   { nom: "SUPPRIMER_PRODUIT", module: "INVENTAIRE", description: "Retirer un produit du système" },
 
-  // --- MODULE : EQUIPE ---
-  { nom: "GERER_ROLES", module: "EQUIPE", description: "Permet de créer et modifier les rôles et permissions" },
+  // --- MODULE : EQUIPE (Mis à jour) ---
+ 
+  { nom: "VOIR_ROLES", module: "EQUIPE", description: "Permet de consulter la liste des rôles et habilitations" }, 
+  { nom: "CREER_ROLE", module: "EQUIPE", description: "Permet de créer un nouveau rôle de sécurité" },
+  { nom: "MODIFIER_ROLE", module: "EQUIPE", description: "Permet de modifier les permissions d'un rôle existant" },
+  { nom: "SUPPRIMER_ROLE", module: "EQUIPE", description: "Permet de supprimer définitivement un rôle" },
+  { nom: "VOIR_DEPARTEMENTS", module: "EQUIPE", description: "Permet de consulter la liste des départements" },
+  { nom: "CREER_DEPARTEMENT", module: "EQUIPE", description: "Permet d'ajouter un nouveau département" },
+  { nom: "MODIFIER_DEPARTEMENT", module: "EQUIPE", description: "Permet de modifier les informations d'un département existant" },
+  { nom: "SUPPRIMER_DEPARTEMENT", module: "EQUIPE", description: "Autorise la suppression définitive d'un département" },
+  { nom: "VOIR_EMPLOYE", module: "EQUIPE", description: "Permet de voir tous les utilisateurs dans la boutique" },
   { nom: "AJOUTER_EMPLOYE", module: "EQUIPE", description: "Permet d'insérer de nouveaux utilisateurs dans la boutique" },
   { nom: "MODIFIER_EMPLOYE", module: "EQUIPE", description: "Changer les accès ou infos d'un collègue" },
-  { nom: "BLOQUER_EMPLOYE", module: "EQUIPE", description: "Suspendre l'accès d'un travailleur" },
-  { nom: "RESET_PASSWORD_EMPLOYE", module: "EQUIPE", description: "Permet au propriétaire de réinitialiser le mot de passe d'un employé bloqué ou ayant oublié ses accès" },
+  { nom: "SUSPENDRE_EMPLOYE", module: "EQUIPE", description: "Suspendre l'accès d'un travailleur" },
+  { nom: "BLOQUER_EMPLOYE", module: "EQUIPE", description: "Bloquer l'accès d'un travailleur" },
+  { nom: "RESET_PASSWORD_EMPLOYE", module: "EQUIPE", description: "Permet au propriétaire de réinitialiser le mot de passe d'un employé bloqué" },
 
-  // --- MODULE : PROFIL (Nouveau - Ajouté suite à notre discussion) ---
+  // --- MODULE : PROFIL ---
   { nom: "MODIFIER_PROFIL_TOTAL", module: "PROFIL", description: "Droit exclusif du Propriétaire pour modifier toutes les données d'identité critiques de la structure" },
-  { nom: "MODIFIER_PROFIL_RESTREINT", module: "PROFIL", description: "Droit de l'Employé pour mettre à jour uniquement ses infos personnelles non critiques (Photo, téléphone, réseaux)" },
+  { nom: "MODIFIER_PROFIL_RESTREINT", module: "PROFIL", description: "Droit de l'Employé pour mettre à jour uniquement ses infos personnelles non critiques" },
 
   // --- MODULE : FINANCE ---
   { nom: "VOIR_HISTORIQUE_VENTES", module: "FINANCE", description: "Consulter la liste de toutes les transactions passées" },
@@ -59,11 +69,10 @@ const seedDB = async () => {
     console.log("Connexion à MongoDB établie pour le seeding...");
     console.log("Début de la synchronisation des permissions...");
 
-    // Utilisation de findOneAndUpdate avec upsert pour éviter les doublons
     const promises = permissions.map(p => 
       Permission.findOneAndUpdate(
-        { nom: p.nom }, // On cherche par le code unique
-        p,              // On met à jour ou on insère ces données
+        { nom: p.nom }, 
+        p,              
         { upsert: true, new: true, setDefaultsOnInsert: true }
       )
     );
