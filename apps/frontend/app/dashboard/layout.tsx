@@ -250,7 +250,7 @@ export default function DashboardLayout({
     { 
       name: "Employés", 
       href: "/dashboard/equipe/employes", 
-      permission: "VOIR_EMPLOYES" //
+      permission: "VOIR_EMPLOYE" //
     },
     { 
       name: "Départements", 
