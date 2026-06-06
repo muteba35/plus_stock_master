@@ -40,6 +40,7 @@ const permissions = [
   { nom: "MODIFIER_EMPLOYE", module: "EQUIPE", description: "Changer les accès ou infos d'un collègue" },
   { nom: "SUSPENDRE_EMPLOYE", module: "EQUIPE", description: "Suspendre l'accès d'un travailleur" },
   { nom: "BLOQUER_EMPLOYE", module: "EQUIPE", description: "Bloquer l'accès d'un travailleur" },
+  { nom: "SUPPRIMER_EMPLOYE", module: "EQUIPE", description: "Supprimer un employé du système" },
   { nom: "RESET_PASSWORD_EMPLOYE", module: "EQUIPE", description: "Permet au propriétaire de réinitialiser le mot de passe d'un employé bloqué" },
 
   // --- MODULE : PROFIL ---

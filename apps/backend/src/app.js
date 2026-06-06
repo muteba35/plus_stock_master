@@ -3,6 +3,7 @@ import cors from "cors";
 import authRoutes from "./routes/auth.routes.js";
 import departementRoutes from "./routes/departement.routes.js";
 import roleRoutes from "./routes/role.routes.js"; 
+import employeRoutes from "./routes/employe.routes.js";
 
 const app = express();
 
@@ -24,6 +25,7 @@ app.get("/", (req, res) => {
 // 2. Déclaration des points d'accès API distincts
 app.use("/api/auth", authRoutes);
 app.use("/api/departements", departementRoutes); // URL propre : /api/departements
-app.use("/api/roles", roleRoutes); // <-- 2. AJOUT DE LA ROUTE POUR LES RÔLES
+app.use("/api/roles", roleRoutes); 
+app.use("/api/employes", employeRoutes);// <-- 2. AJOUT DE LA ROUTE POUR LES RÔLES
 
 export default app;
