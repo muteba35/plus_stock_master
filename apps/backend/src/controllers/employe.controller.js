@@ -1,10 +1,12 @@
+import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import mongoose from "mongoose";
 import { Utilisateur, Role, Departement, Boutique } from "../models/Utilisateur.js";
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
-// ================= FORMAT FRONT =================
+const getBoutiqueId = (req) => req.user?.boutiqueId || req.user?.boutiqueActive;
+
 const formatEmploye = (employe) => ({
   id: employe._id,
   firstName: employe.prenom,
@@ -14,18 +16,18 @@ const formatEmploye = (employe) => ({
   avatarUrl: employe.avatar || null,
 
   roleId: employe.roleId?._id || employe.roleId || null,
-  role: employe.roleId?.nom || "Non attribué",
+  role: employe.roleId?.nom || "Non attribue",
 
   departementId: employe.departementId?._id || employe.departementId || null,
-  department: employe.departementId?.nom || "Non attribué",
+  department: employe.departementId?.nom || "Non attribue",
 
   status: employe.isBlocked ? "Suspendu" : "Actif",
   createdAt: employe.createdAt
 });
 
-// ================= UTILS =================
-const getBoutiqueId = (req) =>
-  req.user?.boutiqueId || req.user?.boutiqueActive;
+const assertBoutique = (boutiqueId) => {
+  return boutiqueId && isValidObjectId(boutiqueId);
+};
 
 const assertRoleAndDepartementBelongToBoutique = async ({
   roleId,
@@ -45,27 +47,35 @@ const assertRoleAndDepartementBelongToBoutique = async ({
     return { valid: false, message: "Ce role n'existe pas dans votre boutique." };
   }
 
-  const departement = await Departement.findOne({
-    _id: departementId,
-    boutiqueId
-  });
-
+  const departement = await Departement.findOne({ _id: departementId, boutiqueId });
   if (!departement) {
-    return {
-      valid: false,
-      message: "Ce departement n'existe pas dans votre boutique."
-    };
+    return { valid: false, message: "Ce departement n'existe pas dans votre boutique." };
   }
 
   return { valid: true };
 };
 
-// ================= CREATE =================
+const findEmployeInBoutique = async (id, boutiqueId, populate = false) => {
+  if (!isValidObjectId(id)) return null;
+
+  const query = Utilisateur.findOne({
+    _id: id,
+    boutiqueActive: boutiqueId,
+    roleId: { $ne: null }
+  }).select("-password");
+
+  if (populate) {
+    query.populate("roleId").populate("departementId");
+  }
+
+  return query;
+};
+
 export const createEmploye = async (req, res) => {
   try {
     const boutiqueId = getBoutiqueId(req);
 
-    if (!boutiqueId || !isValidObjectId(boutiqueId)) {
+    if (!assertBoutique(boutiqueId)) {
       return res.status(401).json({
         success: false,
         message: "Boutique active introuvable."
@@ -98,10 +108,10 @@ export const createEmploye = async (req, res) => {
       });
     }
 
-    if (password.length < 8) {
+    if (String(password).length < 8) {
       return res.status(400).json({
         success: false,
-        message: "Mot de passe minimum 8 caractères."
+        message: "Mot de passe minimum 8 caracteres."
       });
     }
 
@@ -133,11 +143,11 @@ export const createEmploye = async (req, res) => {
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: "Email ou téléphone déjà utilisé."
+        message: "Email ou telephone deja utilise."
       });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 12);
+    const hashedPassword = await bcrypt.hash(String(password), 12);
 
     const employe = await Utilisateur.create({
       prenom: cleanPrenom,
@@ -155,24 +165,34 @@ export const createEmploye = async (req, res) => {
     });
 
     const populated = await Utilisateur.findById(employe._id)
+      .select("-password")
       .populate("roleId")
       .populate("departementId");
 
     return res.status(201).json({
       success: true,
-      message: "Employé créé avec succès.",
+      message: "Employe cree avec succes.",
       employe: formatEmploye(populated)
     });
   } catch (error) {
     console.error("createEmploye:", error);
-    res.status(500).json({ success: false });
+    return res.status(500).json({
+      success: false,
+      message: "Erreur lors de la creation de l'employe."
+    });
   }
 };
 
-// ================= GET ALL =================
 export const getEmployes = async (req, res) => {
   try {
     const boutiqueId = getBoutiqueId(req);
+
+    if (!assertBoutique(boutiqueId)) {
+      return res.status(401).json({
+        success: false,
+        message: "Boutique active introuvable."
+      });
+    }
 
     const employes = await Utilisateur.find({
       boutiqueActive: boutiqueId,
@@ -183,21 +203,71 @@ export const getEmployes = async (req, res) => {
       .populate("departementId")
       .sort({ createdAt: -1 });
 
-    res.json({
+    return res.status(200).json({
       success: true,
       employes: employes.map(formatEmploye)
     });
   } catch (error) {
     console.error("getEmployes:", error);
-    res.status(500).json({ success: false });
+    return res.status(500).json({
+      success: false,
+      message: "Erreur lors de la recuperation des employes."
+    });
   }
 };
 
-// ================= GET BY ID ✅ =================
 export const getEmployeById = async (req, res) => {
   try {
     const { id } = req.params;
     const boutiqueId = getBoutiqueId(req);
+
+    if (!assertBoutique(boutiqueId)) {
+      return res.status(401).json({
+        success: false,
+        message: "Boutique active introuvable."
+      });
+    }
+
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "ID invalide."
+      });
+    }
+
+    const employe = await findEmployeInBoutique(id, boutiqueId, true);
+
+    if (!employe) {
+      return res.status(404).json({
+        success: false,
+        message: "Employe introuvable."
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      employe: formatEmploye(employe)
+    });
+  } catch (error) {
+    console.error("getEmployeById:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Erreur lors de la recuperation de l'employe."
+    });
+  }
+};
+
+export const updateEmploye = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const boutiqueId = getBoutiqueId(req);
+
+    if (!assertBoutique(boutiqueId)) {
+      return res.status(401).json({
+        success: false,
+        message: "Boutique active introuvable."
+      });
+    }
 
     if (!isValidObjectId(id)) {
       return res.status(400).json({
@@ -208,46 +278,15 @@ export const getEmployeById = async (req, res) => {
 
     const employe = await Utilisateur.findOne({
       _id: id,
-      boutiqueActive: boutiqueId
-    })
-      .select("-password")
-      .populate("roleId")
-      .populate("departementId");
+      boutiqueActive: boutiqueId,
+      roleId: { $ne: null }
+    });
 
     if (!employe) {
       return res.status(404).json({
         success: false,
-        message: "Employé introuvable."
+        message: "Employe introuvable."
       });
-    }
-
-    res.json({
-      success: true,
-      employe: formatEmploye(employe)
-    });
-  } catch (error) {
-    console.error("getEmployeById:", error);
-    res.status(500).json({ success: false });
-  }
-};
-
-// ================= UPDATE =================
-export const updateEmploye = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const boutiqueId = getBoutiqueId(req);
-
-    if (!isValidObjectId(id)) {
-      return res.status(400).json({ success: false });
-    }
-
-    const employe = await Utilisateur.findOne({
-      _id: id,
-      boutiqueActive: boutiqueId
-    });
-
-    if (!employe) {
-      return res.status(404).json({ success: false });
     }
 
     const {
@@ -263,61 +302,218 @@ export const updateEmploye = async (req, res) => {
       avatar
     } = req.body;
 
-    employe.prenom = prenom || firstName || employe.prenom;
-    employe.nom = nom || lastName || employe.nom;
-    employe.email = email || employe.email;
-    employe.telephone = telephone || phone || employe.telephone;
+    const nextRoleId = roleId || employe.roleId?.toString();
+    const nextDepartementId = departementId || employe.departementId?.toString();
+
+    if (roleId || departementId) {
+      const validation = await assertRoleAndDepartementBelongToBoutique({
+        roleId: nextRoleId,
+        departementId: nextDepartementId,
+        boutiqueId
+      });
+
+      if (!validation.valid) {
+        return res.status(400).json({
+          success: false,
+          message: validation.message
+        });
+      }
+    }
+
+    const nextEmail = email ? String(email).toLowerCase().trim() : employe.email;
+    const nextPhone = telephone || phone ? String(telephone || phone).trim() : employe.telephone;
+
+    const duplicate = await Utilisateur.findOne({
+      _id: { $ne: id },
+      $or: [{ email: nextEmail }, { telephone: nextPhone }]
+    });
+
+    if (duplicate) {
+      return res.status(400).json({
+        success: false,
+        message: "Email ou telephone deja utilise."
+      });
+    }
+
+    employe.prenom = String(prenom || firstName || employe.prenom).trim();
+    employe.nom = String(nom || lastName || employe.nom).trim();
+    employe.email = nextEmail;
+    employe.telephone = nextPhone;
 
     if (roleId) employe.roleId = roleId;
     if (departementId) employe.departementId = departementId;
-    if (avatar !== undefined) employe.avatar = avatar;
+    if (avatar !== undefined) employe.avatar = avatar || "";
 
     await employe.save();
 
-    res.json({ success: true });
+    const populated = await findEmployeInBoutique(id, boutiqueId, true);
+
+    return res.status(200).json({
+      success: true,
+      message: "Employe mis a jour avec succes.",
+      employe: formatEmploye(populated)
+    });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false });
+    console.error("updateEmploye:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Erreur lors de la modification de l'employe."
+    });
   }
 };
 
-// ================= STATUS =================
 export const toggleEmployeStatus = async (req, res) => {
   try {
-    const employe = await Utilisateur.findById(req.params.id);
-    if (!employe) return res.status(404).json({ success: false });
+    const { id } = req.params;
+    const boutiqueId = getBoutiqueId(req);
+
+    if (!assertBoutique(boutiqueId)) {
+      return res.status(401).json({
+        success: false,
+        message: "Boutique active introuvable."
+      });
+    }
+
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "ID invalide."
+      });
+    }
+
+    const employe = await Utilisateur.findOne({
+      _id: id,
+      boutiqueActive: boutiqueId,
+      roleId: { $ne: null }
+    });
+
+    if (!employe) {
+      return res.status(404).json({
+        success: false,
+        message: "Employe introuvable."
+      });
+    }
 
     employe.isBlocked = !employe.isBlocked;
     await employe.save();
 
-    res.json({ success: true });
+    const populated = await findEmployeInBoutique(id, boutiqueId, true);
+
+    return res.status(200).json({
+      success: true,
+      message: employe.isBlocked ? "Employe suspendu." : "Employe reactive.",
+      employe: formatEmploye(populated)
+    });
   } catch (error) {
-    res.status(500).json({ success: false });
+    console.error("toggleEmployeStatus:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Erreur lors du changement de statut."
+    });
   }
 };
 
-// ================= RESET PASSWORD =================
 export const resetEmployePassword = async (req, res) => {
   try {
-    const employe = await Utilisateur.findById(req.params.id);
-    if (!employe) return res.status(404).json({ success: false });
+    const { id } = req.params;
+    const boutiqueId = getBoutiqueId(req);
 
-    const temp =  `Stock@${crypto.randomInt(100000, 999999)}`;
-    employe.password = await bcrypt.hash(temp, 12);
+    if (!assertBoutique(boutiqueId)) {
+      return res.status(401).json({
+        success: false,
+        message: "Boutique active introuvable."
+      });
+    }
+
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "ID invalide."
+      });
+    }
+
+    const employe = await Utilisateur.findOne({
+      _id: id,
+      boutiqueActive: boutiqueId,
+      roleId: { $ne: null }
+    }).select("+loginAttempts +lockUntil");
+
+    if (!employe) {
+      return res.status(404).json({
+        success: false,
+        message: "Employe introuvable."
+      });
+    }
+
+    const temporaryPassword = `Stock@${crypto.randomInt(100000, 999999)}`;
+    employe.password = await bcrypt.hash(temporaryPassword, 12);
+    employe.loginAttempts = 0;
+    employe.lockUntil = undefined;
+    employe.isBlocked = false;
+
     await employe.save();
 
-    res.json({ success: true, temporaryPassword: temp });
-  } catch {
-    res.status(500).json({ success: false });
+    return res.status(200).json({
+      success: true,
+      message: "Mot de passe reinitialise avec succes.",
+      temporaryPassword
+    });
+  } catch (error) {
+    console.error("resetEmployePassword:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Erreur lors de la reinitialisation du mot de passe."
+    });
   }
 };
 
-// ================= DELETE =================
 export const deleteEmploye = async (req, res) => {
   try {
-    await Utilisateur.findByIdAndDelete(req.params.id);
-    res.json({ success: true });
-  } catch {
-    res.status(500).json({ success: false });
+    const { id } = req.params;
+    const boutiqueId = getBoutiqueId(req);
+
+    if (!assertBoutique(boutiqueId)) {
+      return res.status(401).json({
+        success: false,
+        message: "Boutique active introuvable."
+      });
+    }
+
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "ID invalide."
+      });
+    }
+
+    const employe = await Utilisateur.findOne({
+      _id: id,
+      boutiqueActive: boutiqueId,
+      roleId: { $ne: null }
+    });
+
+    if (!employe) {
+      return res.status(404).json({
+        success: false,
+        message: "Employe introuvable."
+      });
+    }
+
+    await Utilisateur.deleteOne({
+      _id: id,
+      boutiqueActive: boutiqueId,
+      roleId: { $ne: null }
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Employe supprime avec succes."
+    });
+  } catch (error) {
+    console.error("deleteEmploye:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Erreur lors de la suppression de l'employe."
+    });
   }
-};
+}
