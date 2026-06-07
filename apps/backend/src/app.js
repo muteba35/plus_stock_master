@@ -10,8 +10,8 @@ const app = express();
 app.set('trust proxy', 1);
 
 app.use(cors({
-  origin: "*", 
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  origin: "*",
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
