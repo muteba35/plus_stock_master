@@ -25,7 +25,7 @@ app.get("/", (req, res) => {
 // 2. Déclaration des points d'accès API distincts
 app.use("/api/auth", authRoutes);
 app.use("/api/departements", departementRoutes); // URL propre : /api/departements
-app.use("/api/roles", roleRoutes); 
+app.use("/api/roles", roleRoutes);
 app.use("/api/employes", employeRoutes);// <-- 2. AJOUT DE LA ROUTE POUR LES RÔLES
 
 export default app;
