@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
@@ -15,15 +15,33 @@ import {
   Search,
   ChevronDown,
   Check,
-  Briefcase, // Ajout de l'icône pour le département
+  Briefcase,
   LucideIcon,
+  Loader2,
 } from "lucide-react";
 
 // ================= TYPES =================
 
+export interface EmployeOption {
+  id: string;
+  name: string;
+}
+
 interface EmployeModalProps {
   isOpen: boolean;
   onClose: () => void;
+  roles: EmployeOption[];
+  departements: EmployeOption[];
+  onCreate: (payload: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    roleId: string;
+    departementId: string;
+    password: string;
+    avatar?: string;
+  }) => Promise<void>;
 }
 
 interface FormInputProps extends React.InputHTMLAttributes<HTMLInputElement | HTMLSelectElement> {
@@ -34,34 +52,40 @@ interface FormInputProps extends React.InputHTMLAttributes<HTMLInputElement | HT
   rightElement?: React.ReactNode;
 }
 
-// Listes disponibles pour la recherche
-const AVAILABLE_ROLES = ["Caissier", "Gestionnaire", "Administrateur"];
-const AVAILABLE_DEPARTMENTS = ["Ventes", "Logistique", "Comptabilité", "Marketing", "Ressources Humaines"];
-
 // ================= COMPONENT =================
 
-export default function EmployeModal({ isOpen, onClose }: EmployeModalProps) {
+export default function EmployeModal({
+  isOpen,
+  onClose,
+  roles = [],
+  departements = [],
+  onCreate,
+}: EmployeModalProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // States pour le sélecteur de rôle personnalisé
   const [showRoleDropdown, setShowRoleDropdown] = useState(false);
   const [roleSearch, setRoleSearch] = useState("");
 
-  // States pour le sélecteur de département personnalisé
   const [showDeptDropdown, setShowDeptDropdown] = useState(false);
   const [deptSearch, setDeptSearch] = useState("");
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     email: "",
     phone: "",
-    role: "Caissier",
-    department: "Ventes", // Valeur par défaut
+    roleId: "",
+    departementId: "",
     password: "",
   });
+
+  const selectedRole = roles.find((role) => role.id === formData.roleId);
+  const selectedDepartment = departements.find((dept) => dept.id === formData.departementId);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -69,25 +93,78 @@ export default function EmployeModal({ isOpen, onClose }: EmployeModalProps) {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) setAvatarPreview(URL.createObjectURL(file));
+  const resetForm = () => {
+    setFormData({
+      firstName: "",
+      lastName: "",
+      email: "",
+      phone: "",
+      roleId: "",
+      departementId: "",
+      password: "",
+    });
+    setAvatarPreview(null);
+    setError("");
+    setRoleSearch("");
+    setDeptSearch("");
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("Nouvel employé:", formData);
+  const handleClose = () => {
+    if (isSubmitting) return;
+    resetForm();
     onClose();
   };
 
-  // Filtrage des rôles selon la saisie
-  const filteredRoles = AVAILABLE_ROLES.filter((role) =>
-    role.toLowerCase().includes(roleSearch.toLowerCase())
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => setAvatarPreview(String(reader.result || ""));
+    reader.readAsDataURL(file);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    if (!formData.roleId) {
+      setError("Veuillez choisir un rôle.");
+      return;
+    }
+
+    if (!formData.departementId) {
+      setError("Veuillez choisir un département.");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      await onCreate({
+        ...formData,
+        avatar: avatarPreview || "",
+      });
+      resetForm();
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur lors de la création de l'employé.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const filteredRoles = useMemo(
+    () => roles.filter((role) =>
+      role.name.toLowerCase().includes(roleSearch.toLowerCase())
+    ),
+    [roles, roleSearch]
   );
 
-  // Filtrage des départements selon la saisie
-  const filteredDepartments = AVAILABLE_DEPARTMENTS.filter((dept) =>
-    dept.toLowerCase().includes(deptSearch.toLowerCase())
+  const filteredDepartments = useMemo(
+    () => departements.filter((dept) =>
+      dept.name.toLowerCase().includes(deptSearch.toLowerCase())
+    ),
+    [departements, deptSearch]
   );
 
   return (
@@ -95,16 +172,14 @@ export default function EmployeModal({ isOpen, onClose }: EmployeModalProps) {
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
           
-          {/* BACKDROP */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onClose}
+            onClick={handleClose}
             className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
           />
 
-          {/* MODAL */}
           <motion.div
             initial={{ opacity: 0, y: 20, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -126,7 +201,6 @@ export default function EmployeModal({ isOpen, onClose }: EmployeModalProps) {
               max-h-[95vh]
             "
           >
-            {/* HEADER */}
             <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-[#fcfdfe] shrink-0">
               <div>
                 <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
@@ -137,21 +211,26 @@ export default function EmployeModal({ isOpen, onClose }: EmployeModalProps) {
                 </p>
               </div>
               <button 
-                onClick={onClose} 
-                className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                onClick={handleClose}
+                disabled={isSubmitting}
+                className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-40"
               >
                 <X size={16} />
               </button>
             </div>
 
-            {/* BODY - Scrollable */}
             <div className="overflow-y-auto custom-scrollbar">
               <form id="add-employee-form" onSubmit={handleSubmit} className="p-6">
                 
-                {/* SECTION PHOTO */}
+                {error && (
+                  <div className="mb-5 rounded-xl border border-rose-100 bg-rose-50 p-3 text-xs font-semibold text-rose-600">
+                    {error}
+                  </div>
+                )}
+
                 <div className="mb-8 flex flex-col items-center justify-center">
                   <div
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={() => !isSubmitting && fileInputRef.current?.click()}
                     className="
                       w-20 
                       h-20 
@@ -188,7 +267,6 @@ export default function EmployeModal({ isOpen, onClose }: EmployeModalProps) {
                   </p>
                 </div>
 
-                {/* GRID FORMULAIRE */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   
                   <FormInput
@@ -198,6 +276,7 @@ export default function EmployeModal({ isOpen, onClose }: EmployeModalProps) {
                     value={formData.firstName}
                     onChange={handleChange}
                     placeholder="Ex: Junior"
+                    disabled={isSubmitting}
                     required
                   />
 
@@ -208,6 +287,7 @@ export default function EmployeModal({ isOpen, onClose }: EmployeModalProps) {
                     value={formData.lastName}
                     onChange={handleChange}
                     placeholder="Ex: Muteba"
+                    disabled={isSubmitting}
                     required
                   />
 
@@ -219,6 +299,7 @@ export default function EmployeModal({ isOpen, onClose }: EmployeModalProps) {
                     value={formData.email}
                     onChange={handleChange}
                     placeholder="junior@shop.com"
+                    disabled={isSubmitting}
                     required
                   />
 
@@ -230,28 +311,29 @@ export default function EmployeModal({ isOpen, onClose }: EmployeModalProps) {
                     value={formData.phone}
                     onChange={handleChange}
                     placeholder="Ex: 812345678"
+                    disabled={isSubmitting}
                     required
                   />
 
-                  {/* SÉLECTEUR DE RÔLE PERSONNALISÉ AVEC RECHERCHE */}
                   <div className="space-y-1.5 relative">
                     <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
                       <ShieldCheck size={12} /> Rôle d`exploitation
                     </label>
                     
-                    {/* Déclencheur du Dropdown */}
                     <div
                       onClick={() => {
+                        if (isSubmitting) return;
                         setShowRoleDropdown(!showRoleDropdown);
-                        setShowDeptDropdown(false); // Ferme l'autre menu s'il est ouvert
+                        setShowDeptDropdown(false);
                       }}
                       className="w-full text-xs font-medium px-3 py-2.5 border border-slate-200 rounded-xl focus:outline-none bg-white flex justify-between items-center cursor-pointer select-none hover:border-indigo-500 transition-colors"
                     >
-                      <span className="text-slate-800">{formData.role}</span>
+                      <span className={selectedRole ? "text-slate-800" : "text-slate-400"}>
+                        {selectedRole?.name || "Choisir un rôle"}
+                      </span>
                       <ChevronDown size={14} className={`text-slate-400 transition-transform duration-200 ${showRoleDropdown ? 'rotate-180' : ''}`} />
                     </div>
 
-                    {/* Menu déroulant de recherche */}
                     <AnimatePresence>
                       {showRoleDropdown && (
                         <motion.div
@@ -276,12 +358,12 @@ export default function EmployeModal({ isOpen, onClose }: EmployeModalProps) {
                           <div className="space-y-0.5">
                             {filteredRoles.length > 0 ? (
                               filteredRoles.map((role) => {
-                                const isSelected = formData.role === role;
+                                const isSelected = formData.roleId === role.id;
                                 return (
                                   <div
-                                    key={role}
+                                    key={role.id}
                                     onClick={() => {
-                                      setFormData({ ...formData, role });
+                                      setFormData({ ...formData, roleId: role.id });
                                       setShowRoleDropdown(false);
                                       setRoleSearch("");
                                     }}
@@ -293,7 +375,7 @@ export default function EmployeModal({ isOpen, onClose }: EmployeModalProps) {
                                       }
                                     `}
                                   >
-                                    <span>{role}</span>
+                                    <span>{role.name}</span>
                                     {isSelected && <Check size={12} className="text-indigo-600" />}
                                   </div>
                                 );
@@ -309,25 +391,25 @@ export default function EmployeModal({ isOpen, onClose }: EmployeModalProps) {
                     </AnimatePresence>
                   </div>
 
-                  {/* NOUVEAU : SÉLECTEUR DE DÉPARTEMENT PERSONNALISÉ AVEC RECHERCHE */}
                   <div className="space-y-1.5 relative">
                     <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
                       <Briefcase size={12} /> Département
                     </label>
                     
-                    {/* Déclencheur du Dropdown */}
                     <div
                       onClick={() => {
+                        if (isSubmitting) return;
                         setShowDeptDropdown(!showDeptDropdown);
-                        setShowRoleDropdown(false); // Ferme l'autre menu s'il est ouvert
+                        setShowRoleDropdown(false);
                       }}
                       className="w-full text-xs font-medium px-3 py-2.5 border border-slate-200 rounded-xl focus:outline-none bg-white flex justify-between items-center cursor-pointer select-none hover:border-indigo-500 transition-colors"
                     >
-                      <span className="text-slate-800">{formData.department}</span>
+                      <span className={selectedDepartment ? "text-slate-800" : "text-slate-400"}>
+                        {selectedDepartment?.name || "Choisir un département"}
+                      </span>
                       <ChevronDown size={14} className={`text-slate-400 transition-transform duration-200 ${showDeptDropdown ? 'rotate-180' : ''}`} />
                     </div>
 
-                    {/* Menu déroulant de recherche interne */}
                     <AnimatePresence>
                       {showDeptDropdown && (
                         <motion.div
@@ -352,12 +434,12 @@ export default function EmployeModal({ isOpen, onClose }: EmployeModalProps) {
                           <div className="space-y-0.5">
                             {filteredDepartments.length > 0 ? (
                               filteredDepartments.map((dept) => {
-                                const isSelected = formData.department === dept;
+                                const isSelected = formData.departementId === dept.id;
                                 return (
                                   <div
-                                    key={dept}
+                                    key={dept.id}
                                     onClick={() => {
-                                      setFormData({ ...formData, department: dept });
+                                      setFormData({ ...formData, departementId: dept.id });
                                       setShowDeptDropdown(false);
                                       setDeptSearch("");
                                     }}
@@ -369,7 +451,7 @@ export default function EmployeModal({ isOpen, onClose }: EmployeModalProps) {
                                       }
                                     `}
                                   >
-                                    <span>{dept}</span>
+                                    <span>{dept.name}</span>
                                     {isSelected && <Check size={12} className="text-indigo-600" />}
                                   </div>
                                 );
@@ -393,6 +475,7 @@ export default function EmployeModal({ isOpen, onClose }: EmployeModalProps) {
                     value={formData.password}
                     onChange={handleChange}
                     placeholder="••••••••"
+                    disabled={isSubmitting}
                     required
                     rightElement={
                       <button
@@ -409,20 +492,22 @@ export default function EmployeModal({ isOpen, onClose }: EmployeModalProps) {
               </form>
             </div>
 
-            {/* FOOTER */}
             <div className="p-5 border-t border-slate-100 bg-[#fcfdfe] shrink-0 flex justify-end gap-3">
               <button
                 type="button"
-                onClick={onClose}
-                className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors"
+                onClick={handleClose}
+                disabled={isSubmitting}
+                className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors disabled:opacity-40"
               >
                 Annuler
               </button>
               <button
                 type="submit"
                 form="add-employee-form"
-                className="px-6 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-colors"
+                disabled={isSubmitting}
+                className="px-6 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-2 disabled:bg-slate-400"
               >
+                {isSubmitting && <Loader2 size={14} className="animate-spin" />}
                 Créer l`employé
               </button>
             </div>
