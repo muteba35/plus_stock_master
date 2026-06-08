@@ -1,63 +1,90 @@
 import jwt from "jsonwebtoken";
+import { Utilisateur, Permission, RolePermission } from "../models/Utilisateur.js";
 
-/**
- * Middleware de protection global - Vérifie la validité du JWT
- */
+const buildUserPermissions = async (user) => {
+  const boutiqueActive = user.boutiqueActive;
+  const isOwner = boutiqueActive?.userId?.toString() === user._id.toString();
+
+  if (isOwner) {
+    const permissions = await Permission.find({});
+    return permissions.map((permission) => permission.nom);
+  }
+
+  if (!user.roleId) return [];
+
+  const rolePermissions = await RolePermission.find({ roleId: user.roleId }).populate("permissionId");
+  return rolePermissions
+    .map((rolePermission) => rolePermission.permissionId?.nom)
+    .filter(Boolean);
+};
+
 export const protect = async (req, res, next) => {
   const authHeader = req.headers.authorization;
 
-  // 1. Extraction et vérification immédiate du format du Header (Early Return)
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Accès refusé. Aucun token fourni." });
+    return res.status(401).json({ message: "Acces refuse. Aucun token fourni." });
   }
 
-  // 2. Récupération du token
   const token = authHeader.split(" ")[1];
 
   try {
-    // 3. Vérification de la signature du token avec le secret
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await Utilisateur.findById(decoded.id)
+      .select("+isPermanentlyBlocked")
+      .populate("boutiqueActive");
 
-    // 4. Injection des données dans l'objet 'req' 
-    // Contient désormais : req.user.id, req.user.boutiqueId, et req.user.permissions
-    req.user = decoded;
+    if (!user) {
+      return res.status(401).json({ message: "Session invalide. Utilisateur introuvable." });
+    }
+
+    if (!user.isActive) {
+      return res.status(403).json({ message: "Compte inactif. Veuillez activer votre compte." });
+    }
+
+    if (user.isBlocked || user.isPermanentlyBlocked) {
+      return res.status(403).json({ message: "Compte suspendu. Contactez un administrateur." });
+    }
+
+    const permissions = await buildUserPermissions(user);
+    const boutiqueId = user.boutiqueActive?._id || user.boutiqueActive || decoded.boutiqueId;
+
+    req.user = {
+      ...decoded,
+      id: user._id.toString(),
+      _id: user._id,
+      boutiqueId,
+      boutiqueActive: boutiqueId,
+      permissions,
+    };
 
     return next();
   } catch (error) {
     console.error("JWT AUTH ERROR:", error.message);
 
-    // Distinction hyper importante pour ton frontend (pour vider les stores/cookies)
     if (error.name === "TokenExpiredError") {
-      return res.status(401).json({ 
-        message: "Votre session a expiré. Veuillez vous reconnecter." 
+      return res.status(401).json({
+        message: "Votre session a expire. Veuillez vous reconnecter.",
       });
     }
 
-    return res.status(401).json({ message: "Accès refusé. Token invalide ou altéré." });
+    return res.status(401).json({ message: "Acces refuse. Token invalide ou altere." });
   }
 };
 
-/**
- * Middleware d'autorisation dynamique - Vérifie si l'utilisateur possède la permission requise
- * @param {string} requiredPermission - Le nom de la permission (ex: "CREER_PRODUIT")
- */
 export const checkPermission = (requiredPermission) => {
   return (req, res, next) => {
-    // 1. On s'assure que le middleware 'protect' est bien passé avant
     if (!req.user || !req.user.permissions) {
-      return res.status(401).json({ message: "Action non autorisée. Profil non identifié." });
+      return res.status(401).json({ message: "Action non autorisee. Profil non identifie." });
     }
 
-    // 2. RÈGLE D'OR : On vérifie si la permission demandée est présente dans le tableau du JWT
     const hasAccess = req.user.permissions.includes(requiredPermission);
 
     if (!hasAccess) {
-      return res.status(403).json({ 
-        message: `Accès interdit. Vous n'avez pas le droit requis [${requiredPermission}] pour effectuer cette action.` 
+      return res.status(403).json({
+        message: `Acces interdit. Vous n'avez pas le droit requis [${requiredPermission}] pour effectuer cette action.`,
       });
     }
 
-    // 3. Tout est OK, on passe au contrôleur
     return next();
   };
 };

@@ -234,6 +234,10 @@ export const login = async (req, res) => {
       return res.status(403).json({ message: "Compte bloqué. Contactez le support" });
     }
 
+    if (user.isBlocked) {
+      return res.status(403).json({ message: "Compte suspendu. Contactez un administrateur." });
+    }
+
     if (user.lockUntil && user.lockUntil > Date.now()) {
       const minutesRestantes = Math.ceil((user.lockUntil - Date.now()) / 60000);
       return res.status(403).json({ 
@@ -502,6 +506,10 @@ export const verifyOTP = async (req, res) => {
     }
 
     // 4. Vérifier si le code est expiré
+    if (user.isBlocked) {
+      return res.status(403).json({ message: "Compte suspendu. Contactez un administrateur." });
+    }
+
     if (!user.otpExpires || user.otpExpires < Date.now()) {
       user.otpCode = undefined;
       user.otpExpires = undefined;
@@ -1230,6 +1238,22 @@ export const updateProfile = async (req, res) => {
     }
 
     // --- APPLICATION DE LA MISE À JOUR ---
+    const isEmploye = userCheck.roleId !== null && userCheck.roleId !== undefined && userCheck.roleId !== "";
+    donneesMiseAJour = {
+      prenom: prenom || firstName,
+      nom: nom || lastName,
+      email,
+      telephone: telephone || phone,
+      city,
+      avatar,
+      bio
+    };
+
+    if (!isEmploye) {
+      donneesMiseAJour.taxId = taxId;
+      donneesMiseAJour.postalCode = postalCode;
+    }
+
     const updatedUser = await Utilisateur.findByIdAndUpdate(
       userId,
       { $set: donneesMiseAJour },
@@ -1253,10 +1277,10 @@ export const updatePassword = async (req, res) => {
       return res.status(401).json({ error: "Accès non autorisé. Utilisateur non identifié." });
     }
 
-    const { currentPassword, newPassword } = req.body;
+    const { currentPassword, newPassword, confirmPassword } = req.body;
 
-    if (!currentPassword || !newPassword) {
-      return res.status(400).json({ error: "Le mot de passe actuel et le nouveau mot de passe sont requis." });
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({ error: "Le mot de passe actuel, le nouveau mot de passe et la confirmation sont requis." });
     }
 
     // 1. Récupérer l'utilisateur avec son mot de passe actuel
@@ -1272,6 +1296,10 @@ export const updatePassword = async (req, res) => {
     }
 
     // 3. Application des règles de validation de sécurité strictes
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ error: "Les nouveaux mots de passe ne correspondent pas." });
+    }
+
     const passwordValidationError = validatePasswordRequirements(newPassword);
     if (passwordValidationError) {
       return res.status(400).json({ error: passwordValidationError });
