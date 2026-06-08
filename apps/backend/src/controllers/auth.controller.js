@@ -1239,20 +1239,40 @@ export const updateProfile = async (req, res) => {
 
     // --- APPLICATION DE LA MISE À JOUR ---
     const isEmploye = userCheck.roleId !== null && userCheck.roleId !== undefined && userCheck.roleId !== "";
-    donneesMiseAJour = {
-      prenom: prenom || firstName,
-      nom: nom || lastName,
-      email,
-      telephone: telephone || phone,
-      city,
-      avatar,
-      bio
-    };
+    const permissions = req.user?.permissions || [];
+    const canEditTotal = !isEmploye || permissions.includes("MODIFIER_PROFIL_TOTAL");
+    const canEditRestricted = canEditTotal || permissions.includes("MODIFIER_PROFIL_RESTREINT");
 
-    if (!isEmploye) {
-      donneesMiseAJour.taxId = taxId;
-      donneesMiseAJour.postalCode = postalCode;
+    if (!canEditRestricted) {
+      return res.status(403).json({
+        error: "Vous n'avez pas la permission de modifier votre profil."
+      });
     }
+
+    if (canEditTotal) {
+      donneesMiseAJour = {
+        prenom: prenom || firstName,
+        nom: nom || lastName,
+        email,
+        telephone: telephone || phone,
+        city,
+        taxId,
+        postalCode,
+        avatar,
+        bio
+      };
+    } else {
+      donneesMiseAJour = {
+        email,
+        telephone: telephone || phone
+      };
+    }
+
+    Object.keys(donneesMiseAJour).forEach((key) => {
+      if (donneesMiseAJour[key] === undefined) {
+        delete donneesMiseAJour[key];
+      }
+    });
 
     const updatedUser = await Utilisateur.findByIdAndUpdate(
       userId,
