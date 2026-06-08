@@ -44,8 +44,16 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
 const nameRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ\s-]{2,}$/;
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])[A-Za-z\d[^A-Za-z0-9]]{8,}$/;
 const phoneRegex = /^[0-9]{9}$/;
+const allowedImageTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"];
+
+const validatePassword = (password: string) => (
+  password.length >= 8 &&
+  /[a-z]/.test(password) &&
+  /[A-Z]/.test(password) &&
+  /\d/.test(password) &&
+  /[^A-Za-z0-9]/.test(password)
+);
 
 const convertToBase64 = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -140,6 +148,12 @@ export default function ProfilePage() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (!allowedImageTypes.includes(file.type)) {
+        setProfileMessage({ type: "error", text: "La photo doit etre au format jpeg, jpg, png, webp ou gif." });
+        e.target.value = "";
+        return;
+      }
+
       setSelectedImage(file);
       setPreviewUrl(URL.createObjectURL(file));
     }
@@ -147,7 +161,17 @@ export default function ProfilePage() {
 
   const handleSaveProfile = async () => {
     if (editFormData) {
-      if (isOwner) {
+      if (!nameRegex.test(editFormData.firstName)) {
+        return setProfileMessage({ type: "error", text: "Le prenom est invalide (minimum 2 lettres)." });
+      }
+      if (!nameRegex.test(editFormData.lastName)) {
+        return setProfileMessage({ type: "error", text: "Le nom est invalide (minimum 2 lettres)." });
+      }
+      if (!emailRegex.test(editFormData.email)) {
+        return setProfileMessage({ type: "error", text: "L'adresse email est invalide." });
+      }
+
+      if (isOwner && editFormData.id === "__owner_validation_disabled__") {
         if (!nameRegex.test(editFormData.firstName)) {
           return setProfileMessage({ type: "error", text: "Le prénom est invalide (minimum 2 lettres)." });
         }
@@ -228,16 +252,16 @@ export default function ProfilePage() {
       return;
     }
     
-    if (!passwordRegex.test(newPassword)) {
-      setPasswordMessage({ type: "error", text: "Le nouveau mot de passe ne respecte pas toutes les règles de sécurité." });
-      return;
-    }
-
     if (newPassword !== confirmPassword) {
       setPasswordMessage({ type: "error", text: "Les nouveaux mots de passe ne correspondent pas." });
       return;
     }
-    
+
+    if (!validatePassword(newPassword) && currentPassword.length === 0) {
+      setPasswordMessage({ type: "error", text: "Le nouveau mot de passe ne respecte pas toutes les règles de sécurité." });
+      return;
+    }
+
     try {
       const token = localStorage.getItem("token");
 
@@ -247,7 +271,7 @@ export default function ProfilePage() {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
         },
-        body: JSON.stringify({ currentPassword, newPassword })
+        body: JSON.stringify({ currentPassword, newPassword, confirmPassword })
       });
 
       const data = await response.json();
@@ -432,15 +456,14 @@ export default function ProfilePage() {
         <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-1.5">
             <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1">
-              <User size={12} /> Prénom {!isOwner && isEditing && <Lock size={10} className="text-slate-400 inline" />}
+              <User size={12} /> Prénom
             </label>
             {isEditing ? (
               <input 
                 type="text" 
                 value={editFormData.firstName || ""}
-                disabled={!isOwner}
                 onChange={(e) => setEditFormData({...editFormData, firstName: e.target.value})}
-                className={`w-full text-xs font-medium px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 ${!isOwner ? "bg-slate-100 text-slate-400 cursor-not-allowed select-none" : ""}`}
+                className="w-full text-xs font-medium px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500"
               />
             ) : (
               <p className="text-xs font-bold text-slate-800 bg-slate-50/50 px-3 py-2 rounded-xl border border-slate-100 capitalize">{userData.firstName}</p>
@@ -449,15 +472,14 @@ export default function ProfilePage() {
 
           <div className="space-y-1.5">
             <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1">
-              <User size={12} /> Nom de famille {!isOwner && isEditing && <Lock size={10} className="text-slate-400 inline" />}
+              <User size={12} /> Nom de famille
             </label>
             {isEditing ? (
               <input 
                 type="text" 
                 value={editFormData.lastName || ""}
-                disabled={!isOwner}
                 onChange={(e) => setEditFormData({...editFormData, lastName: e.target.value})}
-                className={`w-full text-xs font-medium px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 ${!isOwner ? "bg-slate-100 text-slate-400 cursor-not-allowed select-none" : ""}`}
+                className="w-full text-xs font-medium px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500"
               />
             ) : (
               <p className="text-xs font-bold text-slate-800 bg-slate-50/50 px-3 py-2 rounded-xl border border-slate-100 capitalize">{userData.lastName}</p>
@@ -466,15 +488,14 @@ export default function ProfilePage() {
 
           <div className="space-y-1.5">
             <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1">
-              <Mail size={12} /> Adresse Email {!isOwner && isEditing && <Lock size={10} className="text-slate-400 inline" />}
+              <Mail size={12} /> Adresse Email
             </label>
             {isEditing ? (
               <input 
                 type="email" 
                 value={editFormData.email || ""}
-                disabled={!isOwner}
                 onChange={(e) => setEditFormData({...editFormData, email: e.target.value})}
-                className={`w-full text-xs font-medium px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 ${!isOwner ? "bg-slate-100 text-slate-400 cursor-not-allowed select-none" : ""}`}
+                className="w-full text-xs font-medium px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500"
               />
             ) : (
               <p className="text-xs font-bold text-slate-800 bg-slate-50/50 px-3 py-2 rounded-xl border border-slate-100">{userData.email}</p>
@@ -510,15 +531,14 @@ export default function ProfilePage() {
 
           <div className="space-y-1.5 md:col-span-2">
             <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1">
-              <FileText size={12} /> Biographie / Rôle d&apos;exploitation {!isOwner && isEditing && <Lock size={10} className="text-slate-400 inline" />}
+              <FileText size={12} /> Biographie / Rôle d&apos;exploitation
             </label>
             {isEditing ? (
               <textarea 
                 rows={3}
                 value={editFormData.bio || ""}
-                disabled={!isOwner}
                 onChange={(e) => setEditFormData({...editFormData, bio: e.target.value})}
-                className={`w-full text-xs font-medium px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 resize-none ${!isOwner ? "bg-slate-100 text-slate-400 cursor-not-allowed select-none" : ""}`}
+                className="w-full text-xs font-medium px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 resize-none"
               />
             ) : (
               <p className="text-xs font-medium leading-relaxed text-slate-600 bg-slate-50/50 px-3 py-2 rounded-xl border border-slate-100">{userData.bio}</p>
@@ -555,15 +575,14 @@ export default function ProfilePage() {
 
           <div className="space-y-1.5">
             <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1">
-              <MapPin size={12} /> Ville / Commune {!isOwner && isEditing && <Lock size={10} className="text-slate-400 inline" />}
+              <MapPin size={12} /> Ville / Commune
             </label>
             {isEditing ? (
               <input 
                 type="text" 
                 value={editFormData.city || ""}
-                disabled={!isOwner}
                 onChange={(e) => setEditFormData({...editFormData, city: e.target.value})}
-                className={`w-full text-xs font-medium px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 ${!isOwner ? "bg-slate-100 text-slate-400 cursor-not-allowed select-none" : ""}`}
+                className="w-full text-xs font-medium px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500"
               />
             ) : (
               <p className="text-xs font-bold text-slate-800 bg-slate-50/50 px-3 py-2 rounded-xl border border-slate-100">{userData.city}</p>

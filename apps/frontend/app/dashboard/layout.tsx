@@ -53,19 +53,14 @@ interface NavigationItem {
   subMenu?: SubMenuItem[];
 }
 
-const DEFAULT_PERMISSIONS = [
-  "VOIR_RESUME_VENTES",
-  "VOIR_ALERTES_STOCK",
-  "EFFECTUER_VENTE",
-  "VOIR_LISTE_PRODUITS",
-];
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
 const DEFAULT_PROFILE: UserProfile = {
   id: "",
   prenom: "Chargement...",
   nom: "",
   email: "",
-  roleId: null,
+  roleId: "__loading__",
   avatar: "",
 };
 
@@ -80,7 +75,7 @@ export default function DashboardLayout({
   // ==========================================
   // STATES
   // ==========================================
-  const [userPermissions, setUserPermissions] = useState<string[]>(DEFAULT_PERMISSIONS);
+  const [userPermissions, setUserPermissions] = useState<string[]>([]);
   const [user, setUser] = useState<UserProfile>(DEFAULT_PROFILE);
   const [isMounted, setIsMounted] = useState(false);
 
@@ -150,17 +145,68 @@ export default function DashboardLayout({
       }
     };
 
-    const timer = setTimeout(loadDataFromStorage, 0);
+    const syncSessionFromBackend = async () => {
+      loadDataFromStorage();
 
-    window.addEventListener("userProfileUpdated", loadDataFromStorage);
-    window.addEventListener("storage", loadDataFromStorage); 
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setUser(DEFAULT_PROFILE);
+        setUserPermissions([]);
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_URL}/auth/me`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || data.status !== "success") {
+          throw new Error(data.message || "Session invalide.");
+        }
+
+        const userData = data.user || {};
+        const permissions = Array.isArray(data.permissions) ? data.permissions : [];
+
+        localStorage.setItem("user_profile", JSON.stringify(userData));
+        localStorage.setItem("user_permissions", JSON.stringify(permissions));
+
+        setUserPermissions(permissions);
+        setUser({
+          id: userData.id || userData._id || "",
+          prenom: userData.prenom || DEFAULT_PROFILE.prenom,
+          nom: userData.nom || DEFAULT_PROFILE.nom,
+          email: userData.email || DEFAULT_PROFILE.email,
+          roleId: userData.roleId !== undefined ? userData.roleId : null,
+          avatar: userData.avatar || DEFAULT_PROFILE.avatar,
+          boutiqueActive: userData.boutiqueActive || "",
+        });
+      } catch (error) {
+        console.error("Erreur synchronisation session:", error);
+        document.cookie = "stockmaster_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        localStorage.removeItem("token");
+        localStorage.removeItem("user_permissions");
+        localStorage.removeItem("user_profile");
+        router.push("/login");
+      }
+    };
+
+    const timer = setTimeout(syncSessionFromBackend, 0);
+
+    window.addEventListener("userProfileUpdated", syncSessionFromBackend);
+    window.addEventListener("storage", syncSessionFromBackend);
 
     return () => {
       clearTimeout(timer);
-      window.removeEventListener("userProfileUpdated", loadDataFromStorage);
-      window.removeEventListener("storage", loadDataFromStorage);
+      window.removeEventListener("userProfileUpdated", syncSessionFromBackend);
+      window.removeEventListener("storage", syncSessionFromBackend);
     };
-  }, [pathname]);
+  }, [pathname, router]);
 
   const boutique = {
     nom: "Ma Super Boutique",
