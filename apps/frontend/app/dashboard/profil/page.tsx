@@ -78,6 +78,7 @@ export default function ProfilePage() {
 
   const [userData, setUserData] = useState<UserProfile | null>(null);
   const [editFormData, setEditFormData] = useState<UserProfile | null>(null);
+  const [userPermissions, setUserPermissions] = useState<string[]>([]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
@@ -91,12 +92,16 @@ export default function ProfilePage() {
 
   // ÉVALUATION DE LA RÈGLE D'OR : Si pas de roleId, c'est le créateur/propriétaire de la boutique
   const isOwner = userData?.roleId === null;
+  const canEditTotalProfile = isOwner || userPermissions.includes("MODIFIER_PROFIL_TOTAL");
+  const canEditRestrictedProfile = canEditTotalProfile || userPermissions.includes("MODIFIER_PROFIL_RESTREINT");
 
   useEffect(() => {
     const fetchConnectedUser = async () => {
       try {
         setIsLoading(true);
         const token = localStorage.getItem("token");
+        const storedPermissions = JSON.parse(localStorage.getItem("user_permissions") || "[]");
+        setUserPermissions(Array.isArray(storedPermissions) ? storedPermissions : []);
 
         const response = await fetch(`${API_URL}/auth/profile`, {
           method: "GET",
@@ -124,6 +129,11 @@ export default function ProfilePage() {
   }, []);
 
   const handleEditClick = () => {
+    if (!canEditRestrictedProfile) {
+      setProfileMessage({ type: "error", text: "Vous n'avez pas la permission de modifier votre profil." });
+      return;
+    }
+
     if (userData) {
       setEditFormData({ ...userData });
       setIsEditing(true);
@@ -142,6 +152,7 @@ export default function ProfilePage() {
   };
 
   const handleAvatarClick = () => {
+    if (!canEditTotalProfile) return;
     fileInputRef.current?.click();
   };
 
@@ -161,10 +172,10 @@ export default function ProfilePage() {
 
   const handleSaveProfile = async () => {
     if (editFormData) {
-      if (!nameRegex.test(editFormData.firstName)) {
+      if (canEditTotalProfile && !nameRegex.test(editFormData.firstName)) {
         return setProfileMessage({ type: "error", text: "Le prenom est invalide (minimum 2 lettres)." });
       }
-      if (!nameRegex.test(editFormData.lastName)) {
+      if (canEditTotalProfile && !nameRegex.test(editFormData.lastName)) {
         return setProfileMessage({ type: "error", text: "Le nom est invalide (minimum 2 lettres)." });
       }
       if (!emailRegex.test(editFormData.email)) {
@@ -197,7 +208,7 @@ export default function ProfilePage() {
           base64Avatar = await convertToBase64(selectedImage);
         }
         
-        const payload = {
+        let payload: Record<string, string | undefined> = {
           firstName: editFormData.firstName,
           lastName: editFormData.lastName,
           email: editFormData.email,
@@ -209,6 +220,13 @@ export default function ProfilePage() {
           taxId: editFormData.taxId,
           avatar: base64Avatar
         };
+
+        if (!canEditTotalProfile) {
+          payload = {
+            email: editFormData.email,
+            phone: editFormData.phone
+          };
+        }
 
         const response = await fetch(`${API_URL}/auth/profile`, {
           method: "PUT",
@@ -319,8 +337,8 @@ export default function ProfilePage() {
         <div className="flex flex-col md:flex-row items-center gap-5 text-center md:text-left">
           
           <div 
-            className={`relative group ${isEditing ? 'cursor-pointer' : ''}`}
-            onClick={isEditing ? handleAvatarClick : undefined}
+            className={`relative group ${isEditing && canEditTotalProfile ? 'cursor-pointer' : ''}`}
+            onClick={isEditing && canEditTotalProfile ? handleAvatarClick : undefined}
           >
             <input 
               type="file" 
@@ -348,7 +366,7 @@ export default function ProfilePage() {
               </div>
             )}
 
-            {isEditing && (
+            {isEditing && canEditTotalProfile && (
               <button 
                 type="button"
                 className="absolute bottom-0 right-0 bg-indigo-600 p-2 rounded-full text-white border-2 border-white hover:bg-indigo-700 transition-colors shadow-sm"
@@ -462,8 +480,9 @@ export default function ProfilePage() {
               <input 
                 type="text" 
                 value={editFormData.firstName || ""}
+                disabled={!canEditTotalProfile}
                 onChange={(e) => setEditFormData({...editFormData, firstName: e.target.value})}
-                className="w-full text-xs font-medium px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500"
+                className={`w-full text-xs font-medium px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 ${!canEditTotalProfile ? "bg-slate-100 text-slate-400 cursor-not-allowed select-none" : ""}`}
               />
             ) : (
               <p className="text-xs font-bold text-slate-800 bg-slate-50/50 px-3 py-2 rounded-xl border border-slate-100 capitalize">{userData.firstName}</p>
@@ -478,8 +497,9 @@ export default function ProfilePage() {
               <input 
                 type="text" 
                 value={editFormData.lastName || ""}
+                disabled={!canEditTotalProfile}
                 onChange={(e) => setEditFormData({...editFormData, lastName: e.target.value})}
-                className="w-full text-xs font-medium px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500"
+                className={`w-full text-xs font-medium px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 ${!canEditTotalProfile ? "bg-slate-100 text-slate-400 cursor-not-allowed select-none" : ""}`}
               />
             ) : (
               <p className="text-xs font-bold text-slate-800 bg-slate-50/50 px-3 py-2 rounded-xl border border-slate-100 capitalize">{userData.lastName}</p>
@@ -494,8 +514,9 @@ export default function ProfilePage() {
               <input 
                 type="email" 
                 value={editFormData.email || ""}
+                disabled={!canEditRestrictedProfile}
                 onChange={(e) => setEditFormData({...editFormData, email: e.target.value})}
-                className="w-full text-xs font-medium px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500"
+                className={`w-full text-xs font-medium px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 ${!canEditRestrictedProfile ? "bg-slate-100 text-slate-400 cursor-not-allowed select-none" : ""}`}
               />
             ) : (
               <p className="text-xs font-bold text-slate-800 bg-slate-50/50 px-3 py-2 rounded-xl border border-slate-100">{userData.email}</p>
@@ -510,9 +531,10 @@ export default function ProfilePage() {
               <input 
                 type="text" 
                 value={editFormData.phone || ""}
+                disabled={!canEditRestrictedProfile}
                 onChange={(e) => setEditFormData({...editFormData, phone: e.target.value})}
                 placeholder="Ex: 812345678"
-                className="w-full text-xs font-medium px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500"
+                className={`w-full text-xs font-medium px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 ${!canEditRestrictedProfile ? "bg-slate-100 text-slate-400 cursor-not-allowed select-none" : ""}`}
               />
             ) : (
               <p className="text-xs font-bold text-slate-800 bg-slate-50/50 px-3 py-2 rounded-xl border border-slate-100">{userData.phone}</p>
@@ -537,8 +559,9 @@ export default function ProfilePage() {
               <textarea 
                 rows={3}
                 value={editFormData.bio || ""}
+                disabled={!canEditTotalProfile}
                 onChange={(e) => setEditFormData({...editFormData, bio: e.target.value})}
-                className="w-full text-xs font-medium px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 resize-none"
+                className={`w-full text-xs font-medium px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 resize-none ${!canEditTotalProfile ? "bg-slate-100 text-slate-400 cursor-not-allowed select-none" : ""}`}
               />
             ) : (
               <p className="text-xs font-medium leading-relaxed text-slate-600 bg-slate-50/50 px-3 py-2 rounded-xl border border-slate-100">{userData.bio}</p>
@@ -581,8 +604,9 @@ export default function ProfilePage() {
               <input 
                 type="text" 
                 value={editFormData.city || ""}
+                disabled={!canEditTotalProfile}
                 onChange={(e) => setEditFormData({...editFormData, city: e.target.value})}
-                className="w-full text-xs font-medium px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500"
+                className={`w-full text-xs font-medium px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 ${!canEditTotalProfile ? "bg-slate-100 text-slate-400 cursor-not-allowed select-none" : ""}`}
               />
             ) : (
               <p className="text-xs font-bold text-slate-800 bg-slate-50/50 px-3 py-2 rounded-xl border border-slate-100">{userData.city}</p>
@@ -591,15 +615,15 @@ export default function ProfilePage() {
 
           <div className="space-y-1.5">
             <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1">
-              <Hash size={12} /> Code Postal {!isOwner && isEditing && <Lock size={10} className="text-slate-400 inline" />}
+              <Hash size={12} /> Code Postal {!canEditTotalProfile && isEditing && <Lock size={10} className="text-slate-400 inline" />}
             </label>
             {isEditing ? (
               <input 
                 type="text" 
                 value={editFormData.postalCode || ""}
-                disabled={!isOwner}
+                disabled={!canEditTotalProfile}
                 onChange={(e) => setEditFormData({...editFormData, postalCode: e.target.value})}
-                className={`w-full text-xs font-medium px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 ${!isOwner ? "bg-slate-100 text-slate-400 cursor-not-allowed select-none" : ""}`}
+                className={`w-full text-xs font-medium px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 ${!canEditTotalProfile ? "bg-slate-100 text-slate-400 cursor-not-allowed select-none" : ""}`}
               />
             ) : (
               <p className="text-xs font-bold text-slate-800 bg-slate-50/50 px-3 py-2 rounded-xl border border-slate-100">{userData.postalCode}</p>
@@ -608,15 +632,15 @@ export default function ProfilePage() {
 
           <div className="space-y-1.5">
             <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1">
-              <Briefcase size={12} /> Numéro National Impôt (TAX ID) {!isOwner && isEditing && <Lock size={10} className="text-slate-400 inline" />}
+              <Briefcase size={12} /> Numéro National Impôt (TAX ID) {!canEditTotalProfile && isEditing && <Lock size={10} className="text-slate-400 inline" />}
             </label>
             {isEditing ? (
               <input 
                 type="text" 
                 value={editFormData.taxId || ""}
-                disabled={!isOwner}
+                disabled={!canEditTotalProfile}
                 onChange={(e) => setEditFormData({...editFormData, taxId: e.target.value})}
-                className={`w-full text-xs font-medium px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 ${!isOwner ? "bg-slate-100 text-slate-400 cursor-not-allowed select-none" : ""}`}
+                className={`w-full text-xs font-medium px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 ${!canEditTotalProfile ? "bg-slate-100 text-slate-400 cursor-not-allowed select-none" : ""}`}
               />
             ) : (
               <p className="text-xs font-bold text-slate-800 bg-slate-50/50 px-3 py-2 rounded-xl border border-slate-100">{userData.taxId}</p>
