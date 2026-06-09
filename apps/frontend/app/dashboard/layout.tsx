@@ -34,6 +34,7 @@ interface UserProfile {
   nom?: string;
   email?: string;
   roleId: string | null;
+  role?: string;
   avatar?: string;
   boutiqueActive?: string;
 }
@@ -61,6 +62,7 @@ const DEFAULT_PROFILE: UserProfile = {
   nom: "",
   email: "",
   roleId: "__loading__",
+  role: "",
   avatar: "",
 };
 
@@ -133,6 +135,7 @@ export default function DashboardLayout({
             nom: userData.nom || DEFAULT_PROFILE.nom,
             email: userData.email || DEFAULT_PROFILE.email,
             roleId: userData.roleId !== undefined ? userData.roleId : null,
+            role: userData.role || DEFAULT_PROFILE.role,
             avatar: userData.avatar || DEFAULT_PROFILE.avatar,
             boutiqueActive: userData.boutiqueActive || "",
           });
@@ -183,6 +186,7 @@ export default function DashboardLayout({
           nom: userData.nom || DEFAULT_PROFILE.nom,
           email: userData.email || DEFAULT_PROFILE.email,
           roleId: userData.roleId !== undefined ? userData.roleId : null,
+          role: userData.role || DEFAULT_PROFILE.role,
           avatar: userData.avatar || DEFAULT_PROFILE.avatar,
           boutiqueActive: userData.boutiqueActive || "",
         });
@@ -597,7 +601,7 @@ export default function DashboardLayout({
                     {user.prenom} {user.nom}
                   </p>
                   <p className="text-[11px] text-slate-400 font-black tracking-wide mt-0.5 uppercase">
-                    {user.roleId ? "Employé" : "Admin Général"}
+                    {user.role || (user.roleId ? "Employé" : "Admin Général")}
                   </p>
                 </div>
 

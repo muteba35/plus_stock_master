@@ -224,7 +224,8 @@ export default function ProfilePage() {
         if (!canEditTotalProfile) {
           payload = {
             email: editFormData.email,
-            phone: editFormData.phone
+            phone: editFormData.phone,
+            bio: editFormData.bio
           };
         }
 
@@ -559,9 +560,9 @@ export default function ProfilePage() {
               <textarea 
                 rows={3}
                 value={editFormData.bio || ""}
-                disabled={!canEditTotalProfile}
+                disabled={!canEditRestrictedProfile}
                 onChange={(e) => setEditFormData({...editFormData, bio: e.target.value})}
-                className={`w-full text-xs font-medium px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 resize-none ${!canEditTotalProfile ? "bg-slate-100 text-slate-400 cursor-not-allowed select-none" : ""}`}
+                className={`w-full text-xs font-medium px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 resize-none ${!canEditRestrictedProfile ? "bg-slate-100 text-slate-400 cursor-not-allowed select-none" : ""}`}
               />
             ) : (
               <p className="text-xs font-medium leading-relaxed text-slate-600 bg-slate-50/50 px-3 py-2 rounded-xl border border-slate-100">{userData.bio}</p>

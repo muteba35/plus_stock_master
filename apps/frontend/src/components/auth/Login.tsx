@@ -105,15 +105,13 @@ export default function Login() {
       }
 
     } catch (err: unknown) {
-      console.error(err);
-
       const errorMessage =
         err instanceof Error
           ? err.message
           : "Une erreur est survenue";
 
       // Désactive le bouton si le compte est détecté comme bloqué
-      if (errorMessage.toLowerCase().includes("bloqué")) {
+      if (errorMessage.toLowerCase().includes("bloqu") || errorMessage.toLowerCase().includes("suspendu")) {
         setIsBlocked(true);
       }
 
