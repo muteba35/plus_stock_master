@@ -1026,7 +1026,9 @@ export const getMe = async (req, res) => {
     // pour pouvoir inspecter qui en est le propriétaire (userId)
     const user = await Utilisateur.findById(userId)
       .select('-password')
-      .populate('boutiqueActive'); 
+      .populate('boutiqueActive')
+      .populate('roleId')
+      .populate('departementId');
     
     if (!user) {
       return res.status(404).json({ 
@@ -1068,8 +1070,10 @@ export const getMe = async (req, res) => {
         prenom: user.prenom,
         email: user.email,
         telephone: user.telephone || "",
-        roleId: user.roleId || null, 
+        roleId: user.roleId?._id || user.roleId || null,
+        role: user.roleId?.nom || (isOwner ? "Admin Général" : "Employé"),
         departementId: user.departementId || null, // <-- AJOUT ICI
+        departement: user.departementId?.nom || "",
         avatar: user.avatar || "",
         boutiqueActive: user.boutiqueActive ? user.boutiqueActive._id : ""
       },
@@ -1264,7 +1268,8 @@ export const updateProfile = async (req, res) => {
     } else {
       donneesMiseAJour = {
         email,
-        telephone: telephone || phone
+        telephone: telephone || phone,
+        bio
       };
     }
 
