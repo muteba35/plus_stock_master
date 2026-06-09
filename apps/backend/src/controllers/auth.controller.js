@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import { Utilisateur, Boutique } from "../models/Utilisateur.js"; 
-import { sendEmail } from "../utils/sendEmail.js";
+import { sendEmail, sendSecurityAlertEmail } from "../utils/sendEmail.js";
 import { Permission, RolePermission } from "../models/Utilisateur.js";
 
 export const register = async (req, res) => {
@@ -209,6 +209,14 @@ const renderOtpEmail = (prenom, otp) => {
 `;
 };
 
+const sendSecurityAlertEmailSafely = async (email, type, attemptsLeft = 0) => {
+  try {
+    await sendSecurityAlertEmail(email, type, attemptsLeft);
+  } catch (mailError) {
+    console.error("Erreur SMTP lors de l'envoi de l'alerte securite :", mailError.message);
+  }
+};
+
 /**
  * LOGIQUE DE CONNEXION (Login)
  */
@@ -256,16 +264,16 @@ export const login = async (req, res) => {
         user.isPermanentlyBlocked = true;
         responseMessage = "Compte bloqué. Contactez le support";
         status = 403;
-        await sendSecurityAlertEmail(user.email, "banned");
+        await sendSecurityAlertEmailSafely(user.email, "banned");
       } else if (user.loginAttempts === 6) {
         user.lockUntil = Date.now() + 60 * 60 * 1000; // 1h
         responseMessage = "Compte bloqué temporairement (1h)";
         status = 403;
-        await sendSecurityAlertEmail(user.email, "critical");
+        await sendSecurityAlertEmailSafely(user.email, "critical");
       } else if (user.loginAttempts >= 4) {
         const reste = 6 - user.loginAttempts;
         responseMessage = `Attention, encore ${reste} tentative(s) avant blocage`;
-        await sendSecurityAlertEmail(user.email, "warning", reste);
+        await sendSecurityAlertEmailSafely(user.email, "warning", reste);
       }
 
       await user.save();
@@ -1071,7 +1079,7 @@ export const getMe = async (req, res) => {
         email: user.email,
         telephone: user.telephone || "",
         roleId: user.roleId?._id || user.roleId || null,
-        role: user.roleId?.nom || (isOwner ? "Admin Général" : "Employé"),
+        role: user.roleId?.nom || (isOwner ? "Admin GÃ©nÃ©ral" : "Employ"),
         departementId: user.departementId || null, // <-- AJOUT ICI
         departement: user.departementId?.nom || "",
         avatar: user.avatar || "",

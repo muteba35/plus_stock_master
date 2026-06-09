@@ -5,6 +5,12 @@ import nodemailer from "nodemailer";
  * Gère les OTP et les alertes de sécurité (Warning, Critical, Banned)
  */
 export const sendEmail = async (options) => {
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    throw new Error("Configuration email incomplete: EMAIL_USER et EMAIL_PASS sont requis.");
+  }
+
+  const emailPort = Number(process.env.EMAIL_PORT || 587);
+  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
   // On vérifie si on utilise Gmail ou Mailtrap via le HOST
   const isGmail = process.env.EMAIL_HOST === "smtp.gmail.com" || !process.env.EMAIL_HOST;
 
@@ -23,7 +29,8 @@ export const sendEmail = async (options) => {
         }
       : {
           host: process.env.EMAIL_HOST,
-          port: process.env.EMAIL_PORT || 2525,
+          port: emailPort,
+          secure: emailPort === 465,
           auth: {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASS,
@@ -93,7 +100,7 @@ export const sendEmail = async (options) => {
 
           ${showButton ? `
           <div style="text-align: center; margin-top: 45px;">
-            <a href="${process.env.FRONTEND_URL}/forgot-password" 
+            <a href="${frontendUrl}/forgot-password" 
                style="background-color: ${alertColor}; color: #ffffff; padding: 16px 32px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 13px; display: inline-block; letter-spacing: 0.5px; transition: all 0.3s ease;">
               SÉCURISER MON COMPTE
             </a>
@@ -128,7 +135,7 @@ export const sendEmail = async (options) => {
   const mailOptions = {
     from: `"StockMaster Pro Security" <${process.env.EMAIL_USER}>`,
     to: options.email,
-    subject: options.subject,
+    subject: options.subject || "Notification StockMaster Pro",
     html: htmlContent,
   };
 
