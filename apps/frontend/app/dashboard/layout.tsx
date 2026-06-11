@@ -37,6 +37,11 @@ interface UserProfile {
   role?: string;
   avatar?: string;
   boutiqueActive?: string;
+  boutique?: {
+    id?: string;
+    nom?: string;
+    secteurActivite?: string;
+  } | null;
 }
 
 interface SubMenuItem {
@@ -138,6 +143,7 @@ export default function DashboardLayout({
             role: userData.role || DEFAULT_PROFILE.role,
             avatar: userData.avatar || DEFAULT_PROFILE.avatar,
             boutiqueActive: userData.boutiqueActive || "",
+            boutique: userData.boutique || null,
           });
         } else {
           setUser(DEFAULT_PROFILE);
@@ -189,6 +195,7 @@ export default function DashboardLayout({
           role: userData.role || DEFAULT_PROFILE.role,
           avatar: userData.avatar || DEFAULT_PROFILE.avatar,
           boutiqueActive: userData.boutiqueActive || "",
+          boutique: userData.boutique || null,
         });
       } catch (error) {
         console.error("Erreur synchronisation session:", error);
@@ -213,7 +220,7 @@ export default function DashboardLayout({
   }, [pathname, router]);
 
   const boutique = {
-    nom: "Ma Super Boutique",
+    nom: user.boutique?.nom || "Ma Boutique",
     secteur: "Commerce Général",
   };
 
@@ -408,7 +415,7 @@ export default function DashboardLayout({
             {(isSidebarOpen || isMobileSidebarOpen) && (
               <div className="overflow-hidden">
                 <p className="text-xs font-bold text-white truncate">{boutique.nom}</p>
-                <p className="text-[10px] text-slate-500 truncate font-medium">{boutique.secteur}</p>
+                <p className="text-[10px] text-slate-500 truncate font-medium">{user.boutique?.secteurActivite || "Boutique active"}</p>
               </div>
             )}
           </div>
