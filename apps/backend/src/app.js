@@ -4,6 +4,7 @@ import authRoutes from "./routes/auth.routes.js";
 import departementRoutes from "./routes/departement.routes.js";
 import roleRoutes from "./routes/role.routes.js"; 
 import employeRoutes from "./routes/employe.routes.js";
+import boutiqueRoutes from "./routes/boutique.routes.js";
 
 const app = express();
 
