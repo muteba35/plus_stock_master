@@ -13,7 +13,7 @@ router.use(protect);
 router.route("/")
   .get(getBoutiques)
   .post(createBoutique);
-
+          
 router.patch("/:id/active", setActiveBoutique);
 
 export default router;

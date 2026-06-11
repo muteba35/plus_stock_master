@@ -29,4 +29,6 @@ app.use("/api/departements", departementRoutes); // URL propre : /api/departemen
 app.use("/api/roles", roleRoutes);
 app.use("/api/employes", employeRoutes);// <-- 2. AJOUT DE LA ROUTE POUR LES RÔLES
 
+app.use("/api/boutiques", boutiqueRoutes);
+
 export default app;

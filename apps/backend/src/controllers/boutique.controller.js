@@ -34,16 +34,38 @@ const createSessionPayload = async (userId, boutiqueId) => {
   return { token, permissions };
 };
 
+const assertOwnerAccount = async (req, res) => {
+  const user = await Utilisateur.findById(req.user.id).populate("boutiqueActive");
+
+  if (!user) {
+    res.status(404).json({ message: "Utilisateur introuvable." });
+    return null;
+  }
+
+  const isOwner = !user.roleId && (
+    !user.boutiqueActive || user.boutiqueActive.userId?.toString() === user._id.toString()
+  );
+  if (!isOwner) {
+    res.status(403).json({ message: "Seul le proprietaire du compte peut gerer les boutiques." });
+    return null;
+  }
+
+  return user;
+};
+
 export const getBoutiques = async (req, res) => {
   try {
+    const user = await assertOwnerAccount(req, res);
+    if (!user) return;
+
     const boutiques = await Boutique.find({
-      userId: req.user.id,
+      userId: user._id,
       isDeleted: false,
     }).sort({ createdAt: 1 });
 
     return res.status(200).json({
       success: true,
-      boutiques: boutiques.map((boutique) => normalizeBoutique(boutique, req.user.boutiqueId)),
+      boutiques: boutiques.map((boutique) => normalizeBoutique(boutique, user.boutiqueActive?._id)),
     });
   } catch (error) {
     console.error("Erreur getBoutiques:", error);
@@ -53,6 +75,9 @@ export const getBoutiques = async (req, res) => {
 
 export const createBoutique = async (req, res) => {
   try {
+    const user = await assertOwnerAccount(req, res);
+    if (!user) return;
+
     const { nom, secteurActivite, deviseParDefaut, tailleBusiness } = req.body;
 
     const cleanNom = String(nom || "").trim();
@@ -61,7 +86,7 @@ export const createBoutique = async (req, res) => {
     }
 
     const existingBoutique = await Boutique.findOne({
-      userId: req.user.id,
+      userId: user._id,
       nom: cleanNom,
       isDeleted: false,
     });
@@ -72,16 +97,11 @@ export const createBoutique = async (req, res) => {
 
     const boutique = await Boutique.create({
       nom: cleanNom,
-      userId: req.user.id,
+      userId: user._id,
       secteurActivite,
       deviseParDefaut,
       tailleBusiness,
     });
-
-    const user = await Utilisateur.findById(req.user.id);
-    if (!user) {
-      return res.status(404).json({ message: "Utilisateur introuvable." });
-    }
 
     user.boutiqueActive = boutique._id;
     await user.save();
@@ -103,21 +123,19 @@ export const createBoutique = async (req, res) => {
 
 export const setActiveBoutique = async (req, res) => {
   try {
+    const user = await assertOwnerAccount(req, res);
+    if (!user) return;
+
     const { id } = req.params;
 
     const boutique = await Boutique.findOne({
       _id: id,
-      userId: req.user.id,
+      userId: user._id,
       isDeleted: false,
     });
 
     if (!boutique) {
       return res.status(404).json({ message: "Boutique introuvable pour ce compte." });
-    }
-
-    const user = await Utilisateur.findById(req.user.id);
-    if (!user) {
-      return res.status(404).json({ message: "Utilisateur introuvable." });
     }
 
     user.boutiqueActive = boutique._id;

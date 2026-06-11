@@ -1079,11 +1079,18 @@ export const getMe = async (req, res) => {
         email: user.email,
         telephone: user.telephone || "",
         roleId: user.roleId?._id || user.roleId || null,
-        role: user.roleId?.nom || (isOwner ? "Admin GÃ©nÃ©ral" : "Employ"),
+        role: user.roleId?.nom || (isOwner ? "Admin GÃ©nÃ©ral" : "EmployÃ©"),
         departementId: user.departementId || null, // <-- AJOUT ICI
         departement: user.departementId?.nom || "",
         avatar: user.avatar || "",
-        boutiqueActive: user.boutiqueActive ? user.boutiqueActive._id : ""
+        boutiqueActive: user.boutiqueActive ? user.boutiqueActive._id : "",
+        boutique: user.boutiqueActive ? {
+          id: user.boutiqueActive._id,
+          nom: user.boutiqueActive.nom,
+          secteurActivite: user.boutiqueActive.secteurActivite,
+          deviseParDefaut: user.boutiqueActive.deviseParDefaut,
+          tailleBusiness: user.boutiqueActive.tailleBusiness
+        } : null
       },
       permissions: sesPermissions 
     });
