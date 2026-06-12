@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
+  AlertTriangle,
   Building2,
   CheckCircle2,
   ChevronDown,
@@ -44,27 +45,27 @@ interface BoutiqueForm {
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
 const SECTEURS = [
-  "Commerce Général",
-  "Supermarché",
+  "Commerce GÃ©nÃ©ral",
+  "SupermarchÃ©",
   "Pharmacie",
   "Restaurant",
   "Fast-food",
   "Bar",
-  "Café",
-  "Boutique de vêtements",
+  "CafÃ©",
+  "Boutique de vÃªtements",
   "Salon de coiffure",
   "Quincaillerie",
   "Autre",
 ];
 
-const DEVISES = ["USD ($)", "CDF (FC)", "EUR (€)"];
-const TAILLES = ["1-2 employés", "3-10 employés", "10+ employés"];
+const DEVISES = ["USD ($)", "CDF (FC)", "EUR (â‚¬)"];
+const TAILLES = ["1-2 employÃ©s", "3-10 employÃ©s", "10+ employÃ©s"];
 
 const DEFAULT_FORM: BoutiqueForm = {
   nom: "",
-  secteurActivite: "Commerce Général",
+  secteurActivite: "Commerce GÃ©nÃ©ral",
   deviseParDefaut: "USD ($)",
-  tailleBusiness: "1-2 employés",
+  tailleBusiness: "1-2 employÃ©s",
 };
 
 const readApiMessage = async (response: Response, fallback: string) => {
@@ -100,6 +101,7 @@ export default function BoutiquePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activatingId, setActivatingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [boutiqueToDelete, setBoutiqueToDelete] = useState<Boutique | null>(null);
   const [formData, setFormData] = useState<BoutiqueForm>(DEFAULT_FORM);
   const [formError, setFormError] = useState("");
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -311,12 +313,12 @@ export default function BoutiquePage() {
     }
   };
 
-  const handleDeleteBoutique = async (boutique: Boutique) => {
-    if (!confirm(`Supprimer definitivement la boutique "${boutique.nom}" ?`)) return;
+  const handleDeleteBoutique = async () => {
+    if (!boutiqueToDelete) return;
 
     try {
-      setDeletingId(boutique.id);
-      const response = await fetch(`${API_URL}/boutiques/${boutique.id}`, {
+      setDeletingId(boutiqueToDelete.id);
+      const response = await fetch(`${API_URL}/boutiques/${boutiqueToDelete.id}`, {
         method: "DELETE",
         headers: getAuthHeaders(),
       });
@@ -326,7 +328,8 @@ export default function BoutiquePage() {
         throw new Error(message);
       }
 
-      setBoutiques((current) => current.filter((item) => item.id !== boutique.id));
+      setBoutiques((current) => current.filter((item) => item.id !== boutiqueToDelete.id));
+      setBoutiqueToDelete(null);
       showToast("success", data.message || "Boutique supprimee avec succes.");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Impossible de supprimer cette boutique.";
@@ -506,7 +509,7 @@ export default function BoutiquePage() {
                           {canDelete && (
                             <button
                               type="button"
-                              onClick={() => handleDeleteBoutique(boutique)}
+                              onClick={() => setBoutiqueToDelete(boutique)}
                               disabled={boutique.isActive || deletingId === boutique.id}
                               className={`p-1.5 transition-colors ${
                                 boutique.isActive
@@ -539,6 +542,13 @@ export default function BoutiquePage() {
         onClose={() => !isSubmitting && setIsModalOpen(false)}
         onSubmit={handleSubmitBoutique}
       />
+
+      <DeleteBoutiqueModal
+        boutique={boutiqueToDelete}
+        isDeleting={Boolean(boutiqueToDelete && deletingId === boutiqueToDelete.id)}
+        onClose={() => !deletingId && setBoutiqueToDelete(null)}
+        onConfirm={handleDeleteBoutique}
+      />
     </div>
   );
 }
@@ -558,6 +568,96 @@ function EmptyState({ title, message }: { title: string; message: string }) {
         <p className="text-[11px] text-slate-400 font-normal leading-relaxed">{message}</p>
       </motion.div>
     </div>
+  );
+}
+
+function DeleteBoutiqueModal({
+  boutique,
+  isDeleting,
+  onClose,
+  onConfirm,
+}: {
+  boutique: Boutique | null;
+  isDeleting: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <AnimatePresence>
+      {boutique && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+          />
+
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="relative z-10 bg-white rounded-2xl border border-slate-200/80 shadow-2xl w-full max-w-md overflow-hidden text-slate-800"
+          >
+            <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-[#fcfdfe]">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-rose-50 text-rose-600 rounded-lg">
+                  <Trash2 size={16} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-sm">Supprimer la boutique</h3>
+                  <p className="text-[11px] text-slate-400">Confirmation requise avant suppression.</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isDeleting}
+                className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 transition-colors disabled:opacity-40"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="p-5 text-center space-y-4 text-xs">
+              <div className="w-12 h-12 rounded-full mx-auto flex items-center justify-center bg-rose-50 text-rose-600">
+                <AlertTriangle size={24} />
+              </div>
+              <div>
+                <p className="text-slate-600 text-sm font-medium">
+                  Etes-vous sur de vouloir supprimer definitivement la boutique{" "}
+                  <span className="font-bold text-slate-900">{boutique.nom}</span> ?
+                </p>
+                <p className="text-slate-400 text-[10px] mt-1 font-medium">
+                  Cette action est irreversible. La boutique active ne peut pas etre supprimee.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isDeleting}
+                className="px-4 py-2 hover:bg-slate-200/60 rounded-xl font-bold text-slate-500 text-[11px] transition-colors disabled:opacity-40"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={onConfirm}
+                disabled={isDeleting}
+                className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/60 rounded-xl font-bold text-[11px] transition-colors shadow-sm flex items-center gap-2 disabled:opacity-60"
+              >
+                {isDeleting && <Loader2 size={12} className="animate-spin" />}
+                Supprimer
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
   );
 }
 

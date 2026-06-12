@@ -18,6 +18,7 @@ import {
   Briefcase,
   LucideIcon,
   Loader2,
+  Store,
 } from "lucide-react";
 
 export interface EmployeOption {
@@ -30,11 +31,14 @@ interface EmployeModalProps {
   onClose: () => void;
   roles: EmployeOption[];
   departements: EmployeOption[];
+  boutiques?: EmployeOption[];
+  onBoutiqueChange?: (boutiqueId: string) => void | Promise<void>;
   onCreate: (payload: {
     firstName: string;
     lastName: string;
     email: string;
     phone: string;
+    boutiqueId: string;
     roleId: string;
     departementId: string;
     password: string;
@@ -60,6 +64,8 @@ export default function EmployeModal({
   onClose,
   roles = [],
   departements = [],
+  boutiques = [],
+  onBoutiqueChange,
   onCreate,
 }: EmployeModalProps) {
   const [showPassword, setShowPassword] = useState(false);
@@ -70,7 +76,10 @@ export default function EmployeModal({
   const [roleSearch, setRoleSearch] = useState("");
   const [showDeptDropdown, setShowDeptDropdown] = useState(false);
   const [deptSearch, setDeptSearch] = useState("");
+  const [showBoutiqueDropdown, setShowBoutiqueDropdown] = useState(false);
+  const [boutiqueSearch, setBoutiqueSearch] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingReferences, setIsLoadingReferences] = useState(false);
   const [error, setError] = useState("");
 
   const [formData, setFormData] = useState({
@@ -78,13 +87,20 @@ export default function EmployeModal({
     lastName: "",
     email: "",
     phone: "",
+    boutiqueId: "",
     roleId: "",
     departementId: "",
     password: "",
   });
 
+  const selectedBoutique = boutiques.find((boutique) => boutique.id === formData.boutiqueId);
   const selectedRole = roles.find((role) => role.id === formData.roleId);
   const selectedDepartment = departements.find((dept) => dept.id === formData.departementId);
+
+  const filteredBoutiques = useMemo(
+    () => boutiques.filter((boutique) => boutique.name.toLowerCase().includes(boutiqueSearch.toLowerCase())),
+    [boutiques, boutiqueSearch]
+  );
 
   const filteredRoles = useMemo(
     () => roles.filter((role) => role.name.toLowerCase().includes(roleSearch.toLowerCase())),
@@ -108,6 +124,7 @@ export default function EmployeModal({
       lastName: "",
       email: "",
       phone: "",
+      boutiqueId: "",
       roleId: "",
       departementId: "",
       password: "",
@@ -116,6 +133,32 @@ export default function EmployeModal({
     setError("");
     setRoleSearch("");
     setDeptSearch("");
+    setBoutiqueSearch("");
+    setShowBoutiqueDropdown(false);
+  };
+
+  const handleSelectBoutique = async (boutique: EmployeOption) => {
+    setFormData((current) => ({
+      ...current,
+      boutiqueId: boutique.id,
+      roleId: "",
+      departementId: "",
+    }));
+    setShowBoutiqueDropdown(false);
+    setBoutiqueSearch("");
+    setRoleSearch("");
+    setDeptSearch("");
+
+    if (!onBoutiqueChange) return;
+
+    try {
+      setIsLoadingReferences(true);
+      await onBoutiqueChange(boutique.id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Impossible de charger les roles et departements de cette boutique.");
+    } finally {
+      setIsLoadingReferences(false);
+    }
   };
 
   const handleClose = () => {
@@ -148,6 +191,7 @@ export default function EmployeModal({
       lastName: formData.lastName.trim(),
       email: formData.email.trim().toLowerCase(),
       phone: formData.phone.trim(),
+      boutiqueId: formData.boutiqueId,
       roleId: formData.roleId,
       departementId: formData.departementId,
       password: formData.password,
@@ -170,6 +214,11 @@ export default function EmployeModal({
 
     if (!PHONE_REGEX.test(cleanedForm.phone)) {
       setError("Le numero de telephone doit contenir exactement 9 chiffres.");
+      return;
+    }
+
+    if (boutiques.length > 0 && !cleanedForm.boutiqueId) {
+      setError("Veuillez choisir la boutique ou le site de rattachement.");
       return;
     }
 
@@ -228,7 +277,7 @@ export default function EmployeModal({
                   Nouvel Employe
                 </h3>
                 <p className="text-[11px] text-slate-400 font-medium mt-0.5">
-                  Creation d`un profil collaborateur
+                  Creation d'un profil collaborateur
                 </p>
               </div>
               <button
@@ -281,20 +330,93 @@ export default function EmployeModal({
                   <FormInput label="Adresse Email" name="email" type="email" icon={Mail} value={formData.email} onChange={handleChange} placeholder="junior@shop.com" disabled={isSubmitting} required />
                   <FormInput label="Numero de Telephone" name="phone" type="tel" icon={Phone} value={formData.phone} onChange={handleChange} placeholder="Ex: 812345678" disabled={isSubmitting} required />
 
+                  {boutiques.length > 0 && (
+                    <div className="space-y-1.5 relative md:col-span-2">
+                      <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
+                        <Store size={12} /> Boutique / Site
+                      </label>
+                      <div
+                        onClick={() => {
+                          if (isSubmitting) return;
+                          setShowBoutiqueDropdown(!showBoutiqueDropdown);
+                          setShowRoleDropdown(false);
+                          setShowDeptDropdown(false);
+                        }}
+                        className="w-full text-xs font-medium px-3 py-2.5 border border-slate-200 rounded-xl focus:outline-none bg-white flex justify-between items-center cursor-pointer select-none hover:border-indigo-500 transition-colors"
+                      >
+                        <span className={selectedBoutique ? "text-slate-800" : "text-slate-400"}>
+                          {selectedBoutique?.name || "Choisir la boutique de rattachement"}
+                        </span>
+                        <ChevronDown size={14} className={`text-slate-400 transition-transform duration-200 ${showBoutiqueDropdown ? "rotate-180" : ""}`} />
+                      </div>
+
+                      <AnimatePresence>
+                        {showBoutiqueDropdown && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -4 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -4 }}
+                            transition={{ duration: 0.15 }}
+                            className="absolute w-full mt-1 bg-white border border-slate-200 shadow-xl rounded-xl z-50 p-2 space-y-2 max-h-[240px] overflow-y-auto custom-scrollbar"
+                          >
+                            <div className="relative" onClick={(e) => e.stopPropagation()}>
+                              <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                              <input
+                                type="text"
+                                placeholder="Rechercher une boutique..."
+                                value={boutiqueSearch}
+                                onChange={(e) => setBoutiqueSearch(e.target.value)}
+                                onKeyDown={(e) => { if (e.key === "Enter") e.preventDefault(); }}
+                                className="w-full text-xs pl-12 pr-3 py-2 bg-slate-50 border border-slate-100 rounded-lg focus:outline-none focus:border-indigo-500 font-medium"
+                              />
+                            </div>
+
+                            <div className="space-y-0.5">
+                              {filteredBoutiques.length > 0 ? (
+                                filteredBoutiques.map((boutique) => {
+                                  const isSelected = formData.boutiqueId === boutique.id;
+                                  return (
+                                    <div
+                                      key={boutique.id}
+                                      onClick={() => handleSelectBoutique(boutique)}
+                                      className={`text-xs font-medium px-2.5 py-2 rounded-lg cursor-pointer transition-colors flex items-center justify-between ${
+                                        isSelected ? "bg-indigo-50 text-indigo-600 font-bold" : "text-slate-700 hover:bg-slate-50"
+                                      }`}
+                                    >
+                                      <span>{boutique.name}</span>
+                                      {isSelected && <Check size={12} className="text-indigo-600" />}
+                                    </div>
+                                  );
+                                })
+                              ) : (
+                                <p className="text-[11px] text-slate-400 text-center py-3 font-medium">
+                                  Aucune boutique trouvee
+                                </p>
+                              )}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  )}
+
                   <div className="space-y-1.5 relative">
                     <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
-                      <ShieldCheck size={12} /> Role d`exploitation
+                      <ShieldCheck size={12} /> Role d'exploitation
                     </label>
                     <div
                       onClick={() => {
-                        if (isSubmitting) return;
+                        if (isSubmitting || isLoadingReferences) return;
                         setShowRoleDropdown(!showRoleDropdown);
                         setShowDeptDropdown(false);
+                        setShowBoutiqueDropdown(false);
                       }}
-                      className="w-full text-xs font-medium px-3 py-2.5 border border-slate-200 rounded-xl focus:outline-none bg-white flex justify-between items-center cursor-pointer select-none hover:border-indigo-500 transition-colors"
+                      className={`w-full text-xs font-medium px-3 py-2.5 border border-slate-200 rounded-xl focus:outline-none bg-white flex justify-between items-center select-none transition-colors ${
+                        isLoadingReferences ? "cursor-wait opacity-70" : "cursor-pointer hover:border-indigo-500"
+                      }`}
                     >
                       <span className={selectedRole ? "text-slate-800" : "text-slate-400"}>
-                        {selectedRole?.name || "Choisir un role"}
+                        {isLoadingReferences ? "Chargement des roles..." : selectedRole?.name || "Choisir un role"}
                       </span>
                       <ChevronDown size={14} className={`text-slate-400 transition-transform duration-200 ${showRoleDropdown ? "rotate-180" : ""}`} />
                     </div>
@@ -358,14 +480,17 @@ export default function EmployeModal({
                     </label>
                     <div
                       onClick={() => {
-                        if (isSubmitting) return;
+                        if (isSubmitting || isLoadingReferences) return;
                         setShowDeptDropdown(!showDeptDropdown);
                         setShowRoleDropdown(false);
+                        setShowBoutiqueDropdown(false);
                       }}
-                      className="w-full text-xs font-medium px-3 py-2.5 border border-slate-200 rounded-xl focus:outline-none bg-white flex justify-between items-center cursor-pointer select-none hover:border-indigo-500 transition-colors"
+                      className={`w-full text-xs font-medium px-3 py-2.5 border border-slate-200 rounded-xl focus:outline-none bg-white flex justify-between items-center select-none transition-colors ${
+                        isLoadingReferences ? "cursor-wait opacity-70" : "cursor-pointer hover:border-indigo-500"
+                      }`}
                     >
                       <span className={selectedDepartment ? "text-slate-800" : "text-slate-400"}>
-                        {selectedDepartment?.name || "Choisir un departement"}
+                        {isLoadingReferences ? "Chargement des departements..." : selectedDepartment?.name || "Choisir un departement"}
                       </span>
                       <ChevronDown size={14} className={`text-slate-400 transition-transform duration-200 ${showDeptDropdown ? "rotate-180" : ""}`} />
                     </div>
@@ -463,7 +588,7 @@ export default function EmployeModal({
                 className="px-6 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-2 disabled:bg-slate-400"
               >
                 {isSubmitting && <Loader2 size={14} className="animate-spin" />}
-                Creer l`employe
+                Creer l'employe
               </button>
             </div>
           </motion.div>

@@ -24,6 +24,7 @@ import {
   Loader2,
   CheckCircle2,
   XCircle,
+  Store,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import EmployeModal, { EmployeOption } from "./components/EmployeModal";
@@ -40,6 +41,8 @@ export interface Employe {
   avatarUrl?: string | null;
   roleId?: string | null;
   departementId?: string | null;
+  boutiqueId?: string | null;
+  boutique?: string;
 }
 
 interface EditInterfaceProps {
@@ -82,6 +85,12 @@ interface ApiRole {
 
 interface ApiDepartement {
   _id: string;
+  nom: string;
+}
+
+interface ApiBoutique {
+  id: string;
+  _id?: string;
   nom: string;
 }
 
@@ -146,6 +155,7 @@ export default function EmployesPage() {
   const [employes, setEmployes] = useState<Employe[]>([]);
   const [roles, setRoles] = useState<EmployeOption[]>([]);
   const [departements, setDepartements] = useState<EmployeOption[]>([]);
+  const [boutiques, setBoutiques] = useState<EmployeOption[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -181,10 +191,32 @@ export default function EmployesPage() {
     setEmployes(data.employes || []);
   }, [getAuthHeaders]);
 
-  const fetchReferences = useCallback(async () => {
+  const fetchBoutiques = useCallback(async () => {
+    const response = await fetch(`${API_URL}/boutiques`, {
+      method: "GET",
+      headers: getAuthHeaders(),
+    });
+
+    const { data, message } = await readApiMessage(response, "Impossible de charger les boutiques.");
+    if (!response.ok || !data?.success) {
+      setBoutiques([]);
+      showToast("error", message);
+      return;
+    }
+
+    setBoutiques(
+      (data.boutiques || []).map((boutique: ApiBoutique) => ({
+        id: boutique.id || boutique._id || "",
+        name: boutique.nom,
+      }))
+    );
+  }, [getAuthHeaders, showToast]);
+
+  const fetchReferences = useCallback(async (boutiqueId?: string) => {
+    const query = boutiqueId ? `?boutiqueId=${encodeURIComponent(boutiqueId)}` : "";
     const [rolesResponse, departementsResponse] = await Promise.all([
-      fetch(`${API_URL}/roles`, { method: "GET", headers: getAuthHeaders() }),
-      fetch(`${API_URL}/departements`, { method: "GET", headers: getAuthHeaders() }),
+      fetch(`${API_URL}/roles${query}`, { method: "GET", headers: getAuthHeaders() }),
+      fetch(`${API_URL}/departements${query}`, { method: "GET", headers: getAuthHeaders() }),
     ]);
 
     const rolesResult = await readApiMessage(rolesResponse, "Impossible de charger les roles.");
@@ -217,7 +249,7 @@ export default function EmployesPage() {
     const loadData = async () => {
       try {
         setIsLoading(true);
-        await Promise.all([fetchEmployes(), fetchReferences()]);
+        await Promise.all([fetchEmployes(), fetchReferences(), fetchBoutiques()]);
       } catch (error) {
         showToast(error instanceof Error ? "error" : "error", error instanceof Error ? error.message : "Erreur de communication avec le serveur.");
       } finally {
@@ -226,14 +258,15 @@ export default function EmployesPage() {
     };
 
     loadData();
-  }, [fetchEmployes, fetchReferences, showToast]);
+  }, [fetchBoutiques, fetchEmployes, fetchReferences, showToast]);
 
   const filteredEmployes = employes.filter((emp) =>
     `${emp.firstName} ${emp.lastName}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
     emp.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
     emp.phone.includes(searchQuery) ||
     emp.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    emp.department.toLowerCase().includes(searchQuery.toLowerCase())
+    emp.department.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (emp.boutique || "").toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleCreateEmploye = async (payload: {
@@ -241,6 +274,7 @@ export default function EmployesPage() {
     lastName: string;
     email: string;
     phone: string;
+    boutiqueId: string;
     roleId: string;
     departementId: string;
     password: string;
@@ -421,11 +455,12 @@ export default function EmployesPage() {
         </div>
 
         <div className="w-full overflow-x-auto">
-          <table className="w-full text-left text-xs min-w-[700px]">
+          <table className="w-full text-left text-xs min-w-[820px]">
             <thead className="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider">
               <tr>
                 <th className="px-6 py-4">Employe</th>
                 <th className="px-6 py-4">Contact</th>
+                <th className="px-6 py-4">Boutique</th>
                 <th className="px-6 py-4">Role</th>
                 <th className="px-6 py-4">Departement</th>
                 <th className="px-6 py-4">Statut</th>
@@ -435,7 +470,7 @@ export default function EmployesPage() {
             <tbody className="divide-y divide-slate-100">
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-slate-400 font-medium bg-slate-50/30">
+                  <td colSpan={7} className="px-6 py-12 text-center text-slate-400 font-medium bg-slate-50/30">
                     <div className="flex items-center justify-center gap-2">
                       <Loader2 size={16} className="animate-spin text-indigo-500" />
                       Chargement des employes...
@@ -444,7 +479,7 @@ export default function EmployesPage() {
                 </tr>
               ) : filteredEmployes.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-slate-400 font-medium bg-slate-50/30">
+                  <td colSpan={7} className="px-6 py-8 text-center text-slate-400 font-medium bg-slate-50/30">
                     Aucun element trouve
                   </td>
                 </tr>
@@ -464,6 +499,12 @@ export default function EmployesPage() {
                     <td className="px-6 py-4 text-slate-600">
                       {emp.email}<br />
                       <span className="text-[10px] text-slate-400 font-medium">{emp.phone}</span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="inline-flex items-center gap-1.5 bg-sky-50 text-sky-700 border border-sky-100 px-2 py-0.5 rounded-md font-bold text-[10px]">
+                        <Store size={11} />
+                        {emp.boutique || "Boutique active"}
+                      </span>
                     </td>
                     <td className="px-6 py-4">
                       <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md font-bold text-[10px]">{emp.role}</span>
@@ -501,6 +542,8 @@ export default function EmployesPage() {
         onClose={() => setIsModalOpen(false)}
         roles={roles}
         departements={departements}
+        boutiques={boutiques}
+        onBoutiqueChange={fetchReferences}
         onCreate={handleCreateEmploye}
       />
 
@@ -615,8 +658,8 @@ function EditInterface({ employe, roles, departements, onClose, onSave }: EditIn
     <>
       <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-[#fcfdfe] shrink-0">
         <div>
-          <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Modifier l`Employe</h3>
-          <p className="text-[11px] text-slate-400 font-medium mt-0.5">Mise a jour globale de la fiche d`identite</p>
+          <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Modifier l'Employe</h3>
+          <p className="text-[11px] text-slate-400 font-medium mt-0.5">Mise a jour globale de la fiche d'identite</p>
         </div>
         <button onClick={onClose} disabled={isSaving} className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-40">
           <X size={16} />
@@ -649,7 +692,7 @@ function EditInterface({ employe, roles, departements, onClose, onSave }: EditIn
 
           <div className="space-y-1.5 relative">
             <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
-              <ShieldCheck size={12} /> Role d`exploitation
+              <ShieldCheck size={12} /> Role d'exploitation
             </label>
             <div onClick={() => { if (!isSaving) { setShowRoleDropdown(!showRoleDropdown); setShowDeptDropdown(false); } }} className="w-full text-xs font-medium px-3 py-2.5 border border-slate-200 rounded-xl bg-white flex justify-between items-center cursor-pointer hover:border-indigo-500 transition-colors">
               <span className="text-slate-800">{formData.role || "Choisir un role"}</span>
@@ -749,7 +792,7 @@ function ResetInterface({ employe, onClose, onReset, copyToClipboard, copied }: 
           <div className="p-2 bg-amber-50 text-amber-600 rounded-lg"><KeyRound size={16} /></div>
           <div>
             <h3 className="font-bold text-slate-900 text-sm">Identifiants & Securite</h3>
-            <p className="text-[11px] text-slate-400">Reinitialiser les acces de l`utilisateur.</p>
+            <p className="text-[11px] text-slate-400">Reinitialiser les acces de l'utilisateur.</p>
           </div>
         </div>
         <button onClick={onClose} disabled={isResetting} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 transition-colors disabled:opacity-40"><X size={16} /></button>
@@ -806,7 +849,7 @@ function StatusInterface({ employe, onClose, onConfirm }: StatusInterfaceProps) 
           <div className={`p-2 ${isCurrentlyActive ? "bg-rose-50 text-rose-600" : "bg-emerald-50 text-emerald-600"} rounded-lg`}><Power size={16} /></div>
           <div>
             <h3 className="font-bold text-slate-900 text-sm">Changer le statut</h3>
-            <p className="text-[11px] text-slate-400">Modifier l`etat operationnel.</p>
+            <p className="text-[11px] text-slate-400">Modifier l'etat operationnel.</p>
           </div>
         </div>
         <button onClick={onClose} disabled={isProcessing} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 transition-colors disabled:opacity-40"><X size={16} /></button>
@@ -849,7 +892,7 @@ function DeleteInterface({ employe, onClose, onConfirm }: DeleteInterfaceProps) 
           <div className="p-2 bg-rose-50 text-rose-600 rounded-lg"><Trash2 size={16} /></div>
           <div>
             <h3 className="font-bold text-slate-900 text-sm">Supprimer definitivement</h3>
-            <p className="text-[11px] text-slate-400">Retirer l`acces et detruire la fiche.</p>
+            <p className="text-[11px] text-slate-400">Retirer l'acces et detruire la fiche.</p>
           </div>
         </div>
         <button onClick={onClose} disabled={isProcessing} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 transition-colors disabled:opacity-40"><X size={16} /></button>

@@ -43,6 +43,12 @@ interface DepartementApi {
   employeeCount?: number;
 }
 
+interface BoutiqueApi {
+  id: string;
+  _id?: string;
+  nom: string;
+}
+
 interface TeamStats {
   totalEmployees: number;
   activeNow: number;
@@ -127,6 +133,7 @@ export default function TeamOverviewPage() {
   const [employes, setEmployes] = useState<Employe[]>([]);
   const [roles, setRoles] = useState<EmployeOption[]>([]);
   const [departements, setDepartements] = useState<(EmployeOption & { employeeCount?: number })[]>([]);
+  const [boutiques, setBoutiques] = useState<EmployeOption[]>([]);
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   const showToast = useCallback((type: "success" | "error", message: string) => {
@@ -142,19 +149,55 @@ export default function TeamOverviewPage() {
     };
   }, []);
 
+  const fetchReferences = useCallback(async (boutiqueId?: string) => {
+    const query = boutiqueId ? `?boutiqueId=${encodeURIComponent(boutiqueId)}` : "";
+    const [rolesResponse, departementsResponse] = await Promise.all([
+      fetch(`${API_URL}/roles${query}`, { method: "GET", headers: getAuthHeaders() }),
+      fetch(`${API_URL}/departements${query}`, { method: "GET", headers: getAuthHeaders() }),
+    ]);
+
+    const rolesResult = await readApiMessage(rolesResponse, "Impossible de charger les roles.");
+    const departementsResult = await readApiMessage(departementsResponse, "Impossible de charger les departements.");
+
+    if (!rolesResponse.ok || !rolesResult.data?.success) {
+      throw new Error(rolesResult.message);
+    }
+
+    if (!departementsResponse.ok || !departementsResult.data?.success) {
+      throw new Error(departementsResult.message);
+    }
+
+    setRoles(
+      (rolesResult.data.roles || []).map((role: RoleApi) => ({
+        id: role._id,
+        name: role.nom,
+      }))
+    );
+
+    setDepartements(
+      (departementsResult.data.data || []).map((departement: DepartementApi) => ({
+        id: departement._id,
+        name: departement.nom,
+        employeeCount: departement.employeeCount || 0,
+      }))
+    );
+  }, [getAuthHeaders]);
+
   const fetchOverviewData = useCallback(async () => {
     try {
       setIsLoading(true);
 
-      const [employesResponse, rolesResponse, departementsResponse] = await Promise.all([
+      const [employesResponse, rolesResponse, departementsResponse, boutiquesResponse] = await Promise.all([
         fetch(`${API_URL}/employes`, { method: "GET", headers: getAuthHeaders() }),
         fetch(`${API_URL}/roles`, { method: "GET", headers: getAuthHeaders() }),
         fetch(`${API_URL}/departements`, { method: "GET", headers: getAuthHeaders() }),
+        fetch(`${API_URL}/boutiques`, { method: "GET", headers: getAuthHeaders() }),
       ]);
 
       const employesResult = await readApiMessage(employesResponse, "Impossible de charger les employes.");
       const rolesResult = await readApiMessage(rolesResponse, "Impossible de charger les roles.");
       const departementsResult = await readApiMessage(departementsResponse, "Impossible de charger les departements.");
+      const boutiquesResult = await readApiMessage(boutiquesResponse, "Impossible de charger les boutiques.");
 
       if (employesResponse.ok && employesResult.data?.success) {
         setEmployes(employesResult.data.employes || []);
@@ -184,6 +227,15 @@ export default function TeamOverviewPage() {
       } else {
         showToast("error", departementsResult.message);
       }
+
+      if (boutiquesResponse.ok && boutiquesResult.data?.success) {
+        setBoutiques(
+          (boutiquesResult.data.boutiques || []).map((boutique: BoutiqueApi) => ({
+            id: boutique.id || boutique._id || "",
+            name: boutique.nom,
+          }))
+        );
+      }
     } catch {
       showToast("error", "Erreur de communication avec le serveur.");
     } finally {
@@ -200,6 +252,7 @@ export default function TeamOverviewPage() {
     lastName: string;
     email: string;
     phone: string;
+    boutiqueId: string;
     roleId: string;
     departementId: string;
     password: string;
@@ -473,6 +526,8 @@ export default function TeamOverviewPage() {
         onClose={() => setIsModalOpen(false)}
         roles={roles}
         departements={departements}
+        boutiques={boutiques}
+        onBoutiqueChange={fetchReferences}
         onCreate={handleCreateEmploye}
       />
     </div>
