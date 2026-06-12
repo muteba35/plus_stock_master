@@ -276,6 +276,7 @@ export const updateEmploye = async (req, res) => {
   try {
     const { id } = req.params;
     const boutiqueId = getBoutiqueId(req);
+    const targetBoutiqueId = req.user?.isOwner && req.body?.boutiqueId ? req.body.boutiqueId : boutiqueId;
 
     if (!assertBoutique(boutiqueId)) {
       return res.status(401).json({
@@ -288,6 +289,13 @@ export const updateEmploye = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "ID invalide."
+      });
+    }
+
+    if (!isValidObjectId(targetBoutiqueId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Boutique cible invalide."
       });
     }
 
@@ -317,14 +325,38 @@ export const updateEmploye = async (req, res) => {
       avatar
     } = req.body;
 
+    const isChangingBoutique = targetBoutiqueId.toString() !== boutiqueId.toString();
+
+    if (isChangingBoutique && (!roleId || !departementId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Veuillez choisir un role et un departement pour la boutique cible."
+      });
+    }
+
+    if (req.user?.isOwner && isChangingBoutique) {
+      const targetBoutique = await Boutique.findOne({
+        _id: targetBoutiqueId,
+        userId: req.user.id,
+        isDeleted: false
+      });
+
+      if (!targetBoutique) {
+        return res.status(403).json({
+          success: false,
+          message: "Cette boutique n'appartient pas a votre compte."
+        });
+      }
+    }
+
     const nextRoleId = roleId || employe.roleId?.toString();
     const nextDepartementId = departementId || employe.departementId?.toString();
 
-    if (roleId || departementId) {
+    if (roleId || departementId || isChangingBoutique) {
       const validation = await assertRoleAndDepartementBelongToBoutique({
         roleId: nextRoleId,
         departementId: nextDepartementId,
-        boutiqueId
+        boutiqueId: targetBoutiqueId
       });
 
       if (!validation.valid) {
@@ -357,11 +389,12 @@ export const updateEmploye = async (req, res) => {
 
     if (roleId) employe.roleId = roleId;
     if (departementId) employe.departementId = departementId;
+    if (isChangingBoutique) employe.boutiqueActive = targetBoutiqueId;
     if (avatar !== undefined) employe.avatar = avatar || "";
 
     await employe.save();
 
-    const populated = await findEmployeInBoutique(id, boutiqueId, true);
+    const populated = await findEmployeInBoutique(id, targetBoutiqueId, true);
 
     return res.status(200).json({
       success: true,
