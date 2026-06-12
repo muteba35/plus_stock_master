@@ -109,15 +109,16 @@ export const createEmploye = async (req, res) => {
     const cleanNom = String(nom || lastName || "").trim();
     const cleanEmail = String(email || "").toLowerCase().trim();
     const cleanPhone = String(telephone || phone || "").trim();
+    const temporaryPassword = password ? String(password) : crypto.randomBytes(9).toString("base64url");
 
-    if (!cleanPrenom || !cleanNom || !cleanEmail || !cleanPhone || !password || !roleId || !departementId) {
+    if (!cleanPrenom || !cleanNom || !cleanEmail || !cleanPhone || !roleId || !departementId) {
       return res.status(400).json({
         success: false,
         message: "Tous les champs sont obligatoires."
       });
     }
 
-    if (String(password).length < 8) {
+    if (temporaryPassword.length < 8) {
       return res.status(400).json({
         success: false,
         message: "Mot de passe minimum 8 caracteres."
@@ -161,7 +162,7 @@ export const createEmploye = async (req, res) => {
       });
     }
 
-    const hashedPassword = await bcrypt.hash(String(password), 12);
+    const hashedPassword = await bcrypt.hash(temporaryPassword, 12);
 
     const employe = await Utilisateur.create({
       prenom: cleanPrenom,
@@ -186,7 +187,8 @@ export const createEmploye = async (req, res) => {
     return res.status(201).json({
       success: true,
       message: "Employe cree avec succes.",
-      employe: formatEmploye(populated)
+      employe: formatEmploye(populated),
+      temporaryPassword
     });
   } catch (error) {
     console.error("createEmploye:", error);
