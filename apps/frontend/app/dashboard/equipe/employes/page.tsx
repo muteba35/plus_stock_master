@@ -49,6 +49,8 @@ interface EditInterfaceProps {
   employe: Employe;
   roles: EmployeOption[];
   departements: EmployeOption[];
+  boutiques: EmployeOption[];
+  onBoutiqueChange: (boutiqueId: string) => void | Promise<void>;
   onClose: () => void;
   onSave: (updatedEmp: Employe) => Promise<void>;
 }
@@ -277,7 +279,6 @@ export default function EmployesPage() {
     boutiqueId: string;
     roleId: string;
     departementId: string;
-    password: string;
     avatar?: string;
   }) => {
     try {
@@ -318,6 +319,7 @@ export default function EmployesPage() {
           phone: updatedEmp.phone.trim(),
           roleId: updatedEmp.roleId,
           departementId: updatedEmp.departementId,
+          boutiqueId: updatedEmp.boutiqueId,
           avatar: updatedEmp.avatarUrl || "",
         }),
       });
@@ -327,7 +329,7 @@ export default function EmployesPage() {
         throw new Error(message);
       }
 
-      await fetchEmployes();
+      await Promise.all([fetchEmployes(), fetchReferences()]);
       setActiveActionModal(null);
       showToast("success", data.message || "Employe mis a jour avec succes.");
     } catch (error) {
@@ -455,12 +457,11 @@ export default function EmployesPage() {
         </div>
 
         <div className="w-full overflow-x-auto">
-          <table className="w-full text-left text-xs min-w-[820px]">
+          <table className="w-full text-left text-xs min-w-[700px]">
             <thead className="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider">
               <tr>
                 <th className="px-6 py-4">Employe</th>
                 <th className="px-6 py-4">Contact</th>
-                <th className="px-6 py-4">Boutique</th>
                 <th className="px-6 py-4">Role</th>
                 <th className="px-6 py-4">Departement</th>
                 <th className="px-6 py-4">Statut</th>
@@ -470,7 +471,7 @@ export default function EmployesPage() {
             <tbody className="divide-y divide-slate-100">
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-slate-400 font-medium bg-slate-50/30">
+                  <td colSpan={6} className="px-6 py-12 text-center text-slate-400 font-medium bg-slate-50/30">
                     <div className="flex items-center justify-center gap-2">
                       <Loader2 size={16} className="animate-spin text-indigo-500" />
                       Chargement des employes...
@@ -479,7 +480,7 @@ export default function EmployesPage() {
                 </tr>
               ) : filteredEmployes.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-slate-400 font-medium bg-slate-50/30">
+                  <td colSpan={6} className="px-6 py-8 text-center text-slate-400 font-medium bg-slate-50/30">
                     Aucun element trouve
                   </td>
                 </tr>
@@ -499,12 +500,6 @@ export default function EmployesPage() {
                     <td className="px-6 py-4 text-slate-600">
                       {emp.email}<br />
                       <span className="text-[10px] text-slate-400 font-medium">{emp.phone}</span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex items-center gap-1.5 bg-sky-50 text-sky-700 border border-sky-100 px-2 py-0.5 rounded-md font-bold text-[10px]">
-                        <Store size={11} />
-                        {emp.boutique || "Boutique active"}
-                      </span>
                     </td>
                     <td className="px-6 py-4">
                       <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md font-bold text-[10px]">{emp.role}</span>
@@ -557,7 +552,18 @@ export default function EmployesPage() {
               className="bg-white rounded-2xl border border-slate-200/80 shadow-2xl w-full max-w-2xl overflow-hidden text-slate-800 flex flex-col max-h-[90vh]"
             >
               {activeActionModal === "edit" && (
-                <EditInterface employe={selectedEmploye} roles={roles} departements={departements} onClose={() => setActiveActionModal(null)} onSave={handleUpdateEmploye} />
+                <EditInterface
+                  employe={selectedEmploye}
+                  roles={roles}
+                  departements={departements}
+                  boutiques={boutiques}
+                  onBoutiqueChange={fetchReferences}
+                  onClose={() => {
+                    setActiveActionModal(null);
+                    void fetchReferences();
+                  }}
+                  onSave={handleUpdateEmploye}
+                />
               )}
 
               {activeActionModal === "reset" && (
@@ -593,7 +599,7 @@ const FormInput: React.FC<FormInputProps> = ({ label, icon: Icon, ...props }) =>
   );
 };
 
-function EditInterface({ employe, roles, departements, onClose, onSave }: EditInterfaceProps) {
+function EditInterface({ employe, roles, departements, boutiques, onBoutiqueChange, onClose, onSave }: EditInterfaceProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(employe.avatarUrl || null);
   const [showRoleDropdown, setShowRoleDropdown] = useState(false);
@@ -603,6 +609,7 @@ function EditInterface({ employe, roles, departements, onClose, onSave }: EditIn
   const [formData, setFormData] = useState<Employe>({ ...employe });
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingReferences, setIsLoadingReferences] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -629,8 +636,39 @@ function EditInterface({ employe, roles, departements, onClose, onSave }: EditIn
 
   const filteredRoles = roles.filter((role) => role.name.toLowerCase().includes(roleSearch.toLowerCase()));
   const filteredDepartments = departements.filter((dept) => dept.name.toLowerCase().includes(deptSearch.toLowerCase()));
+  const selectedBoutique = boutiques.find((boutique) => boutique.id === formData.boutiqueId);
+
+  const handleBoutiqueSelect = async (boutique: EmployeOption) => {
+    if (isSaving || isLoadingReferences || boutique.id === formData.boutiqueId) return;
+
+    setError("");
+    setFormData({
+      ...formData,
+      boutiqueId: boutique.id,
+      boutique: boutique.name,
+      role: "",
+      roleId: null,
+      department: "",
+      departementId: null,
+    });
+    setShowRoleDropdown(false);
+    setShowDeptDropdown(false);
+    setRoleSearch("");
+    setDeptSearch("");
+
+    try {
+      setIsLoadingReferences(true);
+      await onBoutiqueChange(boutique.id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Impossible de charger les roles et departements de ce site.");
+    } finally {
+      setIsLoadingReferences(false);
+    }
+  };
 
   const handleSave = async () => {
+    if (isLoadingReferences) return;
+
     setError("");
     const validationError = validateEmployeeForm(formData);
     if (validationError) {
@@ -690,12 +728,45 @@ function EditInterface({ employe, roles, departements, onClose, onSave }: EditIn
           <FormInput label="Adresse Email" name="email" type="email" icon={Mail} value={formData.email} onChange={handleChange} required disabled={isSaving} />
           <FormInput label="Numero de Telephone" name="phone" type="tel" icon={Phone} value={formData.phone} onChange={handleChange} required disabled={isSaving} />
 
+          {boutiques.length > 0 && (
+            <div className="space-y-2 md:col-span-2">
+              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
+                <Store size={12} /> Site de rattachement
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {boutiques.map((boutique) => {
+                  const isSelected = formData.boutiqueId === boutique.id;
+
+                  return (
+                    <button
+                      key={boutique.id}
+                      type="button"
+                      onClick={() => handleBoutiqueSelect(boutique)}
+                      disabled={isSaving || isLoadingReferences}
+                      className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border text-[11px] font-bold transition-all disabled:opacity-60 ${
+                        isSelected
+                          ? "bg-indigo-50 text-indigo-600 border-indigo-100"
+                          : "bg-white text-slate-500 border-slate-200 hover:border-indigo-200 hover:text-indigo-600"
+                      }`}
+                    >
+                      {isLoadingReferences && isSelected ? <Loader2 size={12} className="animate-spin" /> : <Store size={12} />}
+                      {boutique.name}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-[10px] text-slate-400 font-medium">
+                Site actuel : {selectedBoutique?.name || formData.boutique || "Boutique active"}
+              </p>
+            </div>
+          )}
+
           <div className="space-y-1.5 relative">
             <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
               <ShieldCheck size={12} /> Role d'exploitation
             </label>
-            <div onClick={() => { if (!isSaving) { setShowRoleDropdown(!showRoleDropdown); setShowDeptDropdown(false); } }} className="w-full text-xs font-medium px-3 py-2.5 border border-slate-200 rounded-xl bg-white flex justify-between items-center cursor-pointer hover:border-indigo-500 transition-colors">
-              <span className="text-slate-800">{formData.role || "Choisir un role"}</span>
+            <div onClick={() => { if (!isSaving && !isLoadingReferences) { setShowRoleDropdown(!showRoleDropdown); setShowDeptDropdown(false); } }} className={`w-full text-xs font-medium px-3 py-2.5 border border-slate-200 rounded-xl bg-white flex justify-between items-center transition-colors ${isLoadingReferences ? "cursor-wait opacity-70" : "cursor-pointer hover:border-indigo-500"}`}>
+              <span className={formData.role ? "text-slate-800" : "text-slate-400"}>{isLoadingReferences ? "Chargement des roles..." : formData.role || "Choisir un role"}</span>
               <ChevronDown size={14} className={`text-slate-400 transition-transform ${showRoleDropdown ? "rotate-180" : ""}`} />
             </div>
             <AnimatePresence>
@@ -726,8 +797,8 @@ function EditInterface({ employe, roles, departements, onClose, onSave }: EditIn
             <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
               <Briefcase size={12} /> Departement
             </label>
-            <div onClick={() => { if (!isSaving) { setShowDeptDropdown(!showDeptDropdown); setShowRoleDropdown(false); } }} className="w-full text-xs font-medium px-3 py-2.5 border border-slate-200 rounded-xl bg-white flex justify-between items-center cursor-pointer hover:border-indigo-500 transition-colors">
-              <span className="text-slate-800">{formData.department || "Choisir un departement"}</span>
+            <div onClick={() => { if (!isSaving && !isLoadingReferences) { setShowDeptDropdown(!showDeptDropdown); setShowRoleDropdown(false); } }} className={`w-full text-xs font-medium px-3 py-2.5 border border-slate-200 rounded-xl bg-white flex justify-between items-center transition-colors ${isLoadingReferences ? "cursor-wait opacity-70" : "cursor-pointer hover:border-indigo-500"}`}>
+              <span className={formData.department ? "text-slate-800" : "text-slate-400"}>{isLoadingReferences ? "Chargement des departements..." : formData.department || "Choisir un departement"}</span>
               <ChevronDown size={14} className={`text-slate-400 transition-transform ${showDeptDropdown ? "rotate-180" : ""}`} />
             </div>
             <AnimatePresence>
@@ -757,9 +828,9 @@ function EditInterface({ employe, roles, departements, onClose, onSave }: EditIn
       </div>
 
       <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2 shrink-0">
-        <button onClick={onClose} disabled={isSaving} className="px-4 py-2 hover:bg-slate-200/60 rounded-xl font-bold text-slate-500 text-[11px] transition-colors disabled:opacity-40">Annuler</button>
-        <button onClick={handleSave} disabled={isSaving} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-[11px] transition-colors flex items-center gap-2 disabled:bg-slate-400">
-          {isSaving && <Loader2 size={12} className="animate-spin" />}
+        <button onClick={onClose} disabled={isSaving || isLoadingReferences} className="px-4 py-2 hover:bg-slate-200/60 rounded-xl font-bold text-slate-500 text-[11px] transition-colors disabled:opacity-40">Annuler</button>
+        <button onClick={handleSave} disabled={isSaving || isLoadingReferences} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-[11px] transition-colors flex items-center gap-2 disabled:bg-slate-400">
+          {(isSaving || isLoadingReferences) && <Loader2 size={12} className="animate-spin" />}
           Appliquer les changements
         </button>
       </div>

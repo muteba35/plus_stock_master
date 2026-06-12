@@ -8,9 +8,6 @@ import {
   Mail,
   Phone,
   ShieldCheck,
-  Lock,
-  Eye,
-  EyeOff,
   Camera,
   Search,
   ChevronDown,
@@ -41,7 +38,6 @@ interface EmployeModalProps {
     boutiqueId: string;
     roleId: string;
     departementId: string;
-    password: string;
     avatar?: string;
   }) => Promise<void>;
 }
@@ -68,7 +64,6 @@ export default function EmployeModal({
   onBoutiqueChange,
   onCreate,
 }: EmployeModalProps) {
-  const [showPassword, setShowPassword] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -90,7 +85,6 @@ export default function EmployeModal({
     boutiqueId: "",
     roleId: "",
     departementId: "",
-    password: "",
   });
 
   const selectedBoutique = boutiques.find((boutique) => boutique.id === formData.boutiqueId);
@@ -127,7 +121,6 @@ export default function EmployeModal({
       boutiqueId: "",
       roleId: "",
       departementId: "",
-      password: "",
     });
     setAvatarPreview(null);
     setError("");
@@ -194,7 +187,6 @@ export default function EmployeModal({
       boutiqueId: formData.boutiqueId,
       roleId: formData.roleId,
       departementId: formData.departementId,
-      password: formData.password,
     };
 
     if (!NAME_REGEX.test(cleanedForm.firstName)) {
@@ -232,11 +224,6 @@ export default function EmployeModal({
       return;
     }
 
-    if (cleanedForm.password.length < 8) {
-      setError("Le mot de passe doit contenir au moins 8 caracteres.");
-      return;
-    }
-
     try {
       setIsSubmitting(true);
       await onCreate({
@@ -269,7 +256,7 @@ export default function EmployeModal({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.98 }}
             transition={{ duration: 0.2 }}
-            className="relative z-10 w-full max-w-2xl bg-white rounded-2xl border border-slate-200/80 shadow-xl overflow-hidden flex flex-col max-h-[95vh]"
+            className="relative z-10 w-full max-w-3xl bg-white rounded-2xl border border-slate-200/80 shadow-xl overflow-hidden flex flex-col max-h-[90vh]"
           >
             <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-[#fcfdfe] shrink-0">
               <div>
@@ -290,7 +277,7 @@ export default function EmployeModal({
               </button>
             </div>
 
-            <div className="overflow-y-auto custom-scrollbar">
+            <div className="overflow-y-auto custom-scrollbar max-h-[calc(90vh-130px)]">
               <form id="add-employee-form" onSubmit={handleSubmit} className="p-6">
                 {error && (
                   <div className="mb-5 rounded-xl border border-rose-100 bg-rose-50 p-3 text-xs font-semibold text-rose-600">
@@ -298,10 +285,10 @@ export default function EmployeModal({
                   </div>
                 )}
 
-                <div className="mb-8 flex flex-col items-center justify-center">
+                <div className="mb-6 flex flex-col items-center justify-center">
                   <div
                     onClick={() => !isSubmitting && fileInputRef.current?.click()}
-                    className="w-20 h-20 rounded-full border border-slate-200 bg-slate-50 flex items-center justify-center cursor-pointer overflow-hidden group relative"
+                    className="w-16 h-16 rounded-full border border-slate-200 bg-slate-50 flex items-center justify-center cursor-pointer overflow-hidden group relative"
                   >
                     {avatarPreview ? (
                       <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
@@ -324,7 +311,7 @@ export default function EmployeModal({
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <FormInput label="Prenom" name="firstName" icon={User} value={formData.firstName} onChange={handleChange} placeholder="Ex: Junior" disabled={isSubmitting} required />
                   <FormInput label="Nom de famille" name="lastName" icon={User} value={formData.lastName} onChange={handleChange} placeholder="Ex: Muteba" disabled={isSubmitting} required />
                   <FormInput label="Adresse Email" name="email" type="email" icon={Mail} value={formData.email} onChange={handleChange} placeholder="junior@shop.com" disabled={isSubmitting} required />
@@ -547,37 +534,16 @@ export default function EmployeModal({
                       )}
                     </AnimatePresence>
                   </div>
-
-                  <FormInput
-                    label="Mot de passe"
-                    name="password"
-                    type={showPassword ? "text" : "password"}
-                    icon={Lock}
-                    value={formData.password}
-                    onChange={handleChange}
-                    placeholder="Minimum 8 caracteres"
-                    disabled={isSubmitting}
-                    required
-                    rightElement={
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="text-slate-400 hover:text-indigo-600 focus:outline-none"
-                      >
-                        {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
-                      </button>
-                    }
-                  />
                 </div>
               </form>
             </div>
 
-            <div className="p-5 border-t border-slate-100 bg-[#fcfdfe] shrink-0 flex justify-end gap-3">
+            <div className="p-4 border-t border-slate-100 bg-[#fcfdfe] shrink-0 flex justify-end gap-2">
               <button
                 type="button"
                 onClick={handleClose}
                 disabled={isSubmitting}
-                className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors disabled:opacity-40"
+                className="px-4 py-2 text-[11px] font-bold text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors disabled:opacity-40"
               >
                 Annuler
               </button>
@@ -585,7 +551,7 @@ export default function EmployeModal({
                 type="submit"
                 form="add-employee-form"
                 disabled={isSubmitting}
-                className="px-6 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-2 disabled:bg-slate-400"
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold rounded-xl transition-colors flex items-center gap-2 disabled:bg-slate-400"
               >
                 {isSubmitting && <Loader2 size={14} className="animate-spin" />}
                 Creer l'employe

@@ -95,6 +95,9 @@ export default function BoutiquePage() {
   const [boutiques, setBoutiques] = useState<Boutique[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [sectorFilter, setSectorFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [currencyFilter, setCurrencyFilter] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"create" | "edit" | "view">("create");
   const [selectedBoutique, setSelectedBoutique] = useState<Boutique | null>(null);
@@ -190,13 +193,25 @@ export default function BoutiquePage() {
 
   const filteredBoutiques = useMemo(
     () =>
-      boutiques.filter(
-        (boutique) =>
+      boutiques.filter((boutique) => {
+        const query = searchTerm.toLowerCase();
+        const statusLabel = boutique.isActive ? "active" : (boutique.statutPaiement || "disponible").toLowerCase();
+        const matchesSearch =
           boutique.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
           boutique.secteurActivite.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          boutique.deviseParDefaut.toLowerCase().includes(searchTerm.toLowerCase())
-      ),
-    [boutiques, searchTerm]
+          boutique.deviseParDefaut.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (boutique.plan || "").toLowerCase().includes(query) ||
+          statusLabel.includes(query);
+        const matchesSector = sectorFilter === "all" || boutique.secteurActivite === sectorFilter;
+        const matchesCurrency = currencyFilter === "all" || boutique.deviseParDefaut === currencyFilter;
+        const matchesStatus =
+          statusFilter === "all" ||
+          (statusFilter === "active" && boutique.isActive) ||
+          (statusFilter === "inactive" && !boutique.isActive);
+
+        return matchesSearch && matchesSector && matchesCurrency && matchesStatus;
+      }),
+    [boutiques, currencyFilter, searchTerm, sectorFilter, statusFilter]
   );
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -384,16 +399,35 @@ export default function BoutiquePage() {
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex items-center gap-4">
-          <div className="relative w-full">
+        <div className="p-4 border-b border-slate-100 flex flex-col xl:flex-row xl:items-center gap-3">
+          <div className="relative flex-1">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
             <input
               type="text"
-              placeholder="Rechercher une boutique, un secteur ou une devise..."
+              placeholder="Rechercher une boutique, un secteur, une devise ou un statut..."
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
               className="w-full pl-12 pr-4 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 font-medium text-slate-800 bg-white"
             />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 xl:w-[620px]">
+            <select value={sectorFilter} onChange={(event) => setSectorFilter(event.target.value)} className="text-xs font-bold px-3 py-2 border border-slate-200 rounded-xl bg-white text-slate-600 focus:outline-none focus:border-indigo-500">
+              <option value="all">Tous les secteurs</option>
+              {Array.from(new Set(boutiques.map((boutique) => boutique.secteurActivite))).map((sector) => (
+                <option key={sector} value={sector}>{sector}</option>
+              ))}
+            </select>
+            <select value={currencyFilter} onChange={(event) => setCurrencyFilter(event.target.value)} className="text-xs font-bold px-3 py-2 border border-slate-200 rounded-xl bg-white text-slate-600 focus:outline-none focus:border-indigo-500">
+              <option value="all">Toutes les devises</option>
+              {Array.from(new Set(boutiques.map((boutique) => boutique.deviseParDefaut))).map((currency) => (
+                <option key={currency} value={currency}>{currency}</option>
+              ))}
+            </select>
+            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="text-xs font-bold px-3 py-2 border border-slate-200 rounded-xl bg-white text-slate-600 focus:outline-none focus:border-indigo-500">
+              <option value="all">Tous les statuts</option>
+              <option value="active">Active</option>
+              <option value="inactive">Non active</option>
+            </select>
           </div>
         </div>
 
