@@ -47,6 +47,9 @@ export const protect = async (req, res, next) => {
 
     const permissions = await buildUserPermissions(user);
     const boutiqueId = user.boutiqueActive?._id || user.boutiqueActive || decoded.boutiqueId;
+    const isOwner = !user.roleId && (
+      !user.boutiqueActive || user.boutiqueActive.userId?.toString() === user._id.toString()
+    );
 
     req.user = {
       ...decoded,
@@ -54,6 +57,7 @@ export const protect = async (req, res, next) => {
       _id: user._id,
       boutiqueId,
       boutiqueActive: boutiqueId,
+      isOwner,
       permissions,
     };
 
@@ -77,7 +81,7 @@ export const checkPermission = (requiredPermission) => {
       return res.status(401).json({ message: "Action non autorisee. Profil non identifie." });
     }
 
-    const hasAccess = req.user.permissions.includes(requiredPermission);
+    const hasAccess = req.user.isOwner || req.user.permissions.includes(requiredPermission);
 
     if (!hasAccess) {
       return res.status(403).json({

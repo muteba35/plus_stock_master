@@ -9,7 +9,8 @@ dotenv.config();
 const permissions = [
   // --- MODULE : DASHBOARD ---
   { nom: "VOIR_RESUME_VENTES", module: "DASHBOARD", description: "Consulter les statistiques globales sur la page d'accueil" },
- 
+  { nom: "VOIR_ALERTES_STOCK", module: "DASHBOARD", description: "Recevoir les notifications de rupture de stock" },
+
   // --- MODULE : VENTE ---
   { nom: "EFFECTUER_VENTE", module: "VENTE", description: "Autorise l'accès à la caisse et la validation des paniers" },
   { nom: "APPLIQUER_REMISE", module: "VENTE", description: "Permet d'appliquer des réductions sur le prix de vente" },
@@ -23,7 +24,6 @@ const permissions = [
   { nom: "VOIR_PRIX_ACHAT", module: "INVENTAIRE", description: "Permet de voir le prix d'achat (protection des marges)" },
   { nom: "AJUSTER_STOCK", module: "INVENTAIRE", description: "Modifier manuellement les quantités en stock" },
   { nom: "SUPPRIMER_PRODUIT", module: "INVENTAIRE", description: "Retirer un produit du système" },
-  { nom: "VOIR_ALERTES_STOCK", module: "INVENTAIRE", description: "Recevoir les notifications de rupture de stock" },
 
   // --- MODULE : EQUIPE (Mis à jour) ---
  
@@ -40,7 +40,6 @@ const permissions = [
   { nom: "MODIFIER_EMPLOYE", module: "EQUIPE", description: "Changer les accès ou infos d'un collègue" },
   { nom: "SUSPENDRE_EMPLOYE", module: "EQUIPE", description: "Suspendre l'accès d'un travailleur" },
   { nom: "BLOQUER_EMPLOYE", module: "EQUIPE", description: "Bloquer l'accès d'un travailleur" },
-  { nom: "SUPPRIMER_EMPLOYE", module: "EQUIPE", description: "Supprimer un employé du système" },
   { nom: "RESET_PASSWORD_EMPLOYE", module: "EQUIPE", description: "Permet au propriétaire de réinitialiser le mot de passe d'un employé bloqué" },
 
   // --- MODULE : PROFIL ---
@@ -54,6 +53,11 @@ const permissions = [
   { nom: "EXPORTER_RAPPORTS", module: "FINANCE", description: "Télécharger les rapports en PDF/Excel" },
 
   // --- MODULE : PARAMETRES ---
+  { nom: "VOIR_BOUTIQUES", module: "PARAMETRES", description: "Consulter les boutiques du compte proprietaire" },
+  { nom: "CREER_BOUTIQUE", module: "PARAMETRES", description: "Creer une nouvelle boutique rattachee au compte" },
+  { nom: "MODIFIER_BOUTIQUE", module: "PARAMETRES", description: "Modifier les informations d'une boutique" },
+  { nom: "SUPPRIMER_BOUTIQUE", module: "PARAMETRES", description: "Supprimer une boutique non active" },
+  { nom: "ACTIVER_BOUTIQUE", module: "PARAMETRES", description: "Changer la boutique active de la session" },
   { nom: "MODIFIER_INFOS_BOUTIQUE", module: "PARAMETRES", description: "Changer le nom, logo ou adresse de la boutique" },
   { nom: "CHANGER_DEVISE", module: "PARAMETRES", description: "Modifier la monnaie de travail (USD, CDF, EUR)" },
 
