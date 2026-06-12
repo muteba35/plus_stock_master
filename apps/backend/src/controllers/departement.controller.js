@@ -1,4 +1,9 @@
-import { Departement, Utilisateur } from "../models/Utilisateur.js"; 
+import { Boutique, Departement, Utilisateur } from "../models/Utilisateur.js";
+
+const getRequestedBoutiqueId = (req) => {
+  if (req.user?.isOwner && req.query?.boutiqueId) return req.query.boutiqueId;
+  return req.user.boutiqueActive || req.user.boutiqueId;
+};
 
 /**
  * @desc    Récupérer tous les départements de la boutique active
@@ -7,7 +12,7 @@ import { Departement, Utilisateur } from "../models/Utilisateur.js";
  */
 export const getDepartements = async (req, res) => {
   try {
-    const boutiqueId = req.user.boutiqueActive || req.user.boutiqueId;
+    const boutiqueId = getRequestedBoutiqueId(req);
 
     if (!boutiqueId) {
       return res.status(400).json({
@@ -15,6 +20,17 @@ export const getDepartements = async (req, res) => {
         status: "fail",
         message: "Identifiant de la boutique introuvable dans la session utilisateur."
       });
+    }
+
+    if (req.user?.isOwner && req.query?.boutiqueId) {
+      const boutique = await Boutique.findOne({ _id: boutiqueId, userId: req.user.id, isDeleted: false });
+      if (!boutique) {
+        return res.status(403).json({
+          success: false,
+          status: "fail",
+          message: "Cette boutique n'appartient pas a votre compte."
+        });
+      }
     }
 
     const departements = await Departement.find({ boutiqueId }).sort({ createdAt: -1 });

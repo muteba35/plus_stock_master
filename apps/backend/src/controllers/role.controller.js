@@ -1,7 +1,12 @@
 import mongoose from "mongoose";
-import { Role, RolePermission, Permission, Utilisateur } from "../models/Utilisateur.js";
+import { Boutique, Role, RolePermission, Permission, Utilisateur } from "../models/Utilisateur.js";
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
+
+const getRequestedBoutiqueId = (req) => {
+  if (req.user?.isOwner && req.query?.boutiqueId) return req.query.boutiqueId;
+  return req.user?.boutiqueId;
+};
 
 const normalizePermissionIds = (permissions = []) => {
   if (!Array.isArray(permissions)) return [];
@@ -141,10 +146,17 @@ export const createRole = async (req, res) => {
 // ==========================================
 export const getRoles = async (req, res) => {
   try {
-    const boutiqueId = req.user?.boutiqueId;
+    const boutiqueId = getRequestedBoutiqueId(req);
 
     if (!boutiqueId || !isValidObjectId(boutiqueId)) {
       return res.status(401).json({ message: "Boutique active introuvable dans la session." });
+    }
+
+    if (req.user?.isOwner && req.query?.boutiqueId) {
+      const boutique = await Boutique.findOne({ _id: boutiqueId, userId: req.user.id, isDeleted: false });
+      if (!boutique) {
+        return res.status(403).json({ message: "Cette boutique n'appartient pas a votre compte." });
+      }
     }
 
     const roles = await Role.find({ boutiqueId }).sort({ createdAt: -1 });

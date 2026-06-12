@@ -7,6 +7,12 @@ const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
 const getBoutiqueId = (req) => req.user?.boutiqueId || req.user?.boutiqueActive;
 
+const getTargetBoutiqueId = (req) => {
+  if (req.user?.isOwner && req.body?.boutiqueId) return req.body.boutiqueId;
+  if (req.user?.isOwner && req.query?.boutiqueId) return req.query.boutiqueId;
+  return getBoutiqueId(req);
+};
+
 const formatEmploye = (employe) => ({
   id: employe._id,
   firstName: employe.prenom,
@@ -20,6 +26,9 @@ const formatEmploye = (employe) => ({
 
   departementId: employe.departementId?._id || employe.departementId || null,
   department: employe.departementId?.nom || "Non attribue",
+
+  boutiqueId: employe.boutiqueActive?._id || employe.boutiqueActive || null,
+  boutique: employe.boutiqueActive?.nom || "",
 
   status: employe.isBlocked ? "Suspendu" : "Actif",
   createdAt: employe.createdAt
@@ -73,7 +82,7 @@ const findEmployeInBoutique = async (id, boutiqueId, populate = false) => {
 
 export const createEmploye = async (req, res) => {
   try {
-    const boutiqueId = getBoutiqueId(req);
+    const boutiqueId = getTargetBoutiqueId(req);
 
     if (!assertBoutique(boutiqueId)) {
       return res.status(401).json({
@@ -115,7 +124,12 @@ export const createEmploye = async (req, res) => {
       });
     }
 
-    const boutique = await Boutique.findById(boutiqueId);
+    const boutiqueQuery = { _id: boutiqueId };
+    if (req.user?.isOwner) {
+      boutiqueQuery.userId = req.user.id;
+    }
+
+    const boutique = await Boutique.findOne(boutiqueQuery);
     if (!boutique) {
       return res.status(404).json({
         success: false,
@@ -185,7 +199,7 @@ export const createEmploye = async (req, res) => {
 
 export const getEmployes = async (req, res) => {
   try {
-    const boutiqueId = getBoutiqueId(req);
+    const boutiqueId = getTargetBoutiqueId(req);
 
     if (!assertBoutique(boutiqueId)) {
       return res.status(401).json({
@@ -201,6 +215,7 @@ export const getEmployes = async (req, res) => {
       .select("-password")
       .populate("roleId")
       .populate("departementId")
+      .populate("boutiqueActive")
       .sort({ createdAt: -1 });
 
     return res.status(200).json({
