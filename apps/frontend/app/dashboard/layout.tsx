@@ -339,7 +339,7 @@ export default function DashboardLayout({
       module: "PARAMETRES",
       subMenu: [
         { name: "Général", href: "/dashboard/parametres", permission: "MODIFIER_INFOS_BOUTIQUE" },
-        { name: "Ma Boutique", href: "/dashboard/parametres/boutique", permission: "MODIFIER_INFOS_BOUTIQUE" },
+        { name: "Ma Boutique", href: "/dashboard/parametres/boutique", permission: "VOIR_BOUTIQUES" },
         { name: "Devises & Taxes", href: "/dashboard/parametres/devise", permission: "CHANGER_DEVISE" },
         { name: "Abonnement", href: "/dashboard/parametres/abonnement", permission: "VOIR_ABONNEMENT" },
       ],

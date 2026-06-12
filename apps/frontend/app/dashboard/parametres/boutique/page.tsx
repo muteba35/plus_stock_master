@@ -7,12 +7,14 @@ import {
   CheckCircle2,
   ChevronDown,
   Coins,
+  Edit2,
   Eye,
   Loader2,
   Plus,
+  Power,
   Search,
   Store,
-  UserCheck,
+  Trash2,
   Users,
   X,
   XCircle,
@@ -93,11 +95,16 @@ export default function BoutiquePage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<"create" | "edit" | "view">("create");
+  const [selectedBoutique, setSelectedBoutique] = useState<Boutique | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activatingId, setActivatingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<BoutiqueForm>(DEFAULT_FORM);
   const [formError, setFormError] = useState("");
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [userPermissions, setUserPermissions] = useState<string[]>([]);
+  const [isOwner, setIsOwner] = useState(false);
 
   const showToast = useCallback((type: "success" | "error", message: string) => {
     setToast({ type, message });
@@ -120,6 +127,7 @@ export default function BoutiquePage() {
 
     if (Array.isArray(data.permissions)) {
       localStorage.setItem("user_permissions", JSON.stringify(data.permissions));
+      setUserPermissions(data.permissions);
     }
 
     if (data.boutique) {
@@ -161,7 +169,22 @@ export default function BoutiquePage() {
 
   useEffect(() => {
     fetchBoutiques();
+
+    try {
+      setUserPermissions(JSON.parse(localStorage.getItem("user_permissions") || "[]"));
+      const profile = JSON.parse(localStorage.getItem("user_profile") || "{}");
+      setIsOwner(profile.roleId === null || profile.roleId === "");
+    } catch {
+      setUserPermissions([]);
+      setIsOwner(false);
+    }
   }, [fetchBoutiques]);
+
+  const canView = isOwner || userPermissions.includes("VOIR_BOUTIQUES");
+  const canCreate = isOwner || userPermissions.includes("CREER_BOUTIQUE");
+  const canEdit = isOwner || userPermissions.includes("MODIFIER_BOUTIQUE");
+  const canDelete = isOwner || userPermissions.includes("SUPPRIMER_BOUTIQUE");
+  const canActivate = isOwner || userPermissions.includes("ACTIVER_BOUTIQUE");
 
   const filteredBoutiques = useMemo(
     () =>
@@ -181,14 +204,44 @@ export default function BoutiquePage() {
   };
 
   const handleOpenCreate = () => {
+    setSelectedBoutique(null);
+    setModalMode("create");
     setFormData(DEFAULT_FORM);
     setFormError("");
     setIsModalOpen(true);
   };
 
-  const handleCreateBoutique = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleOpenEdit = (boutique: Boutique) => {
+    setSelectedBoutique(boutique);
+    setModalMode("edit");
+    setFormData({
+      nom: boutique.nom,
+      secteurActivite: boutique.secteurActivite,
+      deviseParDefaut: boutique.deviseParDefaut,
+      tailleBusiness: boutique.tailleBusiness,
+    });
+    setFormError("");
+    setIsModalOpen(true);
+  };
+
+  const handleOpenView = (boutique: Boutique) => {
+    setSelectedBoutique(boutique);
+    setModalMode("view");
+    setFormData({
+      nom: boutique.nom,
+      secteurActivite: boutique.secteurActivite,
+      deviseParDefaut: boutique.deviseParDefaut,
+      tailleBusiness: boutique.tailleBusiness,
+    });
+    setFormError("");
+    setIsModalOpen(true);
+  };
+
+  const handleSubmitBoutique = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setFormError("");
+
+    if (modalMode === "view") return;
 
     if (!formData.nom.trim()) {
       setFormError("Le nom de la boutique est requis.");
@@ -197,8 +250,9 @@ export default function BoutiquePage() {
 
     try {
       setIsSubmitting(true);
-      const response = await fetch(`${API_URL}/boutiques`, {
-        method: "POST",
+      const isEdit = modalMode === "edit" && selectedBoutique;
+      const response = await fetch(isEdit ? `${API_URL}/boutiques/${selectedBoutique.id}` : `${API_URL}/boutiques`, {
+        method: isEdit ? "PUT" : "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify({
           ...formData,
@@ -206,17 +260,24 @@ export default function BoutiquePage() {
         }),
       });
 
-      const { data, message } = await readApiMessage(response, "Erreur lors de la creation de la boutique.");
+      const { data, message } = await readApiMessage(
+        response,
+        isEdit ? "Erreur lors de la modification de la boutique." : "Erreur lors de la creation de la boutique."
+      );
+
       if (!response.ok || !data?.success) {
         throw new Error(message);
       }
 
-      syncSession(data);
+      if (data.token || data.permissions || data.boutique?.isActive) {
+        syncSession(data);
+      }
+
       await fetchBoutiques();
       setIsModalOpen(false);
-      showToast("success", data.message || "Boutique creee avec succes.");
+      showToast("success", data.message || "Configuration enregistree avec succes.");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Erreur lors de la creation de la boutique.";
+      const message = error instanceof Error ? error.message : "Erreur lors de l'enregistrement.";
       setFormError(message);
       showToast("error", message);
     } finally {
@@ -240,18 +301,38 @@ export default function BoutiquePage() {
       }
 
       syncSession(data);
-      setBoutiques((current) =>
-        current.map((item) => ({
-          ...item,
-          isActive: item.id === boutique.id,
-        }))
-      );
+      await fetchBoutiques();
       showToast("success", data.message || "Boutique active changee avec succes.");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Impossible de changer de boutique active.";
       showToast("error", message);
     } finally {
       setActivatingId(null);
+    }
+  };
+
+  const handleDeleteBoutique = async (boutique: Boutique) => {
+    if (!confirm(`Supprimer definitivement la boutique "${boutique.nom}" ?`)) return;
+
+    try {
+      setDeletingId(boutique.id);
+      const response = await fetch(`${API_URL}/boutiques/${boutique.id}`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+      });
+
+      const { data, message } = await readApiMessage(response, "Erreur lors de la suppression de la boutique.");
+      if (!response.ok || !data?.success) {
+        throw new Error(message);
+      }
+
+      setBoutiques((current) => current.filter((item) => item.id !== boutique.id));
+      showToast("success", data.message || "Boutique supprimee avec succes.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Impossible de supprimer cette boutique.";
+      showToast("error", message);
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -288,19 +369,15 @@ export default function BoutiquePage() {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={handleOpenCreate}
-          className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-md shadow-indigo-600/10 active:scale-[0.98]"
-        >
-          <Plus size={14} /> Nouvelle boutique
-        </button>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <SummaryCard label="Boutiques" value={boutiques.length} icon={Store} tone="indigo" />
-        <SummaryCard label="Active" value={boutiques.filter((item) => item.isActive).length} icon={UserCheck} tone="emerald" />
-        <SummaryCard label="Plans essai" value={boutiques.filter((item) => item.statutPaiement === "Essai").length} icon={Users} tone="amber" />
+        {canCreate && (
+          <button
+            type="button"
+            onClick={handleOpenCreate}
+            className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-md shadow-indigo-600/10 active:scale-[0.98]"
+          >
+            <Plus size={14} /> Nouvelle boutique
+          </button>
+        )}
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
@@ -323,6 +400,8 @@ export default function BoutiquePage() {
               <Loader2 className="animate-spin text-indigo-500" size={24} />
               <span className="text-xs font-medium">Chargement de vos boutiques...</span>
             </div>
+          ) : !canView ? (
+            <EmptyState title="Acces restreint" message="Vous n'avez pas la permission de consulter les boutiques." />
           ) : (
             <table className="w-full text-left text-xs min-w-[850px]">
               <thead className="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider">
@@ -339,20 +418,8 @@ export default function BoutiquePage() {
               <tbody className="divide-y divide-slate-100">
                 {filteredBoutiques.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-16 text-center text-slate-400 font-medium">
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="flex flex-col items-center justify-center gap-2.5 max-w-sm mx-auto"
-                      >
-                        <div className="p-3 rounded-full bg-slate-50 text-slate-400 border border-slate-100">
-                          <AlertCircle size={20} />
-                        </div>
-                        <p className="text-xs font-bold text-slate-700">Aucune boutique trouvee</p>
-                        <p className="text-[11px] text-slate-400 font-normal leading-relaxed">
-                          Aucune boutique ne correspond a votre recherche. Vous pouvez creer un nouveau point de vente.
-                        </p>
-                      </motion.div>
+                    <td colSpan={7}>
+                      <EmptyState title="Aucune boutique trouvee" message="Aucune boutique ne correspond a votre recherche." />
                     </td>
                   </tr>
                 ) : (
@@ -402,25 +469,55 @@ export default function BoutiquePage() {
                         <div className="flex items-center justify-end gap-1">
                           <button
                             type="button"
+                            onClick={() => handleOpenView(boutique)}
                             className="text-slate-400 hover:text-indigo-600 p-1.5 transition-colors"
                             title="Consulter"
                           >
                             <Eye size={15} />
                           </button>
 
-                          <button
-                            type="button"
-                            onClick={() => handleActivateBoutique(boutique)}
-                            disabled={boutique.isActive || activatingId === boutique.id}
-                            className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-colors inline-flex items-center gap-1.5 ${
-                              boutique.isActive
-                                ? "bg-emerald-50 text-emerald-600 cursor-default"
-                                : "bg-indigo-50 text-indigo-600 hover:bg-indigo-100"
-                            } disabled:opacity-70`}
-                          >
-                            {activatingId === boutique.id && <Loader2 size={12} className="animate-spin" />}
-                            {boutique.isActive ? "Selectionnee" : "Activer"}
-                          </button>
+                          {canActivate && (
+                            <button
+                              type="button"
+                              onClick={() => handleActivateBoutique(boutique)}
+                              disabled={boutique.isActive || activatingId === boutique.id}
+                              className={`p-1.5 transition-colors ${
+                                boutique.isActive
+                                  ? "text-emerald-500 cursor-default"
+                                  : "text-slate-400 hover:text-emerald-600"
+                              } disabled:opacity-60`}
+                              title={boutique.isActive ? "Boutique active" : "Activer la boutique"}
+                            >
+                              {activatingId === boutique.id ? <Loader2 size={15} className="animate-spin" /> : <Power size={15} />}
+                            </button>
+                          )}
+
+                          {canEdit && (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEdit(boutique)}
+                              className="text-slate-400 hover:text-amber-600 p-1.5 transition-colors"
+                              title="Modifier"
+                            >
+                              <Edit2 size={15} />
+                            </button>
+                          )}
+
+                          {canDelete && (
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteBoutique(boutique)}
+                              disabled={boutique.isActive || deletingId === boutique.id}
+                              className={`p-1.5 transition-colors ${
+                                boutique.isActive
+                                  ? "text-slate-200 cursor-not-allowed"
+                                  : "text-slate-400 hover:text-rose-600"
+                              }`}
+                              title={boutique.isActive ? "Activez une autre boutique avant suppression" : "Supprimer"}
+                            >
+                              {deletingId === boutique.id ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -434,49 +531,39 @@ export default function BoutiquePage() {
 
       <BoutiqueModal
         isOpen={isModalOpen}
+        mode={modalMode}
         isSubmitting={isSubmitting}
         formData={formData}
         error={formError}
         onChange={handleChange}
         onClose={() => !isSubmitting && setIsModalOpen(false)}
-        onSubmit={handleCreateBoutique}
+        onSubmit={handleSubmitBoutique}
       />
     </div>
   );
 }
 
-function SummaryCard({
-  label,
-  value,
-  icon: Icon,
-  tone,
-}: {
-  label: string;
-  value: number;
-  icon: React.ComponentType<{ size: number }>;
-  tone: "indigo" | "emerald" | "amber";
-}) {
-  const tones = {
-    indigo: "bg-indigo-50 border-indigo-100 text-indigo-600",
-    emerald: "bg-emerald-50 border-emerald-100 text-emerald-600",
-    amber: "bg-amber-50 border-amber-100 text-amber-600",
-  };
-
+function EmptyState({ title, message }: { title: string; message: string }) {
   return (
-    <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
-      <div>
-        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{label}</p>
-        <h3 className="text-2xl font-black text-slate-900 tracking-tight mt-1">{value}</h3>
-      </div>
-      <div className={`w-10 h-10 rounded-xl border flex items-center justify-center ${tones[tone]}`}>
-        <Icon size={18} />
-      </div>
+    <div className="px-6 py-16 text-center text-slate-400 font-medium">
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col items-center justify-center gap-2.5 max-w-sm mx-auto"
+      >
+        <div className="p-3 rounded-full bg-slate-50 text-slate-400 border border-slate-100">
+          <AlertCircle size={20} />
+        </div>
+        <p className="text-xs font-bold text-slate-700">{title}</p>
+        <p className="text-[11px] text-slate-400 font-normal leading-relaxed">{message}</p>
+      </motion.div>
     </div>
   );
 }
 
 function BoutiqueModal({
   isOpen,
+  mode,
   isSubmitting,
   formData,
   error,
@@ -485,6 +572,7 @@ function BoutiqueModal({
   onSubmit,
 }: {
   isOpen: boolean;
+  mode: "create" | "edit" | "view";
   isSubmitting: boolean;
   formData: BoutiqueForm;
   error: string;
@@ -492,6 +580,9 @@ function BoutiqueModal({
   onClose: () => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
 }) {
+  const isView = mode === "view";
+  const title = mode === "create" ? "Nouvelle Boutique" : mode === "edit" ? "Modifier la Boutique" : "Detail de la Boutique";
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -513,9 +604,9 @@ function BoutiqueModal({
           >
             <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-[#fcfdfe]">
               <div>
-                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Nouvelle Boutique</h3>
+                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">{title}</h3>
                 <p className="text-[11px] text-slate-400 font-medium mt-0.5">
-                  Creation d&apos;un point de vente lie a votre compte.
+                  {isView ? "Consultation du point de vente." : "Configuration du point de vente lie a votre compte."}
                 </p>
               </div>
               <button
@@ -543,7 +634,7 @@ function BoutiqueModal({
                   value={formData.nom}
                   onChange={onChange}
                   placeholder="Ex: StockMaster Kinshasa"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isView}
                   required
                 />
 
@@ -553,7 +644,7 @@ function BoutiqueModal({
                   icon={Building2}
                   value={formData.secteurActivite}
                   onChange={onChange}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isView}
                   options={SECTEURS}
                 />
 
@@ -563,7 +654,7 @@ function BoutiqueModal({
                   icon={Coins}
                   value={formData.deviseParDefaut}
                   onChange={onChange}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isView}
                   options={DEVISES}
                 />
 
@@ -573,15 +664,18 @@ function BoutiqueModal({
                   icon={Users}
                   value={formData.tailleBusiness}
                   onChange={onChange}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isView}
                   options={TAILLES}
                 />
               </div>
 
-              <div className="p-4 bg-indigo-50/50 border border-indigo-100 rounded-xl text-xs text-indigo-700 font-semibold leading-relaxed">
-                Cette boutique deviendra automatiquement la boutique active. Les nouveaux roles, departements,
-                employes et futures donnees seront rattaches a cette boutique active.
-              </div>
+              {!isView && (
+                <div className="p-4 bg-indigo-50/50 border border-indigo-100 rounded-xl text-xs text-indigo-700 font-semibold leading-relaxed">
+                  {mode === "create"
+                    ? "Cette boutique deviendra automatiquement la boutique active apres creation."
+                    : "La modification conserve les donnees deja rattachees a cette boutique."}
+                </div>
+              )}
 
               <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
                 <button
@@ -590,16 +684,18 @@ function BoutiqueModal({
                   disabled={isSubmitting}
                   className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors disabled:opacity-40"
                 >
-                  Annuler
+                  {isView ? "Fermer" : "Annuler"}
                 </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-2 disabled:bg-slate-400"
-                >
-                  {isSubmitting && <Loader2 size={14} className="animate-spin" />}
-                  Creer la boutique
-                </button>
+                {!isView && (
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-2 disabled:bg-slate-400"
+                  >
+                    {isSubmitting && <Loader2 size={14} className="animate-spin" />}
+                    {mode === "edit" ? "Enregistrer" : "Creer la boutique"}
+                  </button>
+                )}
               </div>
             </form>
           </motion.div>
@@ -624,7 +720,7 @@ function TextInput({
       </label>
       <input
         {...props}
-        className="w-full text-xs font-medium px-3 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 bg-white"
+        className="w-full text-xs font-medium px-3 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 bg-white disabled:bg-slate-50 disabled:text-slate-500"
       />
     </div>
   );
@@ -648,7 +744,7 @@ function SelectInput({
       <div className="relative">
         <select
           {...props}
-          className="w-full text-xs font-medium px-3 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 bg-white appearance-none cursor-pointer"
+          className="w-full text-xs font-medium px-3 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 bg-white appearance-none cursor-pointer disabled:bg-slate-50 disabled:text-slate-500"
         >
           {options.map((option) => (
             <option key={option} value={option}>
