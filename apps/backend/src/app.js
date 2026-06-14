@@ -5,6 +5,7 @@ import departementRoutes from "./routes/departement.routes.js";
 import roleRoutes from "./routes/role.routes.js"; 
 import employeRoutes from "./routes/employe.routes.js";
 import boutiqueRoutes from "./routes/boutique.routes.js";
+import inventaireRoutes from "./routes/inventaire.routes.js"; 
 
 const app = express();
 
@@ -28,7 +29,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/departements", departementRoutes); // URL propre : /api/departements
 app.use("/api/roles", roleRoutes);
 app.use("/api/employes", employeRoutes);// <-- 2. AJOUT DE LA ROUTE POUR LES RÔLES
-
+app.use("/api/inventaire", inventaireRoutes); 
 app.use("/api/boutiques", boutiqueRoutes);
 
 export default app;
