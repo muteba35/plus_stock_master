@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { Plus, Search, X, Building, AlertTriangle, FileText, Loader2, CheckCircle2 } from "lucide-react";
+import { Plus, Search, X, Building, AlertTriangle, FileText, Loader2, CheckCircle2, SlidersHorizontal } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import DeptModal from "./components/DeptModal";
 import DeptTable from "./components/DeptTable";
 
@@ -24,6 +25,8 @@ export default function DepartementsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [globalError, setGlobalError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [usageFilter, setUsageFilter] = useState("all");
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   // 2. ÉTATS DES PERMISSIONS
   const [userPermissions, setUserPermissions] = useState<string[]>([]);
@@ -86,9 +89,20 @@ export default function DepartementsPage() {
   const canDelete = userPermissions.includes("SUPPRIMER_DEPARTEMENT");
 
   // Filtrage
-  const filteredDepartments = departments.filter((dept) =>
-    (dept.nom || "").toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredDepartments = departments.filter((dept) => {
+    const query = searchTerm.toLowerCase();
+    const employeeCount = dept.employeeCount || 0;
+    const matchesSearch =
+      (dept.nom || "").toLowerCase().includes(query) ||
+      (dept.description || "").toLowerCase().includes(query) ||
+      String(employeeCount).includes(searchTerm);
+    const matchesUsage =
+      usageFilter === "all" ||
+      (usageFilter === "used" && employeeCount > 0) ||
+      (usageFilter === "empty" && employeeCount === 0);
+
+    return matchesSearch && matchesUsage;
+  });
 
   // Déclencheur Modification
   const handleEditInit = (id: string) => {
@@ -206,15 +220,52 @@ export default function DepartementsPage() {
       </div>
 
       {/* BARRE DE RECHERCHE */}
-      <div className="relative">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-        <input 
-          type="text"
-          placeholder="Rechercher un département..." 
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-12 pr-4 py-2.5 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 font-medium text-slate-800 bg-white shadow-sm transition-all" 
-        />
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 flex items-center gap-3 relative">
+        <div className="relative flex-1">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+          <input
+            type="text"
+            placeholder="Rechercher par nom, description ou effectif..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-12 pr-4 py-2.5 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 font-medium text-slate-800 bg-white transition-all"
+          />
+        </div>
+        <button
+          type="button"
+          onClick={() => setIsFilterOpen((current) => !current)}
+          className={`h-10 w-10 rounded-xl border flex items-center justify-center transition-colors ${
+            isFilterOpen ? "border-indigo-200 bg-indigo-50 text-indigo-600" : "border-slate-200 bg-white text-slate-500 hover:text-indigo-600"
+          }`}
+          title="Filtres"
+        >
+          <SlidersHorizontal size={16} />
+        </button>
+
+        <AnimatePresence>
+          {isFilterOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -6, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -6, scale: 0.98 }}
+              transition={{ duration: 0.16 }}
+              className="absolute right-4 top-[64px] z-30 w-[min(calc(100vw-4rem),320px)] rounded-2xl border border-slate-200 bg-white p-4 shadow-xl"
+            >
+              <label className="space-y-1.5 block">
+                <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Utilisation</span>
+                <select
+                  value={usageFilter}
+                  onChange={(e) => setUsageFilter(e.target.value)}
+                  className="w-full text-xs font-bold px-3 py-2.5 border border-slate-200 rounded-xl bg-white text-slate-600 focus:outline-none focus:border-indigo-500"
+                >
+                  <option value="all">Tous les departements</option>
+                  <option value="used">Avec employes</option>
+                  <option value="empty">Sans employe</option>
+                </select>
+              </label>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* MESSAGES D'ERREURS SYSTÈME (GLOBAL) */}

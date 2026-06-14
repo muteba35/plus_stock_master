@@ -25,6 +25,7 @@ import {
   CheckCircle2,
   XCircle,
   Store,
+  SlidersHorizontal,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import EmployeModal, { EmployeOption } from "./components/EmployeModal";
@@ -43,6 +44,10 @@ export interface Employe {
   departementId?: string | null;
   boutiqueId?: string | null;
   boutique?: string;
+  temporaryAccess?: {
+    temporaryPassword?: string;
+    firstLoginToken?: string;
+  } | null;
 }
 
 interface EditInterfaceProps {
@@ -58,7 +63,7 @@ interface EditInterfaceProps {
 interface ResetInterfaceProps {
   employe: Employe;
   onClose: () => void;
-  onReset: (id: string) => Promise<string>;
+  onReset: (id: string) => Promise<{ temporaryPassword: string; firstLoginToken: string }>;
   copyToClipboard: (text: string) => void;
   copied: boolean;
 }
@@ -160,6 +165,10 @@ export default function EmployesPage() {
   const [boutiques, setBoutiques] = useState<EmployeOption[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [departmentFilter, setDepartmentFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedEmploye, setSelectedEmploye] = useState<Employe | null>(null);
   const [activeActionModal, setActiveActionModal] = useState<"edit" | "reset" | "status" | "delete" | null>(null);
@@ -262,14 +271,20 @@ export default function EmployesPage() {
     loadData();
   }, [fetchBoutiques, fetchEmployes, fetchReferences, showToast]);
 
-  const filteredEmployes = employes.filter((emp) =>
-    `${emp.firstName} ${emp.lastName}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    emp.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    emp.phone.includes(searchQuery) ||
-    emp.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    emp.department.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (emp.boutique || "").toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredEmployes = employes.filter((emp) => {
+    const query = searchQuery.toLowerCase();
+    const matchesSearch =
+      `${emp.firstName} ${emp.lastName}`.toLowerCase().includes(query) ||
+      emp.email.toLowerCase().includes(query) ||
+      emp.phone.includes(searchQuery) ||
+      emp.role.toLowerCase().includes(query) ||
+      emp.department.toLowerCase().includes(query);
+    const matchesRole = roleFilter === "all" || emp.roleId === roleFilter || emp.role === roleFilter;
+    const matchesDepartment = departmentFilter === "all" || emp.departementId === departmentFilter || emp.department === departmentFilter;
+    const matchesStatus = statusFilter === "all" || emp.status === statusFilter;
+
+    return matchesSearch && matchesRole && matchesDepartment && matchesStatus;
+  });
 
   const handleCreateEmploye = async (payload: {
     firstName: string;
@@ -392,7 +407,10 @@ export default function EmployesPage() {
       }
 
       showToast("success", data.message || "Mot de passe reinitialise avec succes.");
-      return data.temporaryPassword || "";
+      return {
+        temporaryPassword: data.temporaryPassword || "",
+        firstLoginToken: data.firstLoginToken || "",
+      };
     } catch (error) {
       const message = error instanceof Error ? error.message : "Impossible de joindre le serveur backend.";
       showToast("error", message);
@@ -443,7 +461,7 @@ export default function EmployesPage() {
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex items-center gap-4">
+        <div className="p-4 border-b border-slate-100 flex items-center gap-3 relative">
           <div className="relative flex-1">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
             <input
@@ -454,6 +472,53 @@ export default function EmployesPage() {
               className="w-full pl-12 pr-4 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 font-medium transition-all"
             />
           </div>
+          <button
+            type="button"
+            onClick={() => setIsFilterOpen((current) => !current)}
+            className={`h-9 w-9 rounded-xl border flex items-center justify-center transition-colors ${
+              isFilterOpen ? "border-indigo-200 bg-indigo-50 text-indigo-600" : "border-slate-200 bg-white text-slate-500 hover:text-indigo-600"
+            }`}
+            title="Filtres"
+          >
+            <SlidersHorizontal size={16} />
+          </button>
+
+          <AnimatePresence>
+            {isFilterOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -6, scale: 0.98 }}
+                transition={{ duration: 0.16 }}
+                className="absolute right-4 top-[58px] z-30 w-[min(calc(100vw-4rem),420px)] rounded-2xl border border-slate-200 bg-white p-4 shadow-xl"
+              >
+                <div className="grid grid-cols-1 gap-3">
+                  <label className="space-y-1.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Role</span>
+                    <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} className="w-full text-xs font-bold px-3 py-2 border border-slate-200 rounded-xl bg-white text-slate-600 focus:outline-none focus:border-indigo-500">
+                      <option value="all">Tous les roles</option>
+                      {roles.map((role) => <option key={role.id} value={role.id}>{role.name}</option>)}
+                    </select>
+                  </label>
+                  <label className="space-y-1.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Departement</span>
+                    <select value={departmentFilter} onChange={(e) => setDepartmentFilter(e.target.value)} className="w-full text-xs font-bold px-3 py-2 border border-slate-200 rounded-xl bg-white text-slate-600 focus:outline-none focus:border-indigo-500">
+                      <option value="all">Tous les departements</option>
+                      {departements.map((dept) => <option key={dept.id} value={dept.id}>{dept.name}</option>)}
+                    </select>
+                  </label>
+                  <label className="space-y-1.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Statut</span>
+                    <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-full text-xs font-bold px-3 py-2 border border-slate-200 rounded-xl bg-white text-slate-600 focus:outline-none focus:border-indigo-500">
+                      <option value="all">Tous les statuts</option>
+                      <option value="Actif">Actif</option>
+                      <option value="Suspendu">Suspendu</option>
+                    </select>
+                  </label>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         <div className="w-full overflow-x-auto">
@@ -839,7 +904,8 @@ function EditInterface({ employe, roles, departements, boutiques, onBoutiqueChan
 }
 
 function ResetInterface({ employe, onClose, onReset, copyToClipboard, copied }: ResetInterfaceProps) {
-  const [generatedTempPassword, setGeneratedTempPassword] = useState("");
+  const [generatedTempPassword, setGeneratedTempPassword] = useState(employe.temporaryAccess?.temporaryPassword || "");
+  const [firstLoginToken, setFirstLoginToken] = useState(employe.temporaryAccess?.firstLoginToken || "");
   const [isResetting, setIsResetting] = useState(false);
   const [error, setError] = useState("");
 
@@ -847,8 +913,9 @@ function ResetInterface({ employe, onClose, onReset, copyToClipboard, copied }: 
     try {
       setError("");
       setIsResetting(true);
-      const temporaryPassword = await onReset(employe.id);
-      setGeneratedTempPassword(temporaryPassword);
+      const access = await onReset(employe.id);
+      setGeneratedTempPassword(access.temporaryPassword);
+      setFirstLoginToken(access.firstLoginToken);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur lors de la reinitialisation.");
     } finally {
@@ -876,20 +943,28 @@ function ResetInterface({ employe, onClose, onReset, copyToClipboard, copied }: 
           <p className="leading-relaxed font-medium">Cette action deconnectera immediatement la session de <strong>{employe.firstName} {employe.lastName}</strong>.</p>
         </div>
 
-        <div className="space-y-2">
-          <label className="block text-slate-500 font-semibold">Mot de passe temporaire genere</label>
-          <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 p-2.5 rounded-xl font-mono text-slate-700 justify-between">
-            <div className="flex items-center gap-2">
-              <Lock size={14} className="text-slate-400" />
-              <span className="font-bold tracking-wide">{generatedTempPassword || "Cliquez sur reinitialiser"}</span>
-            </div>
-            {generatedTempPassword && (
-              <button onClick={() => copyToClipboard(generatedTempPassword)} className={`p-1.5 rounded-lg transition-colors flex items-center gap-1 font-sans ${copied ? "bg-emerald-100 text-emerald-700" : "bg-white hover:bg-slate-100 border border-slate-200 text-slate-500"}`}>
-                {copied ? <Check size={12} /> : <Copy size={12} />}
-                <span className="text-[10px] font-bold">{copied ? "Copie" : "Copier"}</span>
-              </button>
-            )}
-          </div>
+        <div className="space-y-3">
+          <AccessValue
+            label="Code temporaire initial"
+            value={generatedTempPassword || "Cliquez sur reinitialiser"}
+            icon={Lock}
+            canCopy={Boolean(generatedTempPassword)}
+            copied={copied}
+            onCopy={() => copyToClipboard(generatedTempPassword)}
+          />
+          <AccessValue
+            label="Cle de premiere connexion"
+            value={firstLoginToken || "Indisponible tant que l'acces n'est pas regenere"}
+            icon={KeyRound}
+            canCopy={Boolean(firstLoginToken)}
+            copied={copied}
+            onCopy={() => copyToClipboard(firstLoginToken)}
+          />
+          {!generatedTempPassword && !firstLoginToken && (
+            <p className="text-[10px] text-slate-400 font-medium leading-relaxed">
+              Les anciens identifiants ne sont plus affiches si l'utilisateur a deja change son mot de passe.
+            </p>
+          )}
         </div>
       </div>
 
@@ -900,6 +975,40 @@ function ResetInterface({ employe, onClose, onReset, copyToClipboard, copied }: 
         </button>
       </div>
     </>
+  );
+}
+
+function AccessValue({
+  label,
+  value,
+  icon: Icon,
+  canCopy,
+  copied,
+  onCopy,
+}: {
+  label: string;
+  value: string;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+  canCopy: boolean;
+  copied: boolean;
+  onCopy: () => void;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <label className="block text-slate-500 font-semibold">{label}</label>
+      <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 p-2.5 rounded-xl font-mono text-slate-700 justify-between">
+        <div className="flex items-center gap-2 min-w-0">
+          <Icon size={14} className="text-slate-400 shrink-0" />
+          <span className="font-bold tracking-wide truncate">{value}</span>
+        </div>
+        {canCopy && (
+          <button onClick={onCopy} className={`p-1.5 rounded-lg transition-colors flex items-center gap-1 font-sans shrink-0 ${copied ? "bg-emerald-100 text-emerald-700" : "bg-white hover:bg-slate-100 border border-slate-200 text-slate-500"}`}>
+            {copied ? <Check size={12} /> : <Copy size={12} />}
+            <span className="text-[10px] font-bold">{copied ? "Copie" : "Copier"}</span>
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 

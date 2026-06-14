@@ -14,6 +14,7 @@ import {
   Plus,
   Power,
   Search,
+  SlidersHorizontal,
   Store,
   Trash2,
   Users,
@@ -98,6 +99,7 @@ export default function BoutiquePage() {
   const [sectorFilter, setSectorFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [currencyFilter, setCurrencyFilter] = useState("all");
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"create" | "edit" | "view">("create");
   const [selectedBoutique, setSelectedBoutique] = useState<Boutique | null>(null);
@@ -399,7 +401,7 @@ export default function BoutiquePage() {
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex flex-col xl:flex-row xl:items-center gap-3">
+        <div className="p-4 border-b border-slate-100 flex items-center gap-3 relative">
           <div className="relative flex-1">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
             <input
@@ -410,25 +412,57 @@ export default function BoutiquePage() {
               className="w-full pl-12 pr-4 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 font-medium text-slate-800 bg-white"
             />
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 xl:w-[620px]">
-            <select value={sectorFilter} onChange={(event) => setSectorFilter(event.target.value)} className="text-xs font-bold px-3 py-2 border border-slate-200 rounded-xl bg-white text-slate-600 focus:outline-none focus:border-indigo-500">
-              <option value="all">Tous les secteurs</option>
-              {Array.from(new Set(boutiques.map((boutique) => boutique.secteurActivite))).map((sector) => (
-                <option key={sector} value={sector}>{sector}</option>
-              ))}
-            </select>
-            <select value={currencyFilter} onChange={(event) => setCurrencyFilter(event.target.value)} className="text-xs font-bold px-3 py-2 border border-slate-200 rounded-xl bg-white text-slate-600 focus:outline-none focus:border-indigo-500">
-              <option value="all">Toutes les devises</option>
-              {Array.from(new Set(boutiques.map((boutique) => boutique.deviseParDefaut))).map((currency) => (
-                <option key={currency} value={currency}>{currency}</option>
-              ))}
-            </select>
-            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="text-xs font-bold px-3 py-2 border border-slate-200 rounded-xl bg-white text-slate-600 focus:outline-none focus:border-indigo-500">
-              <option value="all">Tous les statuts</option>
-              <option value="active">Active</option>
-              <option value="inactive">Non active</option>
-            </select>
-          </div>
+          <button
+            type="button"
+            onClick={() => setIsFilterOpen((current) => !current)}
+            className={`h-9 w-9 rounded-xl border flex items-center justify-center transition-colors ${
+              isFilterOpen ? "border-indigo-200 bg-indigo-50 text-indigo-600" : "border-slate-200 bg-white text-slate-500 hover:text-indigo-600"
+            }`}
+            title="Filtres"
+          >
+            <SlidersHorizontal size={16} />
+          </button>
+
+          <AnimatePresence>
+            {isFilterOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -6, scale: 0.98 }}
+                transition={{ duration: 0.16 }}
+                className="absolute right-4 top-[58px] z-30 w-[min(calc(100vw-4rem),420px)] rounded-2xl border border-slate-200 bg-white p-4 shadow-xl"
+              >
+                <div className="grid grid-cols-1 gap-3">
+                  <label className="space-y-1.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Secteur</span>
+                    <select value={sectorFilter} onChange={(event) => setSectorFilter(event.target.value)} className="w-full text-xs font-bold px-3 py-2 border border-slate-200 rounded-xl bg-white text-slate-600 focus:outline-none focus:border-indigo-500">
+                      <option value="all">Tous les secteurs</option>
+                      {Array.from(new Set(boutiques.map((boutique) => boutique.secteurActivite))).map((sector) => (
+                        <option key={sector} value={sector}>{sector}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="space-y-1.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Devise</span>
+                    <select value={currencyFilter} onChange={(event) => setCurrencyFilter(event.target.value)} className="w-full text-xs font-bold px-3 py-2 border border-slate-200 rounded-xl bg-white text-slate-600 focus:outline-none focus:border-indigo-500">
+                      <option value="all">Toutes les devises</option>
+                      {Array.from(new Set(boutiques.map((boutique) => boutique.deviseParDefaut))).map((currency) => (
+                        <option key={currency} value={currency}>{currency}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="space-y-1.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Statut</span>
+                    <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="w-full text-xs font-bold px-3 py-2 border border-slate-200 rounded-xl bg-white text-slate-600 focus:outline-none focus:border-indigo-500">
+                      <option value="all">Tous les statuts</option>
+                      <option value="active">Active</option>
+                      <option value="inactive">Non active</option>
+                    </select>
+                  </label>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         <div className="overflow-x-auto w-full">

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { Plus, Search, Eye, Edit2, Trash2, Loader2, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
+import { Plus, Search, Eye, Edit2, Trash2, Loader2, CheckCircle2, XCircle, AlertCircle, SlidersHorizontal } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import RoleModal from "./components/RoleModal";
 
@@ -36,6 +36,9 @@ export default function RolesPage() {
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [usageFilter, setUsageFilter] = useState("all");
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [modalMode, setModalMode] = useState<"create" | "edit" | "view">("create");
@@ -185,10 +188,23 @@ export default function RolesPage() {
     setIsModalOpen(true);
   };
 
-  const filteredRoles = roles.filter((role) =>
-    (role.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (role.description || '').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredRoles = roles.filter((role) => {
+    const query = searchTerm.toLowerCase();
+    const matchesSearch =
+      (role.name || "").toLowerCase().includes(query) ||
+      (role.description || "").toLowerCase().includes(query) ||
+      role.permissions.some((permission) =>
+        `${permission.nom || ""} ${permission.code || ""} ${permission.module || ""}`.toLowerCase().includes(query)
+      ) ||
+      String(role.employeesCount).includes(searchTerm);
+    const matchesStatus = statusFilter === "all" || role.status === statusFilter;
+    const matchesUsage =
+      usageFilter === "all" ||
+      (usageFilter === "used" && role.employeesCount > 0) ||
+      (usageFilter === "empty" && role.employeesCount === 0);
+
+    return matchesSearch && matchesStatus && matchesUsage;
+  });
 
   return (
     <div className="space-y-6 bg-[#f9fafd] p-6 rounded-3xl min-h-screen text-slate-800 relative overflow-hidden">
@@ -238,17 +254,58 @@ export default function RolesPage() {
 
       {/* TABLEAU */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex items-center gap-4">
-          <div className="relative w-full">
+        <div className="p-4 border-b border-slate-100 flex items-center gap-3 relative">
+          <div className="relative flex-1">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
             <input 
               type="text"
-              placeholder="Rechercher un rôle ou une habilitation..." 
+              placeholder="Rechercher un role, une permission ou un module..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-12 pr-4 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 font-medium text-slate-800 bg-white" 
             />
           </div>
+          <button
+            type="button"
+            onClick={() => setIsFilterOpen((current) => !current)}
+            className={`h-9 w-9 rounded-xl border flex items-center justify-center transition-colors ${
+              isFilterOpen ? "border-indigo-200 bg-indigo-50 text-indigo-600" : "border-slate-200 bg-white text-slate-500 hover:text-indigo-600"
+            }`}
+            title="Filtres"
+          >
+            <SlidersHorizontal size={16} />
+          </button>
+
+          <AnimatePresence>
+            {isFilterOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -6, scale: 0.98 }}
+                transition={{ duration: 0.16 }}
+                className="absolute right-4 top-[58px] z-30 w-[min(calc(100vw-4rem),360px)] rounded-2xl border border-slate-200 bg-white p-4 shadow-xl"
+              >
+                <div className="grid grid-cols-1 gap-3">
+                  <label className="space-y-1.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Statut</span>
+                    <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-full text-xs font-bold px-3 py-2 border border-slate-200 rounded-xl bg-white text-slate-600 focus:outline-none focus:border-indigo-500">
+                      <option value="all">Tous les statuts</option>
+                      <option value="Actif">Actifs</option>
+                      <option value="Suspendu">Suspendus</option>
+                    </select>
+                  </label>
+                  <label className="space-y-1.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Utilisateurs</span>
+                    <select value={usageFilter} onChange={(e) => setUsageFilter(e.target.value)} className="w-full text-xs font-bold px-3 py-2 border border-slate-200 rounded-xl bg-white text-slate-600 focus:outline-none focus:border-indigo-500">
+                      <option value="all">Tous les roles</option>
+                      <option value="used">Avec utilisateurs</option>
+                      <option value="empty">Sans utilisateur</option>
+                    </select>
+                  </label>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         <div className="overflow-x-auto w-full">
