@@ -884,7 +884,7 @@ export const resetPassword = async (req, res) => {
     const user = await Utilisateur.findOne({
       resetPasswordToken: hashedToken,
       resetPasswordExpires: { $gt: Date.now() }
-    }).select("+resetPasswordToken +resetPasswordExpires");
+    }).select("+resetPasswordToken +resetPasswordExpires +temporaryAccessPassword +firstLoginToken +mustChangePassword");
 
     if (!user) {
       return res.status(400).json({ status: "error", message: "Lien de réinitialisation invalide ou expiré." });
@@ -905,6 +905,9 @@ export const resetPassword = async (req, res) => {
     // 2. Nettoyage (Usage unique du token)
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
+    user.temporaryAccessPassword = undefined;
+    user.firstLoginToken = undefined;
+    user.mustChangePassword = false;
 
     // 3. Sauvegarde dans MongoDB
     await user.save();
@@ -1324,7 +1327,7 @@ export const updatePassword = async (req, res) => {
     }
 
     // 1. Récupérer l'utilisateur avec son mot de passe actuel
-    const user = await Utilisateur.findById(userId).select('+password');
+    const user = await Utilisateur.findById(userId).select("+password +temporaryAccessPassword +firstLoginToken +mustChangePassword");
     if (!user) {
       return res.status(404).json({ error: "Utilisateur non trouvé." });
     }
@@ -1354,6 +1357,9 @@ export const updatePassword = async (req, res) => {
     // 4. Hasher le nouveau mot de passe et sauvegarder
     const salt = await bcrypt.genSalt(12);
     user.password = await bcrypt.hash(newPassword, salt);
+    user.temporaryAccessPassword = undefined;
+    user.firstLoginToken = undefined;
+    user.mustChangePassword = false;
     await user.save();
 
     res.status(200).json({ message: "Mot de passe mis à jour avec succès !" });

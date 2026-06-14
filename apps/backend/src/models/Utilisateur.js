@@ -143,6 +143,9 @@ const utilisateurSchema = new mongoose.Schema(
 
     resetPasswordToken: { type: String, select: false },
     resetPasswordExpires: { type: Date, select: false },
+    temporaryAccessPassword: { type: String, select: false },
+    firstLoginToken: { type: String, select: false },
+    mustChangePassword: { type: Boolean, default: false },
 
     loginAttempts: { type: Number, default: 0, select: false },
     lockUntil: { type: Date, select: false },
