@@ -33,8 +33,7 @@ const formatEmploye = (employe) => ({
   status: employe.isBlocked ? "Suspendu" : "Actif",
   temporaryAccess: employe.mustChangePassword
     ? {
-        temporaryPassword: employe.temporaryAccessPassword || "",
-        firstLoginToken: employe.firstLoginToken || ""
+        temporaryPassword: employe.temporaryAccessPassword || ""
       }
     : null,
   createdAt: employe.createdAt
@@ -77,7 +76,7 @@ const findEmployeInBoutique = async (id, boutiqueId, populate = false) => {
     _id: id,
     boutiqueActive: boutiqueId,
     roleId: { $ne: null }
-  }).select("+temporaryAccessPassword +firstLoginToken +mustChangePassword");
+  }).select("+temporaryAccessPassword +mustChangePassword");
 
   if (populate) {
     query.populate("roleId").populate("departementId");
@@ -116,7 +115,6 @@ export const createEmploye = async (req, res) => {
     const cleanEmail = String(email || "").toLowerCase().trim();
     const cleanPhone = String(telephone || phone || "").trim();
     const temporaryPassword = password ? String(password) : crypto.randomBytes(9).toString("base64url");
-    const firstLoginToken = crypto.randomBytes(24).toString("hex");
 
     if (!cleanPrenom || !cleanNom || !cleanEmail || !cleanPhone || !roleId || !departementId) {
       return res.status(400).json({
@@ -182,7 +180,6 @@ export const createEmploye = async (req, res) => {
       departementId,
       boutiqueActive: boutiqueId,
       temporaryAccessPassword: temporaryPassword,
-      firstLoginToken,
       mustChangePassword: true,
       isActive: true,
       isBlocked: false,
@@ -190,7 +187,7 @@ export const createEmploye = async (req, res) => {
     });
 
     const populated = await Utilisateur.findById(employe._id)
-      .select("+temporaryAccessPassword +firstLoginToken +mustChangePassword")
+      .select("+temporaryAccessPassword +mustChangePassword")
       .populate("roleId")
       .populate("departementId");
 
@@ -198,8 +195,7 @@ export const createEmploye = async (req, res) => {
       success: true,
       message: "Employe cree avec succes.",
       employe: formatEmploye(populated),
-      temporaryPassword,
-      firstLoginToken
+      temporaryPassword
     });
   } catch (error) {
     console.error("createEmploye:", error);
@@ -225,7 +221,7 @@ export const getEmployes = async (req, res) => {
       boutiqueActive: boutiqueId,
       roleId: { $ne: null }
     })
-      .select("+temporaryAccessPassword +firstLoginToken +mustChangePassword")
+      .select("+temporaryAccessPassword +mustChangePassword")
       .populate("roleId")
       .populate("departementId")
       .populate("boutiqueActive")
@@ -497,7 +493,7 @@ export const resetEmployePassword = async (req, res) => {
       _id: id,
       boutiqueActive: boutiqueId,
       roleId: { $ne: null }
-    }).select("+loginAttempts +lockUntil +temporaryAccessPassword +firstLoginToken +mustChangePassword");
+    }).select("+loginAttempts +lockUntil +temporaryAccessPassword +mustChangePassword");
 
     if (!employe) {
       return res.status(404).json({
@@ -507,10 +503,8 @@ export const resetEmployePassword = async (req, res) => {
     }
 
     const temporaryPassword = `Stock@${crypto.randomInt(100000, 999999)}`;
-    const firstLoginToken = crypto.randomBytes(24).toString("hex");
     employe.password = await bcrypt.hash(temporaryPassword, 12);
     employe.temporaryAccessPassword = temporaryPassword;
-    employe.firstLoginToken = firstLoginToken;
     employe.mustChangePassword = true;
     employe.loginAttempts = 0;
     employe.lockUntil = undefined;
@@ -521,8 +515,7 @@ export const resetEmployePassword = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "Mot de passe reinitialise avec succes.",
-      temporaryPassword,
-      firstLoginToken
+      temporaryPassword
     });
   } catch (error) {
     console.error("resetEmployePassword:", error);
