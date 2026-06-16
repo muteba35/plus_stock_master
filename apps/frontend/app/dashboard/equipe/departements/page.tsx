@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Plus, Search, X, Building, AlertTriangle, FileText, Loader2, CheckCircle2, SlidersHorizontal } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import DeptModal from "./components/DeptModal";
@@ -27,6 +27,7 @@ export default function DepartementsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [usageFilter, setUsageFilter] = useState("all");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const filterMenuRef = useRef<HTMLDivElement | null>(null);
 
   // 2. ÉTATS DES PERMISSIONS
   const [userPermissions, setUserPermissions] = useState<string[]>([]);
@@ -43,6 +44,26 @@ export default function DepartementsPage() {
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [actionError, setActionError] = useState("");
   const [actionSuccess, setActionSuccess] = useState("");
+
+  useEffect(() => {
+    const handlePointerDown = (event: MouseEvent) => {
+      if (filterMenuRef.current && !filterMenuRef.current.contains(event.target as Node)) {
+        setIsFilterOpen(false);
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsFilterOpen(false);
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
 
   // Fonction pour charger la liste depuis le Back-End (Mémorisée avec useCallback)
   const fetchDepartments = useCallback(async () => {
@@ -220,7 +241,7 @@ export default function DepartementsPage() {
       </div>
 
       {/* BARRE DE RECHERCHE */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 flex items-center gap-3 relative">
+      <div ref={filterMenuRef} className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 flex items-center gap-3 relative">
         <div className="relative flex-1">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
           <input
@@ -255,7 +276,7 @@ export default function DepartementsPage() {
                 <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Utilisation</span>
                 <select
                   value={usageFilter}
-                  onChange={(e) => setUsageFilter(e.target.value)}
+                  onChange={(e) => { setUsageFilter(e.target.value); setIsFilterOpen(false); }}
                   className="w-full text-xs font-bold px-3 py-2.5 border border-slate-200 rounded-xl bg-white text-slate-600 focus:outline-none focus:border-indigo-500"
                 >
                   <option value="all">Tous les departements</option>

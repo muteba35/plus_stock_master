@@ -46,7 +46,6 @@ export interface Employe {
   boutique?: string;
   temporaryAccess?: {
     temporaryPassword?: string;
-    firstLoginToken?: string;
   } | null;
 }
 
@@ -63,7 +62,7 @@ interface EditInterfaceProps {
 interface ResetInterfaceProps {
   employe: Employe;
   onClose: () => void;
-  onReset: (id: string) => Promise<{ temporaryPassword: string; firstLoginToken: string }>;
+  onReset: (id: string) => Promise<{ temporaryPassword: string }>;
   copyToClipboard: (text: string) => void;
   copied: boolean;
 }
@@ -174,6 +173,27 @@ export default function EmployesPage() {
   const [activeActionModal, setActiveActionModal] = useState<"edit" | "reset" | "status" | "delete" | null>(null);
   const [copied, setCopied] = useState(false);
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const filterMenuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const handlePointerDown = (event: MouseEvent) => {
+      if (filterMenuRef.current && !filterMenuRef.current.contains(event.target as Node)) {
+        setIsFilterOpen(false);
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsFilterOpen(false);
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
 
   const showToast = useCallback((type: "success" | "error", message: string) => {
     setToast({ type, message });
@@ -409,7 +429,6 @@ export default function EmployesPage() {
       showToast("success", data.message || "Mot de passe reinitialise avec succes.");
       return {
         temporaryPassword: data.temporaryPassword || "",
-        firstLoginToken: data.firstLoginToken || "",
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : "Impossible de joindre le serveur backend.";
@@ -461,7 +480,7 @@ export default function EmployesPage() {
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex items-center gap-3 relative">
+        <div ref={filterMenuRef} className="p-4 border-b border-slate-100 flex items-center gap-3 relative">
           <div className="relative flex-1">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
             <input
@@ -495,21 +514,21 @@ export default function EmployesPage() {
                 <div className="grid grid-cols-1 gap-3">
                   <label className="space-y-1.5">
                     <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Role</span>
-                    <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} className="w-full text-xs font-bold px-3 py-2 border border-slate-200 rounded-xl bg-white text-slate-600 focus:outline-none focus:border-indigo-500">
+                    <select value={roleFilter} onChange={(e) => { setRoleFilter(e.target.value); setIsFilterOpen(false); }} className="w-full text-xs font-bold px-3 py-2 border border-slate-200 rounded-xl bg-white text-slate-600 focus:outline-none focus:border-indigo-500">
                       <option value="all">Tous les roles</option>
                       {roles.map((role) => <option key={role.id} value={role.id}>{role.name}</option>)}
                     </select>
                   </label>
                   <label className="space-y-1.5">
                     <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Departement</span>
-                    <select value={departmentFilter} onChange={(e) => setDepartmentFilter(e.target.value)} className="w-full text-xs font-bold px-3 py-2 border border-slate-200 rounded-xl bg-white text-slate-600 focus:outline-none focus:border-indigo-500">
+                    <select value={departmentFilter} onChange={(e) => { setDepartmentFilter(e.target.value); setIsFilterOpen(false); }} className="w-full text-xs font-bold px-3 py-2 border border-slate-200 rounded-xl bg-white text-slate-600 focus:outline-none focus:border-indigo-500">
                       <option value="all">Tous les departements</option>
                       {departements.map((dept) => <option key={dept.id} value={dept.id}>{dept.name}</option>)}
                     </select>
                   </label>
                   <label className="space-y-1.5">
                     <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Statut</span>
-                    <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-full text-xs font-bold px-3 py-2 border border-slate-200 rounded-xl bg-white text-slate-600 focus:outline-none focus:border-indigo-500">
+                    <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setIsFilterOpen(false); }} className="w-full text-xs font-bold px-3 py-2 border border-slate-200 rounded-xl bg-white text-slate-600 focus:outline-none focus:border-indigo-500">
                       <option value="all">Tous les statuts</option>
                       <option value="Actif">Actif</option>
                       <option value="Suspendu">Suspendu</option>
@@ -905,7 +924,6 @@ function EditInterface({ employe, roles, departements, boutiques, onBoutiqueChan
 
 function ResetInterface({ employe, onClose, onReset, copyToClipboard, copied }: ResetInterfaceProps) {
   const [generatedTempPassword, setGeneratedTempPassword] = useState(employe.temporaryAccess?.temporaryPassword || "");
-  const [firstLoginToken, setFirstLoginToken] = useState(employe.temporaryAccess?.firstLoginToken || "");
   const [isResetting, setIsResetting] = useState(false);
   const [error, setError] = useState("");
 
@@ -915,7 +933,6 @@ function ResetInterface({ employe, onClose, onReset, copyToClipboard, copied }: 
       setIsResetting(true);
       const access = await onReset(employe.id);
       setGeneratedTempPassword(access.temporaryPassword);
-      setFirstLoginToken(access.firstLoginToken);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur lors de la reinitialisation.");
     } finally {
@@ -952,17 +969,9 @@ function ResetInterface({ employe, onClose, onReset, copyToClipboard, copied }: 
             copied={copied}
             onCopy={() => copyToClipboard(generatedTempPassword)}
           />
-          <AccessValue
-            label="Cle de premiere connexion"
-            value={firstLoginToken || "Indisponible tant que l'acces n'est pas regenere"}
-            icon={KeyRound}
-            canCopy={Boolean(firstLoginToken)}
-            copied={copied}
-            onCopy={() => copyToClipboard(firstLoginToken)}
-          />
-          {!generatedTempPassword && !firstLoginToken && (
+          {!generatedTempPassword && (
             <p className="text-[10px] text-slate-400 font-medium leading-relaxed">
-              Les anciens identifiants ne sont plus affiches si l'utilisateur a deja change son mot de passe.
+              Le code initial n'est plus affiche si l'utilisateur a deja change son mot de passe. Vous pouvez generer un nouveau code avec le bouton de reinitialisation.
             </p>
           )}
         </div>

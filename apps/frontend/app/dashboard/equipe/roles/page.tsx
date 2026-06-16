@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Plus, Search, Eye, Edit2, Trash2, Loader2, CheckCircle2, XCircle, AlertCircle, SlidersHorizontal } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import RoleModal from "./components/RoleModal";
@@ -39,6 +39,7 @@ export default function RolesPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [usageFilter, setUsageFilter] = useState("all");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const filterMenuRef = useRef<HTMLDivElement | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [modalMode, setModalMode] = useState<"create" | "edit" | "view">("create");
@@ -46,6 +47,26 @@ export default function RolesPage() {
 
   // ÉTAT DES PERMISSIONS LOCALE
   const [userPermissions, setUserPermissions] = useState<string[]>([]);
+
+  useEffect(() => {
+    const handlePointerDown = (event: MouseEvent) => {
+      if (filterMenuRef.current && !filterMenuRef.current.contains(event.target as Node)) {
+        setIsFilterOpen(false);
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsFilterOpen(false);
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
 
   // Stabilisation de showToast
   const showToast = useCallback((type: "success" | "error", message: string) => {
@@ -123,6 +144,7 @@ export default function RolesPage() {
       if (data.success) {
         setRoles(roles.filter((role) => role.id !== id));
         showToast("success", data.message || "Le rôle a été supprimé avec succès.");
+        window.dispatchEvent(new Event("userProfileUpdated"));
       } else {
         showToast("error", data.message || "Erreur lors de la suppression.");
       }
@@ -160,6 +182,7 @@ export default function RolesPage() {
       if (data.success) {
         showToast("success", data.message || "Configuration enregistrée avec succès !");
         fetchRoles();
+        window.dispatchEvent(new Event("userProfileUpdated"));
         setIsModalOpen(false);
       } else {
         showToast("error", data.message || "Une erreur est survenue lors de l'enregistrement.");
@@ -254,7 +277,7 @@ export default function RolesPage() {
 
       {/* TABLEAU */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex items-center gap-3 relative">
+        <div ref={filterMenuRef} className="p-4 border-b border-slate-100 flex items-center gap-3 relative">
           <div className="relative flex-1">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
             <input 
@@ -288,7 +311,7 @@ export default function RolesPage() {
                 <div className="grid grid-cols-1 gap-3">
                   <label className="space-y-1.5">
                     <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Statut</span>
-                    <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-full text-xs font-bold px-3 py-2 border border-slate-200 rounded-xl bg-white text-slate-600 focus:outline-none focus:border-indigo-500">
+                    <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setIsFilterOpen(false); }} className="w-full text-xs font-bold px-3 py-2 border border-slate-200 rounded-xl bg-white text-slate-600 focus:outline-none focus:border-indigo-500">
                       <option value="all">Tous les statuts</option>
                       <option value="Actif">Actifs</option>
                       <option value="Suspendu">Suspendus</option>
@@ -296,7 +319,7 @@ export default function RolesPage() {
                   </label>
                   <label className="space-y-1.5">
                     <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Utilisateurs</span>
-                    <select value={usageFilter} onChange={(e) => setUsageFilter(e.target.value)} className="w-full text-xs font-bold px-3 py-2 border border-slate-200 rounded-xl bg-white text-slate-600 focus:outline-none focus:border-indigo-500">
+                    <select value={usageFilter} onChange={(e) => { setUsageFilter(e.target.value); setIsFilterOpen(false); }} className="w-full text-xs font-bold px-3 py-2 border border-slate-200 rounded-xl bg-white text-slate-600 focus:outline-none focus:border-indigo-500">
                       <option value="all">Tous les roles</option>
                       <option value="used">Avec utilisateurs</option>
                       <option value="empty">Sans utilisateur</option>

@@ -139,11 +139,19 @@ export default function VerifyCode() {
 
       const data = await response.json();
 
-      // Interception des erreurs (Code faux, expiré ou trop de tentatives)
+      // Interception des erreurs (code faux, expiré ou vrai blocage après 3 essais)
       if (!response.ok) {
-        if (response.status === 429 || data.message?.toLowerCase().includes("tentatives")) {
+        const serverMessage = data.message || "Code invalide ou expiré";
+        const normalizedMessage = serverMessage.toLowerCase();
+        const isHardBlocked =
+          response.status === 429 ||
+          normalizedMessage.includes("trop de tentatives") ||
+          normalizedMessage.includes("sécurité activée") ||
+          normalizedMessage.includes("securite activee");
+
+        if (isHardBlocked) {
           setIsBlocked(true);
-          setError(data.message || "Trop de tentatives infructueuses.");
+          setError(serverMessage);
           
           // Laisse l'utilisateur lire le message de sécurité pendant 2.5s avant redirection
           setTimeout(() => {
@@ -152,7 +160,9 @@ export default function VerifyCode() {
           return;
         }
         
-        throw new Error(data.message || "Code invalide ou expiré");
+        setOtp(["", "", "", "", "", ""]);
+        inputs.current[0]?.focus();
+        throw new Error(serverMessage);
       }
 
       // Cookie middleware Next.js (7 jours)

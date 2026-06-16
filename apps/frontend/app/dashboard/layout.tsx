@@ -22,6 +22,7 @@ import {
   X,
   CircleDollarSign,
   ChevronRight,
+  ShieldCheck,
 } from "lucide-react";
 
 // ==========================================
@@ -58,6 +59,20 @@ interface NavigationItem {
   permission?: string;
   subMenu?: SubMenuItem[];
 }
+
+const EmptyPermissionState = () => (
+  <div className="min-h-full bg-[#f9fafd] rounded-3xl border border-slate-200/80 flex items-center justify-center p-8">
+    <div className="max-w-md text-center">
+      <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-500 border border-slate-200 flex items-center justify-center mx-auto mb-4">
+        <ShieldCheck size={22} />
+      </div>
+      <h2 className="text-sm font-black uppercase tracking-wider text-slate-900">Acces restreint</h2>
+      <p className="text-xs text-slate-500 font-medium mt-2 leading-relaxed">
+        Aucune permission active ne permet d'afficher cette interface. Contactez l'administrateur de la boutique.
+      </p>
+    </div>
+  </div>
+);
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
@@ -208,14 +223,19 @@ export default function DashboardLayout({
     };
 
     const timer = setTimeout(syncSessionFromBackend, 0);
+    const interval = window.setInterval(syncSessionFromBackend, 30000);
+    const handleFocus = () => syncSessionFromBackend();
 
     window.addEventListener("userProfileUpdated", syncSessionFromBackend);
     window.addEventListener("storage", syncSessionFromBackend);
+    window.addEventListener("focus", handleFocus);
 
     return () => {
       clearTimeout(timer);
+      window.clearInterval(interval);
       window.removeEventListener("userProfileUpdated", syncSessionFromBackend);
       window.removeEventListener("storage", syncSessionFromBackend);
+      window.removeEventListener("focus", handleFocus);
     };
   }, [pathname, router]);
 
@@ -228,6 +248,7 @@ export default function DashboardLayout({
   // HELPERS
   // ==========================================
   const hasPermission = (permission?: string) => {
+    if (user.roleId === "__loading__") return false;
     if (user.roleId === null || user.roleId === "") {
       return true;
     }
@@ -345,6 +366,20 @@ export default function DashboardLayout({
       ],
     },
   ];
+
+  const flattenNavigation = navigation.flatMap((item) => [
+    ...(item.href ? [{ href: item.href, permission: item.permission }] : []),
+    ...(item.subMenu || []).map((sub) => ({ href: sub.href, permission: sub.permission })),
+  ]);
+  const currentRoute = flattenNavigation
+    .filter((item) => pathname === item.href || pathname.startsWith(`${item.href}/`))
+    .sort((a, b) => b.href.length - a.href.length)[0];
+  const isEmployeeWithNoPermission =
+    user.roleId !== "__loading__" &&
+    user.roleId !== null &&
+    user.roleId !== "" &&
+    userPermissions.length === 0;
+  const canRenderCurrentRoute = !isEmployeeWithNoPermission && (currentRoute ? hasPermission(currentRoute.permission) : true);
 
   if (!isMounted) {
     return <div className="flex h-screen bg-[#F1F5F9] items-center justify-center font-sans">Chargement...</div>;
@@ -683,7 +718,9 @@ export default function DashboardLayout({
         </header>
 
         {/* MAIN CONTENT */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-[#F1F5F9]">{children}</main>
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-[#F1F5F9]">
+          {canRenderCurrentRoute ? children : <EmptyPermissionState />}
+        </main>
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
   AlertTriangle,
@@ -100,6 +100,7 @@ export default function BoutiquePage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [currencyFilter, setCurrencyFilter] = useState("all");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const filterMenuRef = useRef<HTMLDivElement | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"create" | "edit" | "view">("create");
   const [selectedBoutique, setSelectedBoutique] = useState<Boutique | null>(null);
@@ -116,6 +117,26 @@ export default function BoutiquePage() {
   const showToast = useCallback((type: "success" | "error", message: string) => {
     setToast({ type, message });
     window.setTimeout(() => setToast(null), 4500);
+  }, []);
+
+  useEffect(() => {
+    const handlePointerDown = (event: MouseEvent) => {
+      if (filterMenuRef.current && !filterMenuRef.current.contains(event.target as Node)) {
+        setIsFilterOpen(false);
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsFilterOpen(false);
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleEscape);
+    };
   }, []);
 
   const getAuthHeaders = useCallback(() => {
@@ -401,7 +422,7 @@ export default function BoutiquePage() {
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex items-center gap-3 relative">
+        <div ref={filterMenuRef} className="p-4 border-b border-slate-100 flex items-center gap-3 relative">
           <div className="relative flex-1">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
             <input
@@ -435,7 +456,7 @@ export default function BoutiquePage() {
                 <div className="grid grid-cols-1 gap-3">
                   <label className="space-y-1.5">
                     <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Secteur</span>
-                    <select value={sectorFilter} onChange={(event) => setSectorFilter(event.target.value)} className="w-full text-xs font-bold px-3 py-2 border border-slate-200 rounded-xl bg-white text-slate-600 focus:outline-none focus:border-indigo-500">
+                    <select value={sectorFilter} onChange={(event) => { setSectorFilter(event.target.value); setIsFilterOpen(false); }} className="w-full text-xs font-bold px-3 py-2 border border-slate-200 rounded-xl bg-white text-slate-600 focus:outline-none focus:border-indigo-500">
                       <option value="all">Tous les secteurs</option>
                       {Array.from(new Set(boutiques.map((boutique) => boutique.secteurActivite))).map((sector) => (
                         <option key={sector} value={sector}>{sector}</option>
@@ -444,7 +465,7 @@ export default function BoutiquePage() {
                   </label>
                   <label className="space-y-1.5">
                     <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Devise</span>
-                    <select value={currencyFilter} onChange={(event) => setCurrencyFilter(event.target.value)} className="w-full text-xs font-bold px-3 py-2 border border-slate-200 rounded-xl bg-white text-slate-600 focus:outline-none focus:border-indigo-500">
+                    <select value={currencyFilter} onChange={(event) => { setCurrencyFilter(event.target.value); setIsFilterOpen(false); }} className="w-full text-xs font-bold px-3 py-2 border border-slate-200 rounded-xl bg-white text-slate-600 focus:outline-none focus:border-indigo-500">
                       <option value="all">Toutes les devises</option>
                       {Array.from(new Set(boutiques.map((boutique) => boutique.deviseParDefaut))).map((currency) => (
                         <option key={currency} value={currency}>{currency}</option>
@@ -453,7 +474,7 @@ export default function BoutiquePage() {
                   </label>
                   <label className="space-y-1.5">
                     <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Statut</span>
-                    <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="w-full text-xs font-bold px-3 py-2 border border-slate-200 rounded-xl bg-white text-slate-600 focus:outline-none focus:border-indigo-500">
+                    <select value={statusFilter} onChange={(event) => { setStatusFilter(event.target.value); setIsFilterOpen(false); }} className="w-full text-xs font-bold px-3 py-2 border border-slate-200 rounded-xl bg-white text-slate-600 focus:outline-none focus:border-indigo-500">
                       <option value="all">Tous les statuts</option>
                       <option value="active">Active</option>
                       <option value="inactive">Non active</option>
