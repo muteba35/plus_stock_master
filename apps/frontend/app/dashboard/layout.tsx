@@ -256,6 +256,13 @@ export default function DashboardLayout({
     return userPermissions.includes(permission);
   };
 
+  const hasAnyPermission = (permissions?: string[]) => {
+    if (user.roleId === "__loading__") return false;
+    if (user.roleId === null || user.roleId === "") return true;
+    if (!permissions || permissions.length === 0) return true;
+    return permissions.some((permission) => userPermissions.includes(permission));
+  };
+
   const toggleSubMenu = (menuName: string) => {
     setOpenSubMenus((prev) => ({
       ...prev,
@@ -367,11 +374,14 @@ export default function DashboardLayout({
     },
   ];
 
-  const flattenNavigation = navigation.flatMap((item) => [
-    ...(item.href ? [{ href: item.href, permission: item.permission }] : []),
-    ...(item.subMenu || []).map((sub) => ({ href: sub.href, permission: sub.permission })),
-  ]);
-  const currentRoute = flattenNavigation
+  const routePermissions = [
+    { href: "/dashboard/profil", permissions: ["MODIFIER_PROFIL_RESTREINT", "MODIFIER_PROFIL_TOTAL"] },
+    ...navigation.flatMap((item) => [
+      ...(item.href ? [{ href: item.href, permission: item.permission }] : []),
+      ...(item.subMenu || []).map((sub) => ({ href: sub.href, permission: sub.permission })),
+    ]),
+  ];
+  const currentRoute = routePermissions
     .filter((item) => pathname === item.href || pathname.startsWith(`${item.href}/`))
     .sort((a, b) => b.href.length - a.href.length)[0];
   const isEmployeeWithNoPermission =
@@ -379,7 +389,13 @@ export default function DashboardLayout({
     user.roleId !== null &&
     user.roleId !== "" &&
     userPermissions.length === 0;
-  const canRenderCurrentRoute = !isEmployeeWithNoPermission && (currentRoute ? hasPermission(currentRoute.permission) : true);
+  const canRenderCurrentRoute =
+    !isEmployeeWithNoPermission &&
+    (currentRoute
+      ? "permissions" in currentRoute
+        ? hasAnyPermission(currentRoute.permissions)
+        : hasPermission(currentRoute.permission)
+      : true);
 
   if (!isMounted) {
     return <div className="flex h-screen bg-[#F1F5F9] items-center justify-center font-sans">Chargement...</div>;
