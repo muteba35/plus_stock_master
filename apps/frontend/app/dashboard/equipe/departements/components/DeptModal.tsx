@@ -36,7 +36,7 @@ export default function DeptModal({ isOpen, onClose, onSuccess }: DeptModalProps
       // 2. Définir l'adresse dynamique de l'API
       const backendUrl = process.env.NEXT_PUBLIC_API_URL 
         ? `${process.env.NEXT_PUBLIC_API_URL}/departements`
-        : "http://localhost:5000/api/departements";
+        : "https://plus-stock-master.onrender.com/api/departements";
 
       const response = await fetch(backendUrl, {
         method: "POST",

@@ -31,6 +31,7 @@ const PASSWORD_REQUIREMENTS = [
   },
 ];
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://plus-stock-master.onrender.com/api";
 
 export default function ResetPassword() {
   const params = useParams();
@@ -59,7 +60,7 @@ export default function ResetPassword() {
     setIsLoading(true);
     
     try {
-      const { data } = await axios.post(`http://localhost:5000/api/auth/reset-password/${params.token}`, {
+      const { data } = await axios.post(`${API_URL}/auth/reset-password/${params.token}`, {
         password,
         confirmPassword
       });

@@ -74,7 +74,7 @@ const EmptyPermissionState = () => (
   </div>
 );
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://plus-stock-master.onrender.com/api";
 
 const DEFAULT_PROFILE: UserProfile = {
   id: "",

@@ -17,7 +17,7 @@ interface Department {
 // OPTIMISATION ESLINT : Sortir l'URL constante du composant pour éviter de la recréer à chaque rendu
 const backendBaseUrl = process.env.NEXT_PUBLIC_API_URL 
   ? `${process.env.NEXT_PUBLIC_API_URL}/departements` 
-  : "http://localhost:5000/api/departements";
+  : "https://plus-stock-master.onrender.com/api/departements";
 
 export default function DepartementsPage() {
   // 1. ÉTATS DES DONNÉES

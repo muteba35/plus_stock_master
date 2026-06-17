@@ -8,6 +8,8 @@ import AuthNavbar from "../AuthNavbar";
 import axios, { AxiosError } from "axios";
 import toast, { Toaster } from 'react-hot-toast';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://plus-stock-master.onrender.com/api";
+
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -20,7 +22,7 @@ export default function ForgotPassword() {
     setIsLoading(true);
 
     try {
-      const { data } = await axios.post("http://localhost:5000/api/auth/forgot-password", { 
+      const { data } = await axios.post(`${API_URL}/auth/forgot-password`, {
         email 
       });
 
@@ -43,7 +45,7 @@ export default function ForgotPassword() {
     
     setIsResending(true);
     try {
-      await axios.post("http://localhost:5000/api/auth/resend-forgot-password", { email });
+      await axios.post(`${API_URL}/auth/resend-forgot-password`, { email });
       toast.success("Nouveau lien de récupération envoyé !");
     } catch (error) {
       const err = error as AxiosError<{message: string}>;

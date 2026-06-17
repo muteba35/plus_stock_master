@@ -14,6 +14,8 @@ import {
 import { useRouter } from "next/navigation";
 import AuthNavbar from "../AuthNavbar";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://plus-stock-master.onrender.com/api";
+
 export default function VerifyCode() {
   const router = useRouter();
 
@@ -124,7 +126,7 @@ export default function VerifyCode() {
       const fullOtp = otp.join("");
 
       const response = await fetch(
-        "http://localhost:5000/api/auth/verify-otp",
+        `${API_URL}/auth/verify-otp`,
         {
           method: "POST",
           headers: {
@@ -221,7 +223,7 @@ export default function VerifyCode() {
 
     try {
       const response = await fetch(
-        "http://localhost:5000/api/auth/resend-otp",
+        `${API_URL}/auth/resend-otp`,
         {
           method: "POST",
           headers: {

@@ -23,6 +23,8 @@ interface ApiErrorResponse {
   status?: string;
 }
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://plus-stock-master.onrender.com/api";
+
 // --- CONSTANTS ---
 const PASSWORD_REQUIREMENTS = [
   { 
@@ -106,8 +108,7 @@ export default function Register() {
     setError(null);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-      const response = await axios.post(`${apiUrl}/api/auth/register`, formData);
+      const response = await axios.post(`${API_URL}/auth/register`, formData);
       
       console.log("Réponse du serveur :", response.data);
 

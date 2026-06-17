@@ -8,6 +8,7 @@ import Link from "next/link";
 import AuthNavbar from "../AuthNavbar";
 
 const COOLDOWN_SECONDS = 120; // 2 minutes
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://plus-stock-master.onrender.com/api";
 
 // 1. On crée un sous-composant qui contient toute ta logique actuelle
 function VerifyEmailContent() {
@@ -51,9 +52,7 @@ function VerifyEmailContent() {
     setMessage({ type: "", text: "" });
 
     try {
-      // Conseil : Remplace par process.env.NEXT_PUBLIC_API_URL plus tard
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-      const res = await fetch(`${apiUrl}/api/auth/resend-verification`, {
+      const res = await fetch(`${API_URL}/auth/resend-verification`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
