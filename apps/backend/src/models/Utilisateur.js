@@ -7,11 +7,11 @@ const permissionSchema = new mongoose.Schema({
   nom: { 
     type: String, 
     required: true, 
-    unique: true // ex: "EFFECTUER_VENTE", "VOIR_RAPPORTS"
+    unique: true
   },
   module: { 
     type: String, 
-    required: true // ex: "VENTE", "INVENTAIRE", "RH"
+    required: true
   },
   description: { 
     type: String 
@@ -25,7 +25,7 @@ const roleSchema = new mongoose.Schema({
   nom: { 
     type: String, 
     required: true,
-    trim: true // ex: "Responsable Entrées", "Caissier"
+    trim: true
   },
   description: {
     type: String,
@@ -39,7 +39,6 @@ const roleSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-// Index unique pour éviter les doublons de rôles au sein d'une même boutique
 roleSchema.index({ nom: 1, boutiqueId: 1 }, { unique: true });
 
 // ==========================================
@@ -58,7 +57,6 @@ const rolePermissionSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-// Index composé unique pour éviter d'associer deux fois la même permission au même rôle
 rolePermissionSchema.index({ roleId: 1, permissionId: 1 }, { unique: true });
 
 // ==========================================
@@ -68,12 +66,12 @@ const departementSchema = new mongoose.Schema({
   nom: {
     type: String,
     required: [true, "Le nom du département est requis"],
-    trim: true // ex: "Finance", "Caisse", "Logistique", "Ressources Humaines"
+    trim: true
   },
   boutiqueId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Boutique",
-    required: true // Chaque boutique gère ses propres départements
+    required: true
   },
   description: {
     type: String,
@@ -82,11 +80,10 @@ const departementSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-// Index unique pour éviter d'avoir deux départements avec le même nom dans une même boutique
 departementSchema.index({ nom: 1, boutiqueId: 1 }, { unique: true });
 
 // ==========================================
-// 5. SCHÉMA UTILISATEUR (Mis à jour 🔄)
+// 5. SCHÉMA UTILISATEUR (Mis à jour)
 // ==========================================
 const utilisateurSchema = new mongoose.Schema(
   {
@@ -106,18 +103,16 @@ const utilisateurSchema = new mongoose.Schema(
     postalCode: { type: String, trim: true, default: "N/A" },
     avatar: { type: String, default: "" },
 
-    // Liaison vers le rôle (si employé)
     roleId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Role",
       default: null
     },
     
-    // Nouvelle liaison vers le département de l'employé
     departementId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Departement",
-      default: null // Reste null pour le super-admin (propriétaire de la boutique)
+      default: null
     },
 
     boutiqueActive: {
@@ -131,6 +126,18 @@ const utilisateurSchema = new mongoose.Schema(
       minlength: 8,
       select: false,
     },
+
+    passwordHistory: {
+      type: [
+        {
+          hash: { type: String, required: true },
+          changedAt: { type: Date, default: Date.now },
+        },
+      ],
+      default: [],
+      select: false,
+    },
+
     isActive: { type: Boolean, default: false },
     isBlocked: { type: Boolean, default: false },
     isPermanentlyBlocked: { type: Boolean, default: false },
@@ -203,7 +210,7 @@ const boutiqueSchema = new mongoose.Schema(
 const Permission = mongoose.model("Permission", permissionSchema);
 const Role = mongoose.model("Role", roleSchema);
 const RolePermission = mongoose.model("RolePermission", rolePermissionSchema);
-const Departement = mongoose.model("Departement", departementSchema); // Initialisation du modèle
+const Departement = mongoose.model("Departement", departementSchema);
 const Utilisateur = mongoose.model("Utilisateur", utilisateurSchema);
 const Boutique = mongoose.model("Boutique", boutiqueSchema);
 

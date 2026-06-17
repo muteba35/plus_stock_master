@@ -60,6 +60,7 @@ export const register = async (req, res) => {
       email: cleanEmail,
       telephone: cleanPhone,
       password: hashedPassword,
+      passwordHistory: [],
       roleId: null, 
       activationToken: verificationToken,
       activationTokenExpires: tokenExpires
@@ -884,7 +885,7 @@ export const resetPassword = async (req, res) => {
     const user = await Utilisateur.findOne({
       resetPasswordToken: hashedToken,
       resetPasswordExpires: { $gt: Date.now() }
-    }).select("+resetPasswordToken +resetPasswordExpires +temporaryAccessPassword +firstLoginToken +mustChangePassword");
+    }).select("+password +passwordHistory +resetPasswordToken +resetPasswordExpires +temporaryAccessPassword +firstLoginToken +mustChangePassword");
 
     if (!user) {
       return res.status(400).json({ status: "error", message: "Lien de réinitialisation invalide ou expiré." });
@@ -899,8 +900,15 @@ export const resetPassword = async (req, res) => {
     // user.password = password;
     //
     // SINON (si tu n'as pas de hook automatique), garde le hachage manuel ci-dessous :
+    const passwordReuseError = await validatePasswordNotRecentlyUsed(password, user);
+    if (passwordReuseError) {
+      return res.status(400).json({ status: "error", message: passwordReuseError });
+    }
+
+    const previousPasswordHash = user.password;
     const salt = await bcrypt.genSalt(12);
     user.password = await bcrypt.hash(password, salt);
+    rememberPreviousPassword(user, previousPasswordHash);
 
     // 2. Nettoyage (Usage unique du token)
     user.resetPasswordToken = undefined;
@@ -1120,6 +1128,33 @@ const validatePasswordRequirements = (password) => {
   return null;
 };
 
+const PASSWORD_HISTORY_LIMIT = 5;
+
+const validatePasswordNotRecentlyUsed = async (newPassword, user) => {
+  const previousHashes = [
+    user.password,
+    ...((user.passwordHistory || []).map((entry) => entry.hash).filter(Boolean)),
+  ].filter(Boolean);
+
+  for (const hash of previousHashes) {
+    const alreadyUsed = await bcrypt.compare(newPassword, hash);
+    if (alreadyUsed) {
+      return "Ce mot de passe a deja ete utilise recemment. Veuillez en choisir un nouveau.";
+    }
+  }
+
+  return null;
+};
+
+const rememberPreviousPassword = (user, previousHash) => {
+  if (!previousHash) return;
+
+  user.passwordHistory = [
+    { hash: previousHash, changedAt: new Date() },
+    ...(user.passwordHistory || []),
+  ].slice(0, PASSWORD_HISTORY_LIMIT);
+};
+
 const formatProfileResponse = (user) => {
   if (!user) return null;
 
@@ -1327,7 +1362,7 @@ export const updatePassword = async (req, res) => {
     }
 
     // 1. Récupérer l'utilisateur avec son mot de passe actuel
-    const user = await Utilisateur.findById(userId).select("+password +temporaryAccessPassword +firstLoginToken +mustChangePassword");
+    const user = await Utilisateur.findById(userId).select("+password +passwordHistory +temporaryAccessPassword +firstLoginToken +mustChangePassword");
     if (!user) {
       return res.status(404).json({ error: "Utilisateur non trouvé." });
     }
@@ -1348,15 +1383,16 @@ export const updatePassword = async (req, res) => {
       return res.status(400).json({ error: passwordValidationError });
     }
 
-    // Éviter de réutiliser le même mot de passe
-    const isSamePassword = await bcrypt.compare(newPassword, user.password);
-    if (isSamePassword) {
-      return res.status(400).json({ error: "Le nouveau mot de passe doit être différent de l'actuel." });
+    const passwordReuseError = await validatePasswordNotRecentlyUsed(newPassword, user);
+    if (passwordReuseError) {
+      return res.status(400).json({ error: passwordReuseError });
     }
 
     // 4. Hasher le nouveau mot de passe et sauvegarder
+    const previousPasswordHash = user.password;
     const salt = await bcrypt.genSalt(12);
     user.password = await bcrypt.hash(newPassword, salt);
+    rememberPreviousPassword(user, previousPasswordHash);
     user.temporaryAccessPassword = undefined;
     user.firstLoginToken = undefined;
     user.mustChangePassword = false;
