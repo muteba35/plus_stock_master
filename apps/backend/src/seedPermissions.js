@@ -9,7 +9,7 @@ dotenv.config();
 const permissions = [
   // --- MODULE : DASHBOARD ---
   { nom: "VOIR_RESUME_VENTES", module: "DASHBOARD", description: "Consulter les statistiques globales sur la page d'accueil" },
- 
+  { nom: "VOIR_ALERTES_STOCK", module: "DASHBOARD", description: "Recevoir les notifications de rupture de stock" },
 
   // --- MODULE : VENTE ---
   { nom: "EFFECTUER_VENTE", module: "VENTE", description: "Autorise l'accès à la caisse et la validation des paniers" },
@@ -23,7 +23,6 @@ const permissions = [
   { nom: "MODIFIER_PRODUIT", module: "INVENTAIRE", description: "Permet de modifier les informations d'un produit" },
   { nom: "VOIR_PRIX_ACHAT", module: "INVENTAIRE", description: "Permet de voir le prix d'achat (protection des marges)" },
   { nom: "AJUSTER_STOCK", module: "INVENTAIRE", description: "Modifier manuellement les quantités en stock" },
-  { nom: "VOIR_ALERTES_STOCK", module: "INVENTAIRE", description: "Recevoir les notifications de rupture de stock" },
   { nom: "SUPPRIMER_PRODUIT", module: "INVENTAIRE", description: "Retirer un produit du système" },
 
   // --- MODULE : EQUIPE (Mis à jour) ---

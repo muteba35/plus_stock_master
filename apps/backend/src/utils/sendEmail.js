@@ -15,7 +15,7 @@ export const sendEmail = async (options) => {
   const isGmail = process.env.EMAIL_HOST === "smtp.gmail.com" || !process.env.EMAIL_HOST;
 
   const transporter = nodemailer.createTransport(
-    isGmail 
+    isGmail
       ? {
           service: "gmail",
           auth: {
@@ -56,13 +56,13 @@ export const sendEmail = async (options) => {
     alertColor = "#F59E0B";
     iconUrl = "https://cdn-icons-png.flaticon.com/512/564/564619.png";
     bodyMessage = `Nous avons détecté plusieurs échecs de connexion. Il ne reste que <strong>${options.attemptsLeft} tentative(s)</strong> avant la suspension de votre accès.`;
-  } 
+  }
   else if (options.type === "critical") {
     title = "ACCÈS SUSPENDU (1 HEURE)";
     alertColor = "#EF4444";
     iconUrl = "https://cdn-icons-png.flaticon.com/512/752/752755.png";
     bodyMessage = "Plusieurs tentatives de connexion suspectes ont été constatées. Par mesure de précaution, votre compte est verrouillé pour 1 heure. <strong>Veuillez changer votre mot de passe immédiatement.</strong>";
-  } 
+  }
   else if (options.type === "banned") {
     title = "COMPTE BLOQUÉ DÉFINITIVEMENT";
     alertColor = "#000000";
@@ -70,13 +70,13 @@ export const sendEmail = async (options) => {
     bodyMessage = "Suite à une activité compromise, votre compte a été définitivement verrouillé. Seul l'administrateur peut lever cette restriction.";
     showButton = false;
   }
-  
+
 
   // --- TEMPLATE HTML ---
   const htmlContent = options.html || `
     <div style="background-color: #F4F7FA; padding: 50px 15px; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
       <div style="max-width: 550px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.08);">
-        
+
         <div style="height: 5px; background-color: ${alertColor};"></div>
 
         <div style="background-color: #0F172A; padding: 35px 20px; text-align: center;">
@@ -100,7 +100,7 @@ export const sendEmail = async (options) => {
 
           ${showButton ? `
           <div style="text-align: center; margin-top: 45px;">
-            <a href="${frontendUrl}/forgot-password" 
+            <a href="${frontendUrl}/forgot-password"
                style="background-color: ${alertColor}; color: #ffffff; padding: 16px 32px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 13px; display: inline-block; letter-spacing: 0.5px; transition: all 0.3s ease;">
               SÉCURISER MON COMPTE
             </a>
