@@ -68,7 +68,7 @@ const EmptyPermissionState = () => (
       </div>
       <h2 className="text-sm font-black uppercase tracking-wider text-slate-900">Acces restreint</h2>
       <p className="text-xs text-slate-500 font-medium mt-2 leading-relaxed">
-        Aucune permission active ne permet d'afficher cette interface. Contactez l'administrateur de la boutique.
+        Aucune permission active ne permet d&apos;afficher cette interface. Contactez l&apos;administrateur de la boutique.
       </p>
     </div>
   </div>

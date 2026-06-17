@@ -255,7 +255,6 @@ export default function TeamOverviewPage() {
     boutiqueId: string;
     roleId: string;
     departementId: string;
-    password: string;
     avatar?: string;
   }) => {
     try {

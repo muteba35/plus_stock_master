@@ -264,7 +264,7 @@ export default function EmployeModal({
                   Nouvel Employe
                 </h3>
                 <p className="text-[11px] text-slate-400 font-medium mt-0.5">
-                  Creation d'un profil collaborateur
+                  Creation d&apos;un profil collaborateur
                 </p>
               </div>
               <button
@@ -389,7 +389,7 @@ export default function EmployeModal({
 
                   <div className="space-y-1.5 relative">
                     <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
-                      <ShieldCheck size={12} /> Role d'exploitation
+                      <ShieldCheck size={12} /> Role d&apos;exploitation
                     </label>
                     <div
                       onClick={() => {
@@ -554,7 +554,7 @@ export default function EmployeModal({
                 className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold rounded-xl transition-colors flex items-center gap-2 disabled:bg-slate-400"
               >
                 {isSubmitting && <Loader2 size={14} className="animate-spin" />}
-                Creer l'employe
+                Creer l&apos;employe
               </button>
             </div>
           </motion.div>

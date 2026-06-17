@@ -421,7 +421,7 @@ export default function BoutiquePage() {
         )}
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-visible">
         <div ref={filterMenuRef} className="p-4 border-b border-slate-100 flex items-center gap-3 relative">
           <div className="relative flex-1">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
@@ -447,11 +447,11 @@ export default function BoutiquePage() {
           <AnimatePresence>
             {isFilterOpen && (
               <motion.div
-                initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                initial={{ opacity: 0, y: -8, scale: 0.98 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -6, scale: 0.98 }}
-                transition={{ duration: 0.16 }}
-                className="absolute right-4 top-[58px] z-30 w-[min(calc(100vw-4rem),420px)] rounded-2xl border border-slate-200 bg-white p-4 shadow-xl"
+                exit={{ opacity: 0, y: -8, scale: 0.98 }}
+                transition={{ duration: 0.16, ease: "easeOut" }}
+                className="absolute right-4 top-full mt-2 z-50 w-[min(calc(100vw-4rem),420px)] origin-top-right rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl shadow-slate-200/70 ring-1 ring-slate-900/5"
               >
                 <div className="grid grid-cols-1 gap-3">
                   <label className="space-y-1.5">

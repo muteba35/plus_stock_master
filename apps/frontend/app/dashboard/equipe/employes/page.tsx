@@ -479,7 +479,7 @@ export default function EmployesPage() {
         </button>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-visible">
         <div ref={filterMenuRef} className="p-4 border-b border-slate-100 flex items-center gap-3 relative">
           <div className="relative flex-1">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
@@ -505,11 +505,11 @@ export default function EmployesPage() {
           <AnimatePresence>
             {isFilterOpen && (
               <motion.div
-                initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                initial={{ opacity: 0, y: -8, scale: 0.98 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -6, scale: 0.98 }}
-                transition={{ duration: 0.16 }}
-                className="absolute right-4 top-[58px] z-30 w-[min(calc(100vw-4rem),420px)] rounded-2xl border border-slate-200 bg-white p-4 shadow-xl"
+                exit={{ opacity: 0, y: -8, scale: 0.98 }}
+                transition={{ duration: 0.16, ease: "easeOut" }}
+                className="absolute right-4 top-full mt-2 z-50 w-[min(calc(100vw-4rem),420px)] origin-top-right rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl shadow-slate-200/70 ring-1 ring-slate-900/5"
               >
                 <div className="grid grid-cols-1 gap-3">
                   <label className="space-y-1.5">
@@ -780,8 +780,8 @@ function EditInterface({ employe, roles, departements, boutiques, onBoutiqueChan
     <>
       <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-[#fcfdfe] shrink-0">
         <div>
-          <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Modifier l'Employe</h3>
-          <p className="text-[11px] text-slate-400 font-medium mt-0.5">Mise a jour globale de la fiche d'identite</p>
+          <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Modifier l&apos;Employe</h3>
+          <p className="text-[11px] text-slate-400 font-medium mt-0.5">Mise a jour globale de la fiche d&apos;identite</p>
         </div>
         <button onClick={onClose} disabled={isSaving} className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-40">
           <X size={16} />
@@ -847,7 +847,7 @@ function EditInterface({ employe, roles, departements, boutiques, onBoutiqueChan
 
           <div className="space-y-1.5 relative">
             <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
-              <ShieldCheck size={12} /> Role d'exploitation
+              <ShieldCheck size={12} /> Role d&apos;exploitation
             </label>
             <div onClick={() => { if (!isSaving && !isLoadingReferences) { setShowRoleDropdown(!showRoleDropdown); setShowDeptDropdown(false); } }} className={`w-full text-xs font-medium px-3 py-2.5 border border-slate-200 rounded-xl bg-white flex justify-between items-center transition-colors ${isLoadingReferences ? "cursor-wait opacity-70" : "cursor-pointer hover:border-indigo-500"}`}>
               <span className={formData.role ? "text-slate-800" : "text-slate-400"}>{isLoadingReferences ? "Chargement des roles..." : formData.role || "Choisir un role"}</span>
@@ -947,7 +947,7 @@ function ResetInterface({ employe, onClose, onReset, copyToClipboard, copied }: 
           <div className="p-2 bg-amber-50 text-amber-600 rounded-lg"><KeyRound size={16} /></div>
           <div>
             <h3 className="font-bold text-slate-900 text-sm">Identifiants & Securite</h3>
-            <p className="text-[11px] text-slate-400">Reinitialiser les acces de l'utilisateur.</p>
+            <p className="text-[11px] text-slate-400">Reinitialiser les acces de l&apos;utilisateur.</p>
           </div>
         </div>
         <button onClick={onClose} disabled={isResetting} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 transition-colors disabled:opacity-40"><X size={16} /></button>
@@ -971,7 +971,7 @@ function ResetInterface({ employe, onClose, onReset, copyToClipboard, copied }: 
           />
           {!generatedTempPassword && (
             <p className="text-[10px] text-slate-400 font-medium leading-relaxed">
-              Le code initial n'est plus affiche si l'utilisateur a deja change son mot de passe. Vous pouvez generer un nouveau code avec le bouton de reinitialisation.
+              Le code initial n&apos;est plus affiche si l&apos;utilisateur a deja change son mot de passe. Vous pouvez generer un nouveau code avec le bouton de reinitialisation.
             </p>
           )}
         </div>
@@ -1038,7 +1038,7 @@ function StatusInterface({ employe, onClose, onConfirm }: StatusInterfaceProps) 
           <div className={`p-2 ${isCurrentlyActive ? "bg-rose-50 text-rose-600" : "bg-emerald-50 text-emerald-600"} rounded-lg`}><Power size={16} /></div>
           <div>
             <h3 className="font-bold text-slate-900 text-sm">Changer le statut</h3>
-            <p className="text-[11px] text-slate-400">Modifier l'etat operationnel.</p>
+            <p className="text-[11px] text-slate-400">Modifier l&apos;etat operationnel.</p>
           </div>
         </div>
         <button onClick={onClose} disabled={isProcessing} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 transition-colors disabled:opacity-40"><X size={16} /></button>
@@ -1081,7 +1081,7 @@ function DeleteInterface({ employe, onClose, onConfirm }: DeleteInterfaceProps) 
           <div className="p-2 bg-rose-50 text-rose-600 rounded-lg"><Trash2 size={16} /></div>
           <div>
             <h3 className="font-bold text-slate-900 text-sm">Supprimer definitivement</h3>
-            <p className="text-[11px] text-slate-400">Retirer l'acces et detruire la fiche.</p>
+            <p className="text-[11px] text-slate-400">Retirer l&apos;acces et detruire la fiche.</p>
           </div>
         </div>
         <button onClick={onClose} disabled={isProcessing} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 transition-colors disabled:opacity-40"><X size={16} /></button>
