@@ -1,27 +1,42 @@
 {
-  "name": "backend",
-  "version": "1.0.0",
-  "type": "module",
-  "main": "index.js",
+  "name": "frontend",
+  "version": "0.1.0",
+  "private": true,
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "nodemon src/server.js",
-    "seed:permissions": "node src/seedPermissions.js"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
   },
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
+    "@netlify/plugin-nextjs": "^5.15.9",
     "axios": "^1.15.0",
-    "bcryptjs": "^3.0.3",
-    "cors": "^2.8.6",
-    "dotenv": "^17.3.1",
-    "express": "^5.2.1",
-    "express-rate-limit": "^8.3.2",
-    "jsonwebtoken": "^9.0.3",
-    "mongoose": "^9.3.1",
-    "nodemailer": "^8.0.5",
+    "chart.js": "^4.5.1",
+    "clsx": "^2.1.1",
+    "dexie": "^4.3.0",
+    "framer-motion": "^12.38.0",
+    "lottie-react": "^2.4.1",
+    "lucide-react": "^0.577.0",
+    "next": "16.2.0",
+    "react": "19.2.4",
+    "react-chartjs-2": "^5.3.1",
+    "react-dom": "19.2.4",
     "react-hot-toast": "^2.6.0",
-    "resend": "^6.14.0"
+    "recharts": "^3.8.1",
+    "tailwind-merge": "^3.6.0",
+    "zustand": "^5.0.12",
+    "zxcvbn": "^4.4.2"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14"
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/zxcvbn": "^4.4.5",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.0",
+    "tailwindcss": "^4",
+    "typescript": "^5"
   }
 }
