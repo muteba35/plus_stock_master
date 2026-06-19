@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 // Importation du modèle Permission
-import { Permission } from './models/Utilisateur.js'; 
+import { Permission, RolePermission } from './models/Utilisateur.js';
 
 // Chargement des variables d'environnement
 dotenv.config();
@@ -13,7 +13,8 @@ const permissions = [
 
   // --- MODULE : DASHBOARD ---
   { nom: "VOIR_RESUME_VENTES", module: "DASHBOARD", description: "Consulter les statistiques globales sur la page d'accueil" },
-  { nom: "VOIR_ALERTES_STOCK", module: "DASHBOARD", description: "Recevoir les notifications de rupture de stock" },
+  { nom: "VOIR_ALERTES_STOCK", module: "INVENTAIRE", description: "Consulter les alertes de rupture et de stock faible" },
+  { nom: "REAPPROVISIONNER_STOCK", module: "INVENTAIRE", description: "Réapprovisionner un produit directement depuis une alerte de stock" },
 
   // --- MODULE : VENTE ---
   { nom: "EFFECTUER_VENTE", module: "VENTE", description: "Autorise l'accès à la caisse et la validation des paniers" },
@@ -22,11 +23,16 @@ const permissions = [
   { nom: "IMPRIMER_FACTURE", module: "VENTE", description: "Permet de générer le ticket de caisse" },
 
   // --- MODULE : INVENTAIRE ---
+  { nom: "VOIR_RESUME_INVENTAIRE", module: "INVENTAIRE", description: "Consulter la vue globale et les indicateurs de l'inventaire" },
   { nom: "VOIR_LISTE_PRODUITS", module: "INVENTAIRE", description: "Consulter le catalogue des articles" },
   { nom: "AJOUTER_PRODUIT", module: "INVENTAIRE", description: "Permet d'enregistrer de nouveaux articles en stock" },
   { nom: "MODIFIER_PRODUIT", module: "INVENTAIRE", description: "Permet de modifier les informations d'un produit" },
   { nom: "VOIR_PRIX_ACHAT", module: "INVENTAIRE", description: "Permet de voir le prix d'achat (protection des marges)" },
-  { nom: "AJUSTER_STOCK", module: "INVENTAIRE", description: "Modifier manuellement les quantités en stock" },
+  { nom: "CREER_ENTREE_STOCK", module: "INVENTAIRE", description: "Enregistrer une entrée ou un réapprovisionnement de stock" },
+  { nom: "CREER_SORTIE_STOCK", module: "INVENTAIRE", description: "Enregistrer une sortie manuelle de stock" },
+  { nom: "CREER_AJUSTEMENT_STOCK", module: "INVENTAIRE", description: "Corriger le stock après un comptage physique" },
+  { nom: "VOIR_MOUVEMENTS_STOCK", module: "INVENTAIRE", description: "Consulter l'historique des entrées, sorties et ajustements de stock" },
+  { nom: "EXPORTER_MOUVEMENTS_STOCK", module: "INVENTAIRE", description: "Exporter l'historique des mouvements de stock en Excel ou PDF" },
   { nom: "SUPPRIMER_PRODUIT", module: "INVENTAIRE", description: "Retirer un produit du système" },
   { nom: "VOIR_CATEGORIES", module: "INVENTAIRE", description: "Consulter les catégories de produits de la boutique" },
   { nom: "CREER_CATEGORIE", module: "INVENTAIRE", description: "Créer une nouvelle catégorie de produits" },
@@ -91,6 +97,12 @@ const seedDB = async () => {
     );
 
     await Promise.all(promises);
+    const deprecatedPermission = await Permission.findOne({ nom: "AJUSTER_STOCK" });
+    if (deprecatedPermission) {
+      await RolePermission.deleteMany({ permissionId: deprecatedPermission._id });
+      await Permission.deleteOne({ _id: deprecatedPermission._id });
+      console.log("Permission obsolète AJUSTER_STOCK supprimée avec ses associations.");
+    }
     console.log(`Succès : ${permissions.length} permissions ont été synchronisées.`);
     
   } catch (error) {
