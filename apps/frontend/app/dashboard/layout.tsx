@@ -321,7 +321,7 @@ export default function DashboardLayout({
       module: "INVENTAIRE",
       subMenu: [
         { name: "Vue Globale", href: "/dashboard/inventaire", permission: "VOIR_LISTE_PRODUITS" },
-        { name: "Gestion Produits", href: "/dashboard/inventaire/produits", permission: "AJOUTER_PRODUIT" },
+        { name: "Gestion Produits", href: "/dashboard/inventaire/produits", permission: "VOIR_LISTE_PRODUITS" },
         { name: "Catégories", href: "/dashboard/inventaire/categories", permission: "VOIR_CATEGORIES" },
         { name: "Mouvements Stock", href: "/dashboard/inventaire/stock", permission: "AJUSTER_STOCK" },
         { name: "Alertes Rupture", href: "/dashboard/inventaire/alertes", permission: "VOIR_ALERTES_STOCK" },

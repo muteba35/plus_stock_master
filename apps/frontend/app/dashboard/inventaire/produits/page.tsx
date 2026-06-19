@@ -1,30 +1,336 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Edit2, Eye, Filter, PackagePlus, Plus, Trash2 } from "lucide-react";
-import { InventoryModal, PageHeader, SearchInput, StatusBadge, fieldClass, primaryButton, products as initialProducts, secondaryButton, type Product } from "../components/inventory-ui";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AlertTriangle, CheckCircle2, Download, Edit2, Eye, FileSpreadsheet, ImagePlus, Loader2, PackagePlus, Plus, RotateCcw, SlidersHorizontal, Trash2, Upload, XCircle } from "lucide-react";
+import { InventoryModal, PageHeader, SearchInput, StatusBadge, fieldClass, primaryButton, secondaryButton } from "../components/inventory-ui";
+
+type CategoryOption = { _id: string; nom: string; couleur: string; isActive: boolean };
+type ProductStatus = "Disponible" | "Stock faible" | "Rupture";
+type Product = {
+  _id: string;
+  nom: string;
+  sku: string;
+  description: string;
+  categorieId: CategoryOption;
+  prixAchat?: number;
+  prixVente: number;
+  stock: number;
+  seuilAlerte: number;
+  unite: string;
+  codeBarres: string;
+  image: string;
+  isActive: boolean;
+  status: ProductStatus;
+};
+type ProductForm = {
+  nom: string;
+  sku: string;
+  description: string;
+  categorieId: string;
+  prixAchat: string;
+  prixVente: string;
+  stockInitial: string;
+  seuilAlerte: string;
+  unite: string;
+  codeBarres: string;
+  image: string;
+  isActive: boolean;
+};
+type ImportProductRow = {
+  line: number;
+  nom: string;
+  sku: string;
+  categorie: string;
+  description: string;
+  prixAchat: string;
+  prixVente: string;
+  stockInitial: string;
+  seuilAlerte: string;
+  unite: string;
+  codeBarres: string;
+};
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://plus-stock-master.onrender.com/api";
+const EMPTY_FORM: ProductForm = { nom: "", sku: "", description: "", categorieId: "", prixAchat: "0", prixVente: "0", stockInitial: "0", seuilAlerte: "5", unite: "Pièce", codeBarres: "", image: "", isActive: true };
+const UNITS = ["Pièce", "Boîte", "Paquet", "Kg", "Gramme", "Litre", "Mètre"];
+
+const requestHeaders = () => {
+  const token = localStorage.getItem("token");
+  return { "Content-Type": "application/json", Authorization: token ? `Bearer ${token}` : "" };
+};
+
+const getStoredAccess = () => {
+  if (typeof window === "undefined") return { permissions: [] as string[], isOwner: false };
+  try {
+    const permissions = JSON.parse(localStorage.getItem("user_permissions") || "[]") as string[];
+    const profile = JSON.parse(localStorage.getItem("user_profile") || "{}") as { role?: string };
+    return { permissions, isOwner: profile.role === "Admin Général" };
+  } catch {
+    return { permissions: [] as string[], isOwner: false };
+  }
+};
+
+const parseCsvLine = (line: string, separator: string) => {
+  const values: string[] = [];
+  let value = "";
+  let quoted = false;
+  for (let index = 0; index < line.length; index += 1) {
+    const character = line[index];
+    if (character === '"' && line[index + 1] === '"' && quoted) { value += '"'; index += 1; }
+    else if (character === '"') quoted = !quoted;
+    else if (character === separator && !quoted) { values.push(value.trim()); value = ""; }
+    else value += character;
+  }
+  values.push(value.trim());
+  return values;
+};
+
+const normalizeHeader = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase().replace(/[ -]/g, "_");
+
+const parseProductCsv = (content: string): ImportProductRow[] => {
+  const lines = content.replace(/^\uFEFF/, "").split(/\r?\n/).filter((line) => line.trim());
+  if (lines.length < 2) throw new Error("Le fichier doit contenir un en-tête et au moins un produit.");
+  const separator = (lines[0].match(/;/g) || []).length >= (lines[0].match(/,/g) || []).length ? ";" : ",";
+  const headers = parseCsvLine(lines[0], separator).map(normalizeHeader);
+  const indexOf = (...names: string[]) => headers.findIndex((header) => names.includes(header));
+  const indexes = {
+    nom: indexOf("nom", "name", "produit"), sku: indexOf("sku", "reference"), categorie: indexOf("categorie", "category"),
+    description: indexOf("description"), prixAchat: indexOf("prix_achat", "purchase_price"), prixVente: indexOf("prix_vente", "sale_price"),
+    stockInitial: indexOf("stock_initial", "stock"), seuilAlerte: indexOf("seuil_alerte", "seuil"), unite: indexOf("unite", "unit"), codeBarres: indexOf("code_barres", "barcode"),
+  };
+  if (indexes.nom < 0 || indexes.sku < 0 || indexes.categorie < 0 || indexes.prixVente < 0) {
+    throw new Error("Colonnes obligatoires : nom, sku, categorie et prix_vente.");
+  }
+  const valueAt = (values: string[], index: number, fallback = "") => index >= 0 ? values[index] || fallback : fallback;
+  return lines.slice(1).map((line, lineIndex) => {
+    const values = parseCsvLine(line, separator);
+    return {
+      line: lineIndex + 2,
+      nom: valueAt(values, indexes.nom), sku: valueAt(values, indexes.sku).toUpperCase(), categorie: valueAt(values, indexes.categorie),
+      description: valueAt(values, indexes.description), prixAchat: valueAt(values, indexes.prixAchat, "0"), prixVente: valueAt(values, indexes.prixVente),
+      stockInitial: valueAt(values, indexes.stockInitial, "0"), seuilAlerte: valueAt(values, indexes.seuilAlerte, "5"), unite: valueAt(values, indexes.unite, "Pièce"), codeBarres: valueAt(values, indexes.codeBarres),
+    };
+  });
+};
 
 export default function ProduitsPage() {
-  const [items, setItems] = useState<Product[]>(initialProducts);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("Tous");
-  const [modalOpen, setModalOpen] = useState(false);
-  const filtered = useMemo(() => items.filter((item) => (item.name.toLowerCase().includes(search.toLowerCase()) || item.sku.toLowerCase().includes(search.toLowerCase())) && (status === "Tous" || item.status === status)), [items, search, status]);
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [activityFilter, setActivityFilter] = useState("active");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<"create" | "edit" | "view">("create");
+  const [formOpen, setFormOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importRows, setImportRows] = useState<ImportProductRow[]>([]);
+  const [importFileName, setImportFileName] = useState("");
+  const [importError, setImportError] = useState("");
+  const [selected, setSelected] = useState<Product | null>(null);
+  const [form, setForm] = useState<ProductForm>(EMPTY_FORM);
+  const [formError, setFormError] = useState("");
+  const [deleteError, setDeleteError] = useState("");
+  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [{ permissions, isOwner }] = useState(getStoredAccess);
+  const filterRef = useRef<HTMLDivElement | null>(null);
 
-  const addProduct = () => {
-    setItems((current) => [...current, { id: Date.now(), name: "Nouveau produit", sku: `PRD-${current.length + 1}`, category: "Non classé", price: 0, stock: 0, threshold: 5, status: "Rupture" }]);
-    setModalOpen(false);
+  const canCreate = isOwner || permissions.includes("AJOUTER_PRODUIT");
+  const canEdit = isOwner || permissions.includes("MODIFIER_PRODUIT");
+  const canDelete = isOwner || permissions.includes("SUPPRIMER_PRODUIT");
+  const canViewPurchasePrice = isOwner || permissions.includes("VOIR_PRIX_ACHAT");
+
+  const showMessage = useCallback((type: "success" | "error", text: string) => {
+    setMessage({ type, text });
+    window.setTimeout(() => setMessage(null), 4000);
+  }, []);
+
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const [productsResponse, categoriesResponse] = await Promise.all([
+        fetch(`${API_URL}/inventaire/produits`, { headers: requestHeaders() }),
+        fetch(`${API_URL}/inventaire/categories`, { headers: requestHeaders() }),
+      ]);
+      const [productsData, categoriesData] = await Promise.all([productsResponse.json(), categoriesResponse.json()]);
+      if (!productsResponse.ok || !productsData.success) throw new Error(productsData.message || "Impossible de charger les produits.");
+      setProducts(productsData.data || []);
+      setCategories(categoriesResponse.ok && categoriesData.success ? (categoriesData.data || []) : []);
+    } catch (error) {
+      showMessage("error", error instanceof Error ? error.message : "Erreur de connexion au serveur.");
+    } finally {
+      setLoading(false);
+    }
+  }, [showMessage]);
+
+  useEffect(() => { void fetchData(); }, [fetchData]);
+  useEffect(() => {
+    const close = (event: MouseEvent) => {
+      if (filterRef.current && !filterRef.current.contains(event.target as Node)) setFilterOpen(false);
+    };
+    const escape = (event: KeyboardEvent) => { if (event.key === "Escape") setFilterOpen(false); };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("keydown", escape);
+    return () => { document.removeEventListener("mousedown", close); document.removeEventListener("keydown", escape); };
+  }, []);
+
+  const filtered = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return products.filter((product) => {
+      const matchesSearch = product.nom.toLowerCase().includes(query) || product.sku.toLowerCase().includes(query) || (product.codeBarres || "").toLowerCase().includes(query);
+      const matchesStatus = statusFilter === "all" || product.status === statusFilter;
+      const matchesCategory = categoryFilter === "all" || product.categorieId?._id === categoryFilter;
+      const matchesActivity = activityFilter === "all" || (activityFilter === "active" ? product.isActive : !product.isActive);
+      return matchesSearch && matchesStatus && matchesCategory && matchesActivity;
+    });
+  }, [products, search, statusFilter, categoryFilter, activityFilter]);
+
+  const productToForm = (product: Product): ProductForm => ({
+    nom: product.nom,
+    sku: product.sku,
+    description: product.description || "",
+    categorieId: product.categorieId?._id || "",
+    prixAchat: String(product.prixAchat ?? 0),
+    prixVente: String(product.prixVente),
+    stockInitial: String(product.stock),
+    seuilAlerte: String(product.seuilAlerte),
+    unite: product.unite || "Pièce",
+    codeBarres: product.codeBarres || "",
+    image: product.image || "",
+    isActive: product.isActive,
+  });
+
+  const openCreate = () => {
+    setSelected(null);
+    setModalMode("create");
+    setForm({ ...EMPTY_FORM, categorieId: categories.find((category) => category.isActive)?._id || "" });
+    setFormError("");
+    setFormOpen(true);
   };
+  const openProduct = (product: Product, mode: "edit" | "view") => {
+    setSelected(product);
+    setModalMode(mode);
+    setForm(productToForm(product));
+    setFormError("");
+    setFormOpen(true);
+  };
+
+  const handleImage = (file?: File) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/") || file.size > 2 * 1024 * 1024) {
+      setFormError("L’image doit être au format image et ne pas dépasser 2 Mo.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => setForm((current) => ({ ...current, image: String(reader.result || "") }));
+    reader.readAsDataURL(file);
+  };
+
+  const saveProduct = async () => {
+    if (!form.nom.trim() || !form.sku.trim() || !form.categorieId) {
+      setFormError("Le nom, le SKU et la catégorie sont obligatoires.");
+      return;
+    }
+    try {
+      setSaving(true);
+      setFormError("");
+      const payload: Record<string, unknown> = {
+        nom: form.nom,
+        sku: form.sku,
+        description: form.description,
+        categorieId: form.categorieId,
+        prixVente: Number(form.prixVente),
+        seuilAlerte: Number(form.seuilAlerte),
+        unite: form.unite,
+        codeBarres: form.codeBarres,
+        image: form.image,
+        isActive: form.isActive,
+      };
+      if (canViewPurchasePrice) payload.prixAchat = Number(form.prixAchat);
+      if (modalMode === "create") payload.stockInitial = Number(form.stockInitial);
+      const response = await fetch(modalMode === "edit" && selected ? `${API_URL}/inventaire/produits/${selected._id}` : `${API_URL}/inventaire/produits`, {
+        method: modalMode === "edit" ? "PUT" : "POST",
+        headers: requestHeaders(),
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.message || "Enregistrement impossible.");
+      setFormOpen(false);
+      showMessage("success", data.message || "Produit enregistré avec succès.");
+      await fetchData();
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : "Erreur de connexion au serveur.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deleteProduct = async () => {
+    if (!selected) return;
+    try {
+      setSaving(true);
+      setDeleteError("");
+      const response = await fetch(`${API_URL}/inventaire/produits/${selected._id}`, { method: "DELETE", headers: requestHeaders() });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.message || "Suppression impossible.");
+      setDeleteOpen(false);
+      setSelected(null);
+      showMessage("success", data.message || "Produit supprimé.");
+      await fetchData();
+    } catch (error) {
+      setDeleteError(error instanceof Error ? error.message : "Erreur de connexion au serveur.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const resetFilters = () => { setStatusFilter("all"); setCategoryFilter("all"); setActivityFilter("active"); };
+  const activeFilterCount = Number(statusFilter !== "all") + Number(categoryFilter !== "all") + Number(activityFilter !== "active");
+  const readOnly = modalMode === "view";
 
   return (
     <div className="space-y-6 bg-[#f9fafd] p-3 sm:p-6 rounded-2xl sm:rounded-3xl min-h-screen text-slate-800 overflow-x-hidden">
-      <PageHeader title="Gestion des produits" subtitle="Créez, recherchez et suivez tous les articles de votre catalogue." action={<button onClick={() => setModalOpen(true)} className={primaryButton}><Plus size={15} /> Nouveau produit</button>} />
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-3"><SearchInput value={search} onChange={setSearch} placeholder="Rechercher par nom ou référence SKU..." /><div className="relative"><Filter size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><select value={status} onChange={(event) => setStatus(event.target.value)} className="h-10 pl-9 pr-8 text-xs font-bold border border-slate-200 rounded-xl bg-white outline-none"><option>Tous</option><option>Disponible</option><option>Stock faible</option><option>Rupture</option></select></div></div>
-        <div className="overflow-x-auto"><table className="w-full min-w-[850px] text-left text-xs"><thead className="bg-slate-50 text-[10px] uppercase tracking-wider text-slate-400"><tr><th className="px-5 py-4">Produit</th><th className="px-5 py-4">Catégorie</th><th className="px-5 py-4">Prix</th><th className="px-5 py-4">Stock</th><th className="px-5 py-4">Statut</th><th className="px-5 py-4 text-right">Actions</th></tr></thead><tbody className="divide-y divide-slate-100">{filtered.map((product) => <tr key={product.id} className="hover:bg-slate-50/60"><td className="px-5 py-4"><div className="flex items-center gap-3"><span className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center"><PackagePlus size={16} /></span><div><p className="font-bold text-slate-900">{product.name}</p><p className="text-[10px] text-slate-400 mt-0.5">{product.sku}</p></div></div></td><td className="px-5 py-4 text-slate-600">{product.category}</td><td className="px-5 py-4 font-bold">{product.price.toLocaleString("fr-FR")} $</td><td className="px-5 py-4"><span className="font-black">{product.stock}</span><span className="text-slate-400"> / seuil {product.threshold}</span></td><td className="px-5 py-4"><StatusBadge status={product.status} /></td><td className="px-5 py-4"><div className="flex justify-end gap-1"><button className="p-2 text-slate-400 hover:text-indigo-600" title="Consulter"><Eye size={15} /></button><button className="p-2 text-slate-400 hover:text-amber-600" title="Modifier"><Edit2 size={15} /></button><button onClick={() => setItems((current) => current.filter((item) => item.id !== product.id))} className="p-2 text-slate-400 hover:text-rose-600" title="Supprimer"><Trash2 size={15} /></button></div></td></tr>)}</tbody></table></div>
-        <div className="px-5 py-4 border-t border-slate-100 text-[11px] text-slate-400 font-medium">{filtered.length} produit(s) affiché(s)</div>
+      <PageHeader title="Gestion des produits" subtitle="Créez et gérez les articles de la boutique active." action={canCreate ? <button onClick={openCreate} className={primaryButton}><Plus size={15} /> Nouveau produit</button> : undefined} />
+
+      {message && <div className={`flex items-center gap-2 p-3 rounded-xl border text-xs font-semibold ${message.type === "success" ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-rose-50 text-rose-700 border-rose-100"}`}>{message.type === "success" ? <CheckCircle2 size={15} /> : <XCircle size={15} />}{message.text}</div>}
+
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-visible">
+        <div className="relative z-30 p-4 border-b border-slate-100 flex gap-2 bg-white rounded-t-2xl">
+          <SearchInput value={search} onChange={setSearch} placeholder="Rechercher par nom, SKU ou code-barres..." />
+          <div className="relative" ref={filterRef}>
+            <button onClick={() => setFilterOpen((current) => !current)} className={`h-10 w-10 rounded-xl border flex items-center justify-center relative ${filterOpen || activeFilterCount ? "border-indigo-300 bg-indigo-50 text-indigo-600" : "border-slate-200 text-slate-500"}`} title="Filtrer"><SlidersHorizontal size={16} />{activeFilterCount > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-indigo-600 text-white text-[9px] font-bold flex items-center justify-center">{activeFilterCount}</span>}</button>
+            {filterOpen && <div className="absolute right-0 top-12 z-[70] w-[min(20rem,calc(100vw-2rem))] bg-white border border-slate-200 rounded-xl shadow-[0_18px_45px_-12px_rgba(15,23,42,0.25)] p-4 space-y-4"><div className="flex items-center justify-between"><p className="text-xs font-bold">Filtres</p><button onClick={resetFilters} className="text-[10px] font-bold text-indigo-600 flex items-center gap-1"><RotateCcw size={11} /> Réinitialiser</button></div><label className="block space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Catégorie</span><select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)} className={fieldClass}><option value="all">Toutes les catégories</option>{categories.map((category) => <option key={category._id} value={category._id}>{category.nom}</option>)}</select></label><label className="block space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">État du stock</span><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className={fieldClass}><option value="all">Tous</option><option value="Disponible">Disponible</option><option value="Stock faible">Stock faible</option><option value="Rupture">Rupture</option></select></label><label className="block space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Activité</span><select value={activityFilter} onChange={(event) => setActivityFilter(event.target.value)} className={fieldClass}><option value="all">Tous</option><option value="active">Actifs</option><option value="inactive">Inactifs</option></select></label><button onClick={() => setFilterOpen(false)} className={`${primaryButton} w-full`}>Appliquer</button></div>}
+          </div>
+        </div>
+
+        <div className="relative z-0 overflow-x-auto">
+          {loading ? <div className="py-16 flex flex-col items-center gap-3 text-slate-400"><Loader2 size={24} className="animate-spin text-indigo-500" /><p className="text-xs">Chargement des produits...</p></div> : <table className="w-full min-w-[920px] text-left text-xs"><thead className="bg-slate-50 text-[10px] uppercase tracking-wider text-slate-400"><tr><th className="px-5 py-4">Produit</th><th className="px-5 py-4">Catégorie</th>{canViewPurchasePrice && <th className="px-5 py-4">Prix d’achat</th>}<th className="px-5 py-4">Prix de vente</th><th className="px-5 py-4">Stock</th><th className="px-5 py-4">Statut</th><th className="px-5 py-4 text-right">Actions</th></tr></thead><tbody className="divide-y divide-slate-100">{filtered.map((product) => <tr key={product._id} className="hover:bg-slate-50/60"><td className="px-5 py-4"><div className="flex items-center gap-3">{product.image ? <img src={product.image} alt="" className="w-10 h-10 rounded-xl object-cover border border-slate-100" /> : <span className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center"><PackagePlus size={16} /></span>}<div><p className="font-bold text-slate-900">{product.nom}</p><p className="text-[10px] text-slate-400 mt-0.5">{product.sku} · {product.unite}</p></div></div></td><td className="px-5 py-4"><span className="inline-flex items-center gap-2"><span className="w-2 h-2 rounded-full" style={{ backgroundColor: product.categorieId?.couleur || "#94a3b8" }} />{product.categorieId?.nom || "Non classé"}</span></td>{canViewPurchasePrice && <td className="px-5 py-4 font-bold text-slate-600">{(product.prixAchat || 0).toLocaleString("fr-FR")} $</td>}<td className="px-5 py-4 font-bold">{product.prixVente.toLocaleString("fr-FR")} $</td><td className="px-5 py-4"><span className="font-black">{product.stock}</span><span className="text-slate-400"> / seuil {product.seuilAlerte}</span></td><td className="px-5 py-4"><StatusBadge status={product.status} /></td><td className="px-5 py-4"><div className="flex justify-end gap-1"><button onClick={() => openProduct(product, "view")} className="p-2 text-slate-400 hover:text-indigo-600" title="Consulter"><Eye size={15} /></button><button disabled={!canEdit} onClick={() => openProduct(product, "edit")} className={`p-2 ${canEdit ? "text-slate-400 hover:text-amber-600" : "text-slate-200 cursor-not-allowed"}`} title={canEdit ? "Modifier" : "Permission MODIFIER_PRODUIT requise"}><Edit2 size={15} /></button><button disabled={!canDelete} onClick={() => { setSelected(product); setDeleteError(""); setDeleteOpen(true); }} className={`p-2 ${canDelete ? "text-slate-400 hover:text-rose-600" : "text-slate-200 cursor-not-allowed"}`} title={canDelete ? "Supprimer" : "Permission SUPPRIMER_PRODUIT requise"}><Trash2 size={15} /></button></div></td></tr>)}</tbody></table>}
+        </div>
+        {!loading && filtered.length === 0 && <div className="py-14 text-center"><PackagePlus size={26} className="mx-auto text-slate-300" /><p className="text-sm font-bold text-slate-700 mt-3">Aucun produit trouvé</p><p className="text-xs text-slate-400 mt-1">Créez un produit ou ajustez vos filtres.</p></div>}
+        <div className="px-5 py-4 border-t border-slate-100 text-[11px] text-slate-400">{filtered.length} produit(s) affiché(s)</div>
       </div>
-      <InventoryModal open={modalOpen} onClose={() => setModalOpen(false)} title="Nouveau produit" subtitle="Ajoutez un article au catalogue de la boutique." footer={<><button onClick={() => setModalOpen(false)} className={secondaryButton}>Annuler</button><button onClick={addProduct} className={primaryButton}>Créer le produit</button></>}><div className="grid grid-cols-1 sm:grid-cols-2 gap-4"><label className="space-y-1.5 sm:col-span-2"><span className="text-[10px] font-bold uppercase text-slate-400">Nom du produit</span><input className={fieldClass} placeholder="Ex: Imprimante thermique" /></label><label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Référence SKU</span><input className={fieldClass} placeholder="IMP-001" /></label><label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Catégorie</span><select className={fieldClass}><option>Électronique</option><option>Périphériques</option><option>Audio</option></select></label><label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Prix de vente</span><input type="number" className={fieldClass} placeholder="0.00" /></label><label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Stock initial</span><input type="number" className={fieldClass} placeholder="0" /></label></div></InventoryModal>
+
+      <InventoryModal open={formOpen} onClose={() => !saving && setFormOpen(false)} title={modalMode === "create" ? "Nouveau produit" : modalMode === "edit" ? "Modifier le produit" : "Fiche du produit"} subtitle={modalMode === "create" ? "Le stock initial créera automatiquement une entrée de stock." : modalMode === "edit" ? "La quantité se modifie uniquement dans les mouvements de stock." : "Informations enregistrées dans la boutique active."} notice={formError ? <div className="flex items-start gap-2 p-3 rounded-xl bg-rose-50 border border-rose-100 text-xs font-semibold text-rose-700"><XCircle size={15} className="shrink-0" />{formError}</div> : undefined} footer={readOnly ? <button onClick={() => setFormOpen(false)} className={secondaryButton}>Fermer</button> : <><button disabled={saving} onClick={() => setFormOpen(false)} className={secondaryButton}>Annuler</button><button disabled={saving} onClick={saveProduct} className={primaryButton}>{saving && <Loader2 size={14} className="animate-spin" />}{modalMode === "create" ? "Créer le produit" : "Enregistrer"}</button></>}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <label className="sm:col-span-2 flex items-center gap-4"><span className="w-16 h-16 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center overflow-hidden shrink-0">{form.image ? <img src={form.image} alt="Aperçu" className="w-full h-full object-cover" /> : <ImagePlus size={20} className="text-slate-400" />}</span>{!readOnly && <span className={`${secondaryButton} cursor-pointer`}><ImagePlus size={14} /> Choisir une image<input type="file" accept="image/*" className="hidden" onChange={(event) => handleImage(event.target.files?.[0])} /></span>}</label>
+          <label className="space-y-1.5 sm:col-span-2"><span className="text-[10px] font-bold uppercase text-slate-400">Nom du produit</span><input disabled={readOnly} value={form.nom} onChange={(event) => setForm({ ...form, nom: event.target.value })} className={fieldClass} placeholder="Ex: Clavier mécanique" /></label>
+          <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">SKU</span><input disabled={readOnly} value={form.sku} onChange={(event) => setForm({ ...form, sku: event.target.value.toUpperCase() })} className={fieldClass} placeholder="CLA-MEC-001" /></label>
+          <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Catégorie</span><select disabled={readOnly} value={form.categorieId} onChange={(event) => setForm({ ...form, categorieId: event.target.value })} className={fieldClass}><option value="">Sélectionner...</option>{categories.filter((category) => category.isActive || category._id === form.categorieId).map((category) => <option key={category._id} value={category._id}>{category.nom}</option>)}</select></label>
+          {canViewPurchasePrice && <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Prix d’achat</span><input disabled={readOnly} type="number" min="0" step="0.01" value={form.prixAchat} onChange={(event) => setForm({ ...form, prixAchat: event.target.value })} className={fieldClass} /></label>}
+          <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Prix de vente</span><input disabled={readOnly} type="number" min="0" step="0.01" value={form.prixVente} onChange={(event) => setForm({ ...form, prixVente: event.target.value })} className={fieldClass} /></label>
+          {modalMode === "create" ? <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Stock initial</span><input type="number" min="0" value={form.stockInitial} onChange={(event) => setForm({ ...form, stockInitial: event.target.value })} className={fieldClass} /></label> : <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Stock actuel</span><input disabled value={`${selected?.stock || 0} ${selected?.unite || ""}`} className={`${fieldClass} bg-slate-100`} /></label>}
+          <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Seuil d’alerte</span><input disabled={readOnly} type="number" min="0" value={form.seuilAlerte} onChange={(event) => setForm({ ...form, seuilAlerte: event.target.value })} className={fieldClass} /></label>
+          <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Unité</span><select disabled={readOnly} value={form.unite} onChange={(event) => setForm({ ...form, unite: event.target.value })} className={fieldClass}>{UNITS.map((unit) => <option key={unit}>{unit}</option>)}</select></label>
+          <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Code-barres</span><input disabled={readOnly} value={form.codeBarres} onChange={(event) => setForm({ ...form, codeBarres: event.target.value })} className={fieldClass} placeholder="Facultatif" /></label>
+          <label className="space-y-1.5 sm:col-span-2"><span className="text-[10px] font-bold uppercase text-slate-400">Description</span><textarea disabled={readOnly} rows={3} value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} className={`${fieldClass} h-auto py-3 resize-none`} /></label>
+          {modalMode === "edit" && <label className="sm:col-span-2 flex items-center gap-3 p-3 rounded-xl border border-slate-200"><input type="checkbox" checked={form.isActive} onChange={(event) => setForm({ ...form, isActive: event.target.checked })} className="w-4 h-4 accent-indigo-600" /><span className="text-xs font-bold text-slate-700">Produit actif et disponible dans le catalogue</span></label>}
+        </div>
+      </InventoryModal>
+
+      <InventoryModal open={deleteOpen} onClose={() => !saving && setDeleteOpen(false)} title="Supprimer le produit" subtitle="Le stock doit être à zéro avant cette opération." notice={deleteError ? <div className="flex items-start gap-2 p-3 rounded-xl bg-rose-50 border border-rose-100 text-xs font-semibold text-rose-700"><XCircle size={15} className="shrink-0" />{deleteError}</div> : undefined} footer={<><button disabled={saving} onClick={() => setDeleteOpen(false)} className={secondaryButton}>Annuler</button><button disabled={saving} onClick={deleteProduct} className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-rose-600 text-white text-xs font-bold rounded-xl">{saving ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />} Supprimer</button></>}><div className="flex gap-3 p-4 rounded-xl bg-amber-50 border border-amber-100"><AlertTriangle size={18} className="text-amber-600 shrink-0" /><p className="text-xs text-amber-800">Voulez-vous supprimer <strong>{selected?.nom}</strong> ? Son historique de mouvements sera conservé.</p></div></InventoryModal>
     </div>
   );
 }

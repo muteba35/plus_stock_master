@@ -94,7 +94,7 @@ export function StatusBadge({ status }: { status: Product["status"] }) {
   return <span className={`inline-flex px-2 py-1 rounded-md text-[10px] font-bold whitespace-nowrap ${style}`}>{status}</span>;
 }
 
-export function InventoryModal({ title, subtitle, open, onClose, children, footer }: { title: string; subtitle: string; open: boolean; onClose: () => void; children: React.ReactNode; footer: React.ReactNode }) {
+export function InventoryModal({ title, subtitle, open, onClose, children, footer, notice }: { title: string; subtitle: string; open: boolean; onClose: () => void; children: React.ReactNode; footer: React.ReactNode; notice?: React.ReactNode }) {
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-[100] bg-slate-950/45 backdrop-blur-[2px] p-3 sm:p-6 flex items-center justify-center" onMouseDown={onClose}>
@@ -103,6 +103,7 @@ export function InventoryModal({ title, subtitle, open, onClose, children, foote
           <div><h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide">{title}</h2><p className="text-[11px] text-slate-400 mt-1">{subtitle}</p></div>
           <button onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-slate-100" title="Fermer"><X size={16} /></button>
         </div>
+        {notice && <div className="px-5 pt-4 bg-white">{notice}</div>}
         <div className="p-5 overflow-y-auto">{children}</div>
         <div className="p-4 border-t border-slate-100 bg-slate-50 flex flex-col-reverse sm:flex-row justify-end gap-2">{footer}</div>
       </div>
