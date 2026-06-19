@@ -320,10 +320,10 @@ export default function DashboardLayout({
       icon: Boxes,
       module: "INVENTAIRE",
       subMenu: [
-        { name: "Vue Globale", href: "/dashboard/inventaire", permission: "VOIR_LISTE_PRODUITS" },
+        { name: "Vue Globale", href: "/dashboard/inventaire", permission: "VOIR_RESUME_INVENTAIRE" },
         { name: "Gestion Produits", href: "/dashboard/inventaire/produits", permission: "VOIR_LISTE_PRODUITS" },
         { name: "Catégories", href: "/dashboard/inventaire/categories", permission: "VOIR_CATEGORIES" },
-        { name: "Mouvements Stock", href: "/dashboard/inventaire/stock", permission: "AJUSTER_STOCK" },
+        { name: "Mouvements Stock", href: "/dashboard/inventaire/stock", permission: "VOIR_MOUVEMENTS_STOCK" },
         { name: "Alertes Rupture", href: "/dashboard/inventaire/alertes", permission: "VOIR_ALERTES_STOCK" },
       ],
     },

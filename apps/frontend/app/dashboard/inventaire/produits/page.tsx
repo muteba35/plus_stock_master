@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, CheckCircle2, Download, Edit2, Eye, FileSpreadsheet, ImagePlus, Loader2, PackagePlus, Plus, RotateCcw, SlidersHorizontal, Trash2, Upload, XCircle } from "lucide-react";
 import { InventoryModal, PageHeader, SearchInput, StatusBadge, fieldClass, primaryButton, secondaryButton } from "../components/inventory-ui";
+import ProductImportModal from "./components/ProductImportModal";
 
 type CategoryOption = { _id: string; nom: string; couleur: string; isActive: boolean };
 type ProductStatus = "Disponible" | "Stock faible" | "Rupture";
@@ -287,15 +288,80 @@ export default function ProduitsPage() {
     }
   };
 
+  const downloadImportTemplate = () => {
+    const content = "\uFEFFnom;sku;categorie;description;prix_achat;prix_vente;stock_initial;seuil_alerte;unite;code_barres\r\nClavier mécanique;CLA-MEC-001;Périphériques;Clavier USB professionnel;45;69;20;5;Pièce;1234567890123";
+    const url = URL.createObjectURL(new Blob([content], { type: "text/csv;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "modele-produits-stockmaster.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportFile = async (file?: File) => {
+    setImportError("");
+    setImportRows([]);
+    setImportFileName(file?.name || "");
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith(".csv")) {
+      setImportError("Utilisez le modèle CSV compatible avec Excel.");
+      return;
+    }
+    if (file.size > 3 * 1024 * 1024) {
+      setImportError("Le fichier ne doit pas dépasser 3 Mo.");
+      return;
+    }
+    try {
+      const rows = parseProductCsv(await file.text());
+      if (rows.length > 500) throw new Error("Un import est limité à 500 produits.");
+      const categoryNames = new Set(categories.filter((category) => category.isActive).map((category) => category.nom.toLocaleLowerCase("fr")));
+      const invalid = rows.find((row) =>
+        !row.nom || !row.sku || !row.categorie || !row.prixVente ||
+        !categoryNames.has(row.categorie.toLocaleLowerCase("fr")) ||
+        [row.prixAchat, row.prixVente, row.stockInitial, row.seuilAlerte].some((value) => !Number.isFinite(Number(value)) || Number(value) < 0)
+      );
+      if (invalid) throw new Error(`La ligne ${invalid.line} contient une catégorie inconnue ou une valeur obligatoire invalide.`);
+      setImportRows(rows);
+    } catch (error) {
+      setImportError(error instanceof Error ? error.message : "Impossible de lire le fichier.");
+    }
+  };
+
+  const importProducts = async () => {
+    if (importRows.length === 0) return;
+    try {
+      setSaving(true);
+      setImportError("");
+      const response = await fetch(`${API_URL}/inventaire/produits/import`, {
+        method: "POST",
+        headers: requestHeaders(),
+        body: JSON.stringify({ produits: importRows }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.message || "Import impossible.");
+      setImportOpen(false);
+      setImportRows([]);
+      setImportFileName("");
+      showMessage("success", `${data.data?.imported || 0} produit(s) importé(s), ${data.data?.invalid?.length || 0} ligne(s) ignorée(s).`);
+      await fetchData();
+    } catch (error) {
+      setImportError(error instanceof Error ? error.message : "Erreur de connexion au serveur.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const resetFilters = () => { setStatusFilter("all"); setCategoryFilter("all"); setActivityFilter("active"); };
   const activeFilterCount = Number(statusFilter !== "all") + Number(categoryFilter !== "all") + Number(activityFilter !== "active");
   const readOnly = modalMode === "view";
 
   return (
     <div className="space-y-6 bg-[#f9fafd] p-3 sm:p-6 rounded-2xl sm:rounded-3xl min-h-screen text-slate-800 overflow-x-hidden">
-      <PageHeader title="Gestion des produits" subtitle="Créez et gérez les articles de la boutique active." action={canCreate ? <button onClick={openCreate} className={primaryButton}><Plus size={15} /> Nouveau produit</button> : undefined} />
+      <PageHeader title="Gestion des produits" subtitle="Créez et gérez les articles de la boutique active." action={canCreate ? <div className="flex flex-col min-[420px]:flex-row gap-2"><button onClick={() => { setImportOpen(true); setImportError(""); setImportRows([]); setImportFileName(""); }} className={secondaryButton}><FileSpreadsheet size={15} /> Importer Excel</button><button onClick={openCreate} className={primaryButton}><Plus size={15} /> Nouveau produit</button></div> : undefined} />
 
       {message && <div className={`flex items-center gap-2 p-3 rounded-xl border text-xs font-semibold ${message.type === "success" ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-rose-50 text-rose-700 border-rose-100"}`}>{message.type === "success" ? <CheckCircle2 size={15} /> : <XCircle size={15} />}{message.text}</div>}
+
+      <ProductImportModal open={importOpen} saving={saving} rows={importRows} fileName={importFileName} error={importError} onClose={() => !saving && setImportOpen(false)} onDownloadTemplate={downloadImportTemplate} onFile={(file) => void handleImportFile(file)} onImport={importProducts} />
 
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-visible">
         <div className="relative z-30 p-4 border-b border-slate-100 flex gap-2 bg-white rounded-t-2xl">

@@ -3,49 +3,7 @@
 import React from "react";
 import { Search, X, type LucideIcon } from "lucide-react";
 
-export type Product = {
-  id: number;
-  name: string;
-  sku: string;
-  category: string;
-  price: number;
-  stock: number;
-  threshold: number;
-  status: "Disponible" | "Stock faible" | "Rupture";
-};
-
-export type Movement = {
-  id: number;
-  reference: string;
-  product: string;
-  type: "Entrée" | "Sortie" | "Ajustement";
-  quantity: number;
-  date: string;
-  author: string;
-};
-
-export const products: Product[] = [
-  { id: 1, name: "MacBook Pro M2", sku: "LAP-MBP-001", category: "Électronique", price: 1299, stock: 45, threshold: 10, status: "Disponible" },
-  { id: 2, name: "Clavier mécanique", sku: "ACC-KEY-002", category: "Périphériques", price: 89, stock: 12, threshold: 15, status: "Stock faible" },
-  { id: 3, name: "Souris sans fil", sku: "ACC-MOU-003", category: "Périphériques", price: 35, stock: 0, threshold: 8, status: "Rupture" },
-  { id: 4, name: "Écran 27 pouces", sku: "MON-027-004", category: "Électronique", price: 320, stock: 18, threshold: 5, status: "Disponible" },
-  { id: 5, name: "Casque Bluetooth", sku: "AUD-BT-005", category: "Audio", price: 79, stock: 6, threshold: 10, status: "Stock faible" },
-];
-
-export const movements: Movement[] = [
-  { id: 1, reference: "MVT-2401", product: "MacBook Pro M2", type: "Entrée", quantity: 20, date: "Aujourd’hui, 09:42", author: "Junior Muteba" },
-  { id: 2, reference: "MVT-2402", product: "Clavier mécanique", type: "Sortie", quantity: 4, date: "Aujourd’hui, 10:18", author: "Kendrick Kabeya" },
-  { id: 3, reference: "MVT-2403", product: "Souris sans fil", type: "Ajustement", quantity: -2, date: "Hier, 16:04", author: "Junior Muteba" },
-  { id: 4, reference: "MVT-2404", product: "Écran 27 pouces", type: "Entrée", quantity: 8, date: "Hier, 14:25", author: "Sarah Mbala" },
-  { id: 5, reference: "MVT-2405", product: "Casque Bluetooth", type: "Sortie", quantity: 3, date: "12 juin, 11:30", author: "Kendrick Kabeya" },
-];
-
-export const categories = [
-  { id: 1, name: "Électronique", description: "Ordinateurs, écrans et équipements", products: 28, value: 48350, color: "bg-indigo-500" },
-  { id: 2, name: "Périphériques", description: "Accessoires et périphériques informatiques", products: 42, value: 12480, color: "bg-cyan-500" },
-  { id: 3, name: "Audio", description: "Casques, enceintes et microphones", products: 17, value: 8960, color: "bg-amber-500" },
-  { id: 4, name: "Mobilier", description: "Bureaux, sièges et rangements", products: 12, value: 15200, color: "bg-emerald-500" },
-];
+export type ProductStatus = "Disponible" | "Stock faible" | "Rupture";
 
 export function PageHeader({ title, subtitle, action }: { title: string; subtitle: string; action?: React.ReactNode }) {
   return (
@@ -89,7 +47,7 @@ export function SearchInput({ value, onChange, placeholder }: { value: string; o
   );
 }
 
-export function StatusBadge({ status }: { status: Product["status"] }) {
+export function StatusBadge({ status }: { status: ProductStatus }) {
   const style = status === "Disponible" ? "bg-emerald-50 text-emerald-600" : status === "Stock faible" ? "bg-amber-50 text-amber-700" : "bg-rose-50 text-rose-600";
   return <span className={`inline-flex px-2 py-1 rounded-md text-[10px] font-bold whitespace-nowrap ${style}`}>{status}</span>;
 }
