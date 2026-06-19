@@ -94,6 +94,10 @@ export default function Login() {
           "temp_has_boutique",
           String(data.hasBoutique)
         );
+        localStorage.setItem(
+          "temp_must_change_password",
+          String(Boolean(data.mustChangePassword))
+        );
 
         setMessage({
           text: "Identifiants valides. Code de sécurité envoyé !",
@@ -104,6 +108,22 @@ export default function Login() {
         setTimeout(() => {
           router.push("/verify-code");
         }, 1500);
+      } else if (data.success && data.token) {
+        document.cookie = `stockmaster_token=${data.token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user_profile", JSON.stringify(data.user || {}));
+        localStorage.setItem("user_permissions", JSON.stringify(data.permissions || []));
+
+        setMessage({
+          text: data.mustChangePassword
+            ? "Connexion validee. Modifiez votre mot de passe temporaire."
+            : "Connexion reussie.",
+          type: "success",
+        });
+
+        setTimeout(() => {
+          router.push(data.mustChangePassword ? "/first-login" : "/dashboard");
+        }, 900);
       }
 
     } catch (err: unknown) {

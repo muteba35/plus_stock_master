@@ -22,7 +22,6 @@ export default function VerifyCode() {
   const [otp, setOtp] = useState<string[]>(["", "", "", "", "", ""]);
   const [isLoading, setIsLoading] = useState(false);
   const [isResending, setIsResending] = useState(false);
-  const [resendSuccess, setResendSuccess] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
   const [timer, setTimer] = useState(0);
   const [error, setError] = useState("");
@@ -33,28 +32,23 @@ export default function VerifyCode() {
 
   // Vérification email temporaire
   useEffect(() => {
-    const savedEmail = localStorage.getItem("temp_login_email");
-
-    if (!savedEmail) {
-      router.push("/login");
-      return;
-    }
-
-    setEmail(savedEmail);
-
     const timeout = setTimeout(() => {
+      const savedEmail = localStorage.getItem("temp_login_email");
+      if (!savedEmail) {
+        router.push("/login");
+        return;
+      }
+
+      setEmail(savedEmail);
       inputs.current[0]?.focus();
-    }, 100);
+    }, 0);
 
     return () => clearTimeout(timeout);
   }, [router]);
 
   // Timer resend
   useEffect(() => {
-    if (timer <= 0) {
-      setResendSuccess(false);
-      return;
-    }
+    if (timer <= 0) return;
 
     const interval = setInterval(() => {
       setTimer((prev) => prev - 1);
@@ -189,6 +183,7 @@ export default function VerifyCode() {
         role: data.user.roleId ? "Employé" : "Admin Général",
         avatar: data.user.avatar || fallbackUser?.avatar || "",
         boutiqueActive: data.user.boutiqueActive?._id || data.user.boutiqueActive || fallbackUser?.boutiqueActive || "",
+        mustChangePassword: Boolean(data.mustChangePassword || data.user.mustChangePassword),
       } : fallbackUser;
 
       if (finalUserProfile) {
@@ -200,13 +195,18 @@ export default function VerifyCode() {
       localStorage.setItem("user_permissions", JSON.stringify(permissions));
 
       // Nettoyage des stores temporaires
+      const mustChangePassword =
+        Boolean(data.mustChangePassword || data.user?.mustChangePassword) ||
+        localStorage.getItem("temp_must_change_password") === "true";
+
       localStorage.removeItem("temp_login_email");
       localStorage.removeItem("temp_user_info");
+      localStorage.removeItem("temp_must_change_password");
 
       setSuccessMessage("Vérification réussie. Redirection...");
 
       setTimeout(() => {
-        router.push("/dashboard");
+        router.push(mustChangePassword ? "/first-login" : "/dashboard");
       }, 1200);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erreur de vérification";
@@ -219,7 +219,6 @@ export default function VerifyCode() {
   const handleResend = async () => {
     setIsResending(true);
     setError("");
-    setResendSuccess(false);
 
     try {
       const response = await fetch(
@@ -242,7 +241,6 @@ export default function VerifyCode() {
       setOtp(["", "", "", "", "", ""]);
       inputs.current[0]?.focus();
 
-      setResendSuccess(true);
       setTimer(45); // Cooldown aligné sur le backend
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erreur lors du renvoi";
@@ -415,7 +413,7 @@ export default function VerifyCode() {
             </button>
 
             <AnimatePresence>
-              {resendSuccess && (
+              {timer > 0 && (
                 <motion.div
                   initial={{ opacity: 0, y: 5 }}
                   animate={{ opacity: 1, y: 0 }}

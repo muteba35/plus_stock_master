@@ -190,6 +190,11 @@ export default function DashboardLayout({
 
         const data = await response.json();
 
+        if (response.status === 428 && data.mustChangePassword) {
+          router.replace("/first-login");
+          return;
+        }
+
         if (!response.ok || data.status !== "success") {
           throw new Error(data.message || "Session invalide.");
         }
