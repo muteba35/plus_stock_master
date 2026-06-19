@@ -6,7 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, Check, Eye, EyeOff, KeyRound, Loader2, Lock, Package2, ShieldCheck, X } from "lucide-react";
 import AuthNavbar from "../../src/components/AuthNavbar";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://plus-stock-master.onrender.com/api";
 
 const PASSWORD_RULES = [
   { label: "8 caracteres minimum", test: (value: string) => value.length >= 8 },
