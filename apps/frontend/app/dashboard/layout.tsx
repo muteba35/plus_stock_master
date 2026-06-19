@@ -419,13 +419,14 @@ export default function DashboardLayout({
       {/* SIDEBAR */}
       <aside
         className={`
-          fixed lg:static top-0 left-0 z-50 h-screen
-          ${isSidebarOpen ? "w-64" : "lg:w-20"}
+          fixed lg:static inset-y-0 left-0 z-50 h-[100dvh] lg:h-screen
+          w-[min(18rem,calc(100vw-1rem))]
+          ${isSidebarOpen ? "lg:w-64" : "lg:w-20"}
           bg-[#1C2434] text-slate-200 flex flex-col justify-between
-          border-r border-slate-800/60 shadow-2xl transition-all duration-300
+          border-r border-slate-800/60 shadow-2xl transition-all duration-300 overflow-hidden
           ${
             isMobileSidebarOpen
-              ? "translate-x-0 w-64"
+              ? "translate-x-0"
               : "-translate-x-full lg:translate-x-0"
           }
         `}
@@ -477,7 +478,7 @@ export default function DashboardLayout({
           </div>
 
           {/* NAVIGATION */}
-          <nav className="p-4 mt-4 space-y-1.5 flex-1">
+          <nav className="p-4 mt-4 pb-6 space-y-1.5 flex-1">
             {navigation.map((item) => {
               if (item.permission && !hasPermission(item.permission)) return null;
 
@@ -587,7 +588,7 @@ export default function DashboardLayout({
         </div>
 
         {/* FOOTER SIDEBAR */}
-        <div className="p-4 border-t border-slate-800/60 bg-[#141C2F]/60 shrink-0 space-y-3">
+        <div className="p-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-slate-800/60 bg-[#141C2F]/60 shrink-0 space-y-3">
           <button
             onClick={handleLogout}
             title={!isSidebarOpen ? "Se déconnecter" : ""}

@@ -145,11 +145,23 @@ function RoleModalContent({ role, mode, onSave, onClose, apiHeaders, apiUrl }: O
 
   const handleTogglePermission = (id: string) => {
     if (mode === "view") return; 
-    if (selectedPermissions.includes(id)) {
-      setSelectedPermissions(selectedPermissions.filter((item) => item !== id));
-    } else {
-      setSelectedPermissions([...selectedPermissions, id]);
-    }
+    setSelectedPermissions((current) =>
+      current.includes(id)
+        ? current.filter((item) => item !== id)
+        : [...current, id]
+    );
+  };
+
+  const allPermissionIds = availableModules.flatMap((group) =>
+    group.permissions.map((permission) => permission.id)
+  );
+  const areAllPermissionsSelected =
+    allPermissionIds.length > 0 &&
+    allPermissionIds.every((id) => selectedPermissions.includes(id));
+
+  const handleToggleAllPermissions = () => {
+    if (mode === "view" || !canSave) return;
+    setSelectedPermissions(areAllPermissionsSelected ? [] : allPermissionIds);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -270,7 +282,7 @@ function RoleModalContent({ role, mode, onSave, onClose, apiHeaders, apiUrl }: O
                   transition={{ duration: 0.15 }}
                   className="absolute w-full mt-1.5 bg-white border border-slate-200 shadow-xl rounded-xl z-50 p-4 space-y-4 max-h-[400px] overflow-y-auto flex flex-col"
                 >
-                  <div className="sticky top-0 bg-white pt-1 pb-2 z-10 border-b border-slate-100" onClick={(e) => e.stopPropagation()}>
+                  <div className="sticky top-0 bg-white pt-1 pb-3 z-10 border-b border-slate-100 space-y-2.5" onClick={(e) => e.stopPropagation()}>
                     <div className="relative">
                       <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                       <input 
@@ -281,6 +293,33 @@ function RoleModalContent({ role, mode, onSave, onClose, apiHeaders, apiUrl }: O
                         className="w-full pl-12 pr-4 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 font-medium text-slate-800 bg-white" 
                       />
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={handleToggleAllPermissions}
+                      disabled={mode === "view" || !canSave || allPermissionIds.length === 0}
+                      className={`w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border text-left transition-colors ${
+                        areAllPermissionsSelected
+                          ? "bg-indigo-50 border-indigo-200"
+                          : "bg-slate-50 border-slate-200 hover:border-indigo-200"
+                      } disabled:cursor-default disabled:opacity-60`}
+                    >
+                      <span className="flex items-center gap-3 min-w-0">
+                        <span className={`w-4 h-4 rounded flex items-center justify-center border shrink-0 ${
+                          areAllPermissionsSelected
+                            ? "bg-indigo-600 border-indigo-600 text-white"
+                            : "border-slate-300 bg-white"
+                        }`}>
+                          {areAllPermissionsSelected && <Check size={10} strokeWidth={3} />}
+                        </span>
+                        <span className="text-xs font-bold text-slate-700">
+                          Sélectionner toutes les permissions
+                        </span>
+                      </span>
+                      <span className="text-[10px] font-bold text-slate-400 whitespace-nowrap">
+                        {selectedPermissions.length}/{allPermissionIds.length}
+                      </span>
+                    </button>
                   </div>
 
                   <div className="space-y-5 overflow-y-auto flex-1 pr-1">

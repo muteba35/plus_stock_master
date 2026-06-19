@@ -331,11 +331,11 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="space-y-6 bg-[#f9fafd] p-6 rounded-3xl min-h-screen text-slate-800">
+    <div className="space-y-6 bg-[#f9fafd] p-3 sm:p-6 rounded-2xl sm:rounded-3xl min-h-screen text-slate-800 overflow-x-hidden">
       
       {/* SECTION 1 : EN-TÊTE DU PROFIL */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6">
-        <div className="flex flex-col md:flex-row items-center gap-5 text-center md:text-left">
+      <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6 min-w-0">
+        <div className="flex flex-col md:flex-row items-center gap-5 text-center md:text-left min-w-0 w-full md:w-auto">
           
           <div 
             className={`relative group ${isEditing && canEditTotalProfile ? 'cursor-pointer' : ''}`}
@@ -402,7 +402,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto min-w-0">
           <div className="flex items-center gap-1.5">
             <button className="w-8 h-8 rounded-full border border-slate-200 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50/30 transition-all">
               <Facebook size={14} />
@@ -418,18 +418,18 @@ export default function ProfilePage() {
             </button>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-2 w-full sm:w-auto">
             {isEditing && (
               <button 
                 onClick={handleCancelClick}
-                className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl border border-rose-200 bg-white text-rose-600 hover:bg-rose-50 transition-all shadow-sm"
+                className="w-full sm:w-auto flex items-center justify-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl border border-rose-200 bg-white text-rose-600 hover:bg-rose-50 transition-all shadow-sm whitespace-nowrap"
               >
                 <X size={13} /> Annuler
               </button>
             )}
             <button 
               onClick={isEditing ? handleSaveProfile : handleEditClick}
-              className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl border border-slate-200 transition-all ${
+              className={`w-full sm:w-auto flex items-center justify-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl border border-slate-200 transition-all whitespace-nowrap ${
                 isEditing ? "bg-emerald-600 text-white border-emerald-600 shadow-sm" : "bg-white text-slate-700 hover:bg-slate-50"
               }`}
             >
