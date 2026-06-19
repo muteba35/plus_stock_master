@@ -28,6 +28,10 @@ const permissions = [
   { nom: "VOIR_PRIX_ACHAT", module: "INVENTAIRE", description: "Permet de voir le prix d'achat (protection des marges)" },
   { nom: "AJUSTER_STOCK", module: "INVENTAIRE", description: "Modifier manuellement les quantités en stock" },
   { nom: "SUPPRIMER_PRODUIT", module: "INVENTAIRE", description: "Retirer un produit du système" },
+  { nom: "VOIR_CATEGORIES", module: "INVENTAIRE", description: "Consulter les catégories de produits de la boutique" },
+  { nom: "CREER_CATEGORIE", module: "INVENTAIRE", description: "Créer une nouvelle catégorie de produits" },
+  { nom: "MODIFIER_CATEGORIE", module: "INVENTAIRE", description: "Modifier le nom, la description ou la couleur d'une catégorie" },
+  { nom: "SUPPRIMER_CATEGORIE", module: "INVENTAIRE", description: "Supprimer une catégorie qui ne contient aucun produit" },
 
   // --- MODULE : EQUIPE (Mis à jour) ---
  

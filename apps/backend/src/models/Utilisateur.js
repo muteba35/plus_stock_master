@@ -79,6 +79,40 @@ const departementSchema = new mongoose.Schema(
 
 departementSchema.index({ nom: 1, boutiqueId: 1 }, { unique: true });
 
+const categorieSchema = new mongoose.Schema(
+  {
+    nom: {
+      type: String,
+      required: [true, "Le nom de la categorie est requis"],
+      trim: true,
+      maxlength: 100,
+    },
+    description: {
+      type: String,
+      trim: true,
+      default: "",
+      maxlength: 500,
+    },
+    couleur: {
+      type: String,
+      default: "#6366f1",
+      match: [/^#[0-9A-Fa-f]{6}$/, "La couleur doit etre au format hexadecimal"],
+    },
+    boutiqueId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Boutique",
+      required: true,
+    },
+    isActive: { type: Boolean, default: true },
+  },
+  { timestamps: true }
+);
+
+categorieSchema.index(
+  { boutiqueId: 1, nom: 1 },
+  { unique: true, collation: { locale: "fr", strength: 2 } }
+);
+
 const utilisateurSchema = new mongoose.Schema(
   {
     nom: { type: String, required: [true, "Le nom est requis"], trim: true },
@@ -186,7 +220,8 @@ const Permission = mongoose.model("Permission", permissionSchema);
 const Role = mongoose.model("Role", roleSchema);
 const RolePermission = mongoose.model("RolePermission", rolePermissionSchema);
 const Departement = mongoose.model("Departement", departementSchema);
+const Categorie = mongoose.model("Categorie", categorieSchema);
 const Utilisateur = mongoose.model("Utilisateur", utilisateurSchema);
 const Boutique = mongoose.model("Boutique", boutiqueSchema);
 
-export { Permission, Role, RolePermission, Departement, Utilisateur, Boutique };
+export { Permission, Role, RolePermission, Departement, Categorie, Utilisateur, Boutique };
