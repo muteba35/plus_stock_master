@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { Boutique, Categorie } from "../models/Utilisateur.js";
+import { Boutique, Categorie, Produit } from "../models/Utilisateur.js";
 
 const getBoutiqueId = (req) => {
   if (req.user?.isOwner && req.query?.boutiqueId) return req.query.boutiqueId;
@@ -15,10 +15,10 @@ const ensureBoutiqueAccess = async (req, boutiqueId) => {
   }));
 };
 
-const serializeCategorie = (categorie) => ({
+const serializeCategorie = (categorie, stats = {}) => ({
   ...categorie.toObject(),
-  productCount: 0,
-  stockValue: 0,
+  productCount: stats.productCount || 0,
+  stockValue: stats.stockValue || 0,
 });
 
 export const getCategories = async (req, res) => {
@@ -32,10 +32,19 @@ export const getCategories = async (req, res) => {
     }
 
     const categories = await Categorie.find({ boutiqueId }).sort({ createdAt: -1 });
+    const productStats = await Produit.aggregate([
+      { $match: { boutiqueId: new mongoose.Types.ObjectId(boutiqueId), isDeleted: false } },
+      { $group: {
+        _id: "$categorieId",
+        productCount: { $sum: 1 },
+        stockValue: { $sum: { $multiply: ["$stock", "$prixVente"] } },
+      } },
+    ]);
+    const statsByCategory = new Map(productStats.map((stats) => [stats._id.toString(), stats]));
     return res.status(200).json({
       success: true,
       results: categories.length,
-      data: categories.map(serializeCategorie),
+      data: categories.map((category) => serializeCategorie(category, statsByCategory.get(category._id.toString()))),
     });
   } catch (error) {
     console.error("getCategories:", error);
@@ -66,6 +75,69 @@ export const createCategorie = async (req, res) => {
     if (error?.name === "ValidationError") return res.status(400).json({ success: false, message: Object.values(error.errors)[0]?.message || "Donnees invalides." });
     console.error("createCategorie:", error);
     return res.status(500).json({ success: false, message: "Impossible de creer la categorie." });
+  }
+};
+
+export const importCategories = async (req, res) => {
+  try {
+    const boutiqueId = getBoutiqueId(req);
+    const rows = Array.isArray(req.body.categories) ? req.body.categories : [];
+
+    if (!boutiqueId) return res.status(400).json({ success: false, message: "Boutique active introuvable." });
+    if (!(await ensureBoutiqueAccess(req, boutiqueId))) {
+      return res.status(403).json({ success: false, message: "Cette boutique n'appartient pas a votre compte." });
+    }
+    if (rows.length === 0) return res.status(400).json({ success: false, message: "Le fichier ne contient aucune categorie." });
+    if (rows.length > 500) return res.status(400).json({ success: false, message: "Un import est limite a 500 categories." });
+
+    const invalidRows = [];
+    const seenNames = new Set();
+    const normalizedRows = [];
+
+    rows.forEach((row, index) => {
+      const nom = String(row?.nom || "").trim();
+      const description = String(row?.description || "").trim();
+      const couleur = String(row?.couleur || "#6366f1").trim();
+      const normalizedName = nom.toLocaleLowerCase("fr");
+
+      if (!nom) {
+        invalidRows.push({ line: index + 2, reason: "Nom manquant" });
+      } else if (nom.length > 100) {
+        invalidRows.push({ line: index + 2, reason: "Nom trop long" });
+      } else if (description.length > 500) {
+        invalidRows.push({ line: index + 2, reason: "Description trop longue" });
+      } else if (!/^#[0-9A-Fa-f]{6}$/.test(couleur)) {
+        invalidRows.push({ line: index + 2, reason: "Couleur invalide" });
+      } else if (seenNames.has(normalizedName)) {
+        invalidRows.push({ line: index + 2, reason: "Doublon dans le fichier" });
+      } else {
+        seenNames.add(normalizedName);
+        normalizedRows.push({ nom, description, couleur, boutiqueId });
+      }
+    });
+
+    const existing = await Categorie.find({
+      boutiqueId,
+      nom: { $in: normalizedRows.map((row) => row.nom) },
+    }).collation({ locale: "fr", strength: 2 });
+    const existingNames = new Set(existing.map((category) => category.nom.toLocaleLowerCase("fr")));
+    const newRows = normalizedRows.filter((row) => !existingNames.has(row.nom.toLocaleLowerCase("fr")));
+
+    let inserted = [];
+    if (newRows.length > 0) inserted = await Categorie.insertMany(newRows, { ordered: false });
+
+    return res.status(201).json({
+      success: true,
+      message: `${inserted.length} categorie(s) importee(s) avec succes.`,
+      data: {
+        imported: inserted.length,
+        skippedExisting: normalizedRows.length - newRows.length,
+        invalid: invalidRows,
+      },
+    });
+  } catch (error) {
+    console.error("importCategories:", error);
+    return res.status(500).json({ success: false, message: "Impossible d'importer les categories." });
   }
 };
 
@@ -111,6 +183,11 @@ export const deleteCategorie = async (req, res) => {
     }
     if (!(await ensureBoutiqueAccess(req, boutiqueId))) {
       return res.status(403).json({ success: false, message: "Cette boutique n'appartient pas a votre compte." });
+    }
+
+    const hasProducts = await Produit.exists({ categorieId: req.params.id, boutiqueId, isDeleted: false });
+    if (hasProducts) {
+      return res.status(409).json({ success: false, message: "Cette categorie contient encore des produits." });
     }
 
     const categorie = await Categorie.findOneAndDelete({ _id: req.params.id, boutiqueId });

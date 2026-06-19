@@ -113,6 +113,51 @@ categorieSchema.index(
   { unique: true, collation: { locale: "fr", strength: 2 } }
 );
 
+const produitSchema = new mongoose.Schema(
+  {
+    nom: { type: String, required: [true, "Le nom du produit est requis"], trim: true, maxlength: 150 },
+    sku: { type: String, required: [true, "Le SKU est requis"], trim: true, uppercase: true, maxlength: 80 },
+    description: { type: String, trim: true, default: "", maxlength: 1000 },
+    categorieId: { type: mongoose.Schema.Types.ObjectId, ref: "Categorie", required: true },
+    boutiqueId: { type: mongoose.Schema.Types.ObjectId, ref: "Boutique", required: true },
+    prixAchat: { type: Number, min: 0, default: 0, select: false },
+    prixVente: { type: Number, required: true, min: 0 },
+    stock: { type: Number, min: 0, default: 0 },
+    seuilAlerte: { type: Number, min: 0, default: 5 },
+    unite: { type: String, trim: true, default: "Pièce", maxlength: 30 },
+    codeBarres: { type: String, trim: true, default: "", maxlength: 100 },
+    image: { type: String, default: "" },
+    isActive: { type: Boolean, default: true },
+    isDeleted: { type: Boolean, default: false, select: false },
+  },
+  { timestamps: true }
+);
+
+produitSchema.index({ boutiqueId: 1, sku: 1 }, { unique: true });
+produitSchema.index(
+  { boutiqueId: 1, codeBarres: 1 },
+  { unique: true, partialFilterExpression: { codeBarres: { $type: "string", $gt: "" } } }
+);
+produitSchema.index({ boutiqueId: 1, categorieId: 1, isDeleted: 1 });
+
+const mouvementStockSchema = new mongoose.Schema(
+  {
+    produitId: { type: mongoose.Schema.Types.ObjectId, ref: "Produit", required: true },
+    boutiqueId: { type: mongoose.Schema.Types.ObjectId, ref: "Boutique", required: true },
+    utilisateurId: { type: mongoose.Schema.Types.ObjectId, ref: "Utilisateur", required: true },
+    type: { type: String, enum: ["ENTREE", "SORTIE", "AJUSTEMENT"], required: true },
+    quantite: { type: Number, required: true, min: 0 },
+    variation: { type: Number, required: true },
+    stockAvant: { type: Number, required: true, min: 0 },
+    stockApres: { type: Number, required: true, min: 0 },
+    motif: { type: String, required: true, trim: true, maxlength: 300 },
+    reference: { type: String, trim: true, default: "" },
+  },
+  { timestamps: true }
+);
+
+mouvementStockSchema.index({ boutiqueId: 1, produitId: 1, createdAt: -1 });
+
 const utilisateurSchema = new mongoose.Schema(
   {
     nom: { type: String, required: [true, "Le nom est requis"], trim: true },
@@ -221,7 +266,9 @@ const Role = mongoose.model("Role", roleSchema);
 const RolePermission = mongoose.model("RolePermission", rolePermissionSchema);
 const Departement = mongoose.model("Departement", departementSchema);
 const Categorie = mongoose.model("Categorie", categorieSchema);
+const Produit = mongoose.model("Produit", produitSchema);
+const MouvementStock = mongoose.model("MouvementStock", mouvementStockSchema);
 const Utilisateur = mongoose.model("Utilisateur", utilisateurSchema);
 const Boutique = mongoose.model("Boutique", boutiqueSchema);
 
-export { Permission, Role, RolePermission, Departement, Categorie, Utilisateur, Boutique };
+export { Permission, Role, RolePermission, Departement, Categorie, Produit, MouvementStock, Utilisateur, Boutique };

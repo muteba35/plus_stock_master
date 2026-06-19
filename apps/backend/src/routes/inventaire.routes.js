@@ -1,9 +1,11 @@
 import express from "express";
 import categorieRoutes from "./categorie.routes.js";
+import produitRoutes from "./produit.routes.js";
 
 const router = express.Router();
 
 router.use("/categories", categorieRoutes);
+router.use("/produits", produitRoutes);
 
 // Route principale : /api/inventaire
 // Donnees statiques temporaires pour tester le frontend avant la connexion DB.
