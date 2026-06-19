@@ -218,6 +218,54 @@ const sendSecurityAlertEmailSafely = async (email, type, attemptsLeft = 0) => {
   }
 };
 
+const resolveLoginPermissions = async (user) => {
+  if (!user.boutiqueActive) return [];
+
+  const isOwner = user.boutiqueActive.userId.toString() === user._id.toString();
+  if (isOwner) {
+    const allPermissions = await Permission.find({});
+    return allPermissions.map((permission) => permission.nom);
+  }
+
+  if (!user.roleId) return [];
+
+  const rolePermissions = await RolePermission.find({ roleId: user.roleId }).populate("permissionId");
+  return rolePermissions
+    .map((rolePermission) => rolePermission.permissionId?.nom)
+    .filter(Boolean);
+};
+
+const buildLoginSession = (user, permissions) => {
+  const token = jwt.sign(
+    {
+      id: user._id,
+      boutiqueId: user.boutiqueActive._id,
+      permissions,
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: "7d" }
+  );
+
+  return {
+    success: true,
+    token,
+    user: {
+      id: user._id,
+      prenom: user.prenom,
+      nom: user.nom,
+      email: user.email,
+      telephone: user.telephone,
+      avatar: user.avatar || "",
+      roleId: user.roleId,
+      departementId: user.departementId || null,
+      boutiqueActive: user.boutiqueActive,
+      mustChangePassword: Boolean(user.mustChangePassword),
+    },
+    permissions,
+    mustChangePassword: Boolean(user.mustChangePassword),
+  };
+};
+
 /**
  * LOGIQUE DE CONNEXION (Login)
  */
@@ -281,6 +329,36 @@ export const login = async (req, res) => {
       return res.status(status).json({ message: responseMessage });
     }
 
+    if (!user.boutiqueActive) {
+      return res.status(400).json({ message: "Aucune boutique active configuree. Contactez le support." });
+    }
+
+    const isOwner = user.boutiqueActive.userId.toString() === user._id.toString();
+    if (!isOwner && !user.roleId) {
+      return res.status(403).json({ message: "Acces refuse. Aucun role n'a ete attribue." });
+    }
+
+    const finalPermissions = await resolveLoginPermissions(user);
+    const explicitlyRequiresOtp = finalPermissions.includes("CONNEXION_AVEC_OTP");
+    const explicitlySkipsOtp = finalPermissions.includes("CONNEXION_SANS_OTP");
+    const requiresOTP = isOwner || explicitlyRequiresOtp || !explicitlySkipsOtp;
+
+    user.loginAttempts = 0;
+    user.lockUntil = undefined;
+
+    if (!requiresOTP) {
+      user.otpCode = undefined;
+      user.otpExpires = undefined;
+      await user.save();
+
+      return res.status(200).json({
+        ...buildLoginSession(user, finalPermissions),
+        requiresOTP: false,
+        message: user.mustChangePassword
+          ? "Connexion validee. Vous devez modifier votre mot de passe temporaire."
+          : "Connexion reussie ! Bienvenue sur StockMaster.",
+      });
+    }
     // Configuration de l'OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     user.otpCode = otp;
@@ -307,7 +385,8 @@ export const login = async (req, res) => {
       requiresOTP: true,
       message: "Code de vérification envoyé",
       email: user.email,
-      hasBoutique: !!user.boutiqueActive 
+      hasBoutique: !!user.boutiqueActive,
+      mustChangePassword: Boolean(user.mustChangePassword)
     });
 
   } catch (error) {

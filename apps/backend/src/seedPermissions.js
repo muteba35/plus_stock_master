@@ -7,6 +7,10 @@ import { Permission } from './models/Utilisateur.js';
 dotenv.config();
 
 const permissions = [
+  // --- MODULE : AUTHENTIFICATION ---
+  { nom: "CONNEXION_AVEC_OTP", module: "AUTHENTIFICATION", description: "Exige un code OTP apres la validation du mot de passe" },
+  { nom: "CONNEXION_SANS_OTP", module: "AUTHENTIFICATION", description: "Autorise la connexion directe sans code OTP" },
+
   // --- MODULE : DASHBOARD ---
   { nom: "VOIR_RESUME_VENTES", module: "DASHBOARD", description: "Consulter les statistiques globales sur la page d'accueil" },
   { nom: "VOIR_ALERTES_STOCK", module: "DASHBOARD", description: "Recevoir les notifications de rupture de stock" },

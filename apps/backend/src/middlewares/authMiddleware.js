@@ -30,7 +30,7 @@ export const protect = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await Utilisateur.findById(decoded.id)
-      .select("+isPermanentlyBlocked")
+      .select("+isPermanentlyBlocked +mustChangePassword")
       .populate("boutiqueActive");
 
     if (!user) {
@@ -43,6 +43,14 @@ export const protect = async (req, res, next) => {
 
     if (user.isBlocked || user.isPermanentlyBlocked) {
       return res.status(403).json({ message: "Compte suspendu. Contactez un administrateur." });
+    }
+
+    const isPasswordChangeRoute = req.originalUrl?.startsWith("/api/auth/update-password");
+    if (user.mustChangePassword && !isPasswordChangeRoute) {
+      return res.status(428).json({
+        message: "Vous devez remplacer votre mot de passe temporaire avant de continuer.",
+        mustChangePassword: true,
+      });
     }
 
     const permissions = await buildUserPermissions(user);
@@ -58,6 +66,7 @@ export const protect = async (req, res, next) => {
       boutiqueId,
       boutiqueActive: boutiqueId,
       isOwner,
+      mustChangePassword: Boolean(user.mustChangePassword),
       permissions,
     };
 
