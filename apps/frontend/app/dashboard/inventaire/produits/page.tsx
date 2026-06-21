@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, CheckCircle2, Download, Edit2, Eye, FileSpreadsheet, ImagePlus, Loader2, PackagePlus, Plus, RotateCcw, SlidersHorizontal, Trash2, Upload, XCircle } from "lucide-react";
-import { InventoryModal, PageHeader, SearchInput, StatusBadge, fieldClass, primaryButton, secondaryButton } from "../components/inventory-ui";
+import { InventoryModal, InventoryPagination, PageHeader, SearchInput, StatusBadge, fieldClass, primaryButton, secondaryButton } from "../components/inventory-ui";
 import ProductImportModal from "./components/ProductImportModal";
 
 type CategoryOption = { _id: string; nom: string; couleur: string; isActive: boolean };
@@ -52,7 +52,7 @@ type ImportProductRow = {
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://plus-stock-master.onrender.com/api";
-const EMPTY_FORM: ProductForm = { nom: "", sku: "", description: "", categorieId: "", prixAchat: "0", prixVente: "0", stockInitial: "0", seuilAlerte: "5", unite: "Pièce", codeBarres: "", image: "", isActive: true };
+const EMPTY_FORM: ProductForm = { nom: "", sku: "", description: "", categorieId: "", prixAchat: "", prixVente: "", stockInitial: "", seuilAlerte: "5", unite: "Pièce", codeBarres: "", image: "", isActive: true };
 const UNITS = ["Pièce", "Boîte", "Paquet", "Kg", "Gramme", "Litre", "Mètre"];
 
 const requestHeaders = () => {
@@ -70,6 +70,39 @@ const getStoredAccess = () => {
     return { permissions: [] as string[], isOwner: false };
   }
 };
+
+const compressProductImage = (file: File): Promise<string> => new Promise((resolve, reject) => {
+  if (!file.type.startsWith("image/")) {
+    reject(new Error("Le fichier sélectionné n’est pas une image."));
+    return;
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    reject(new Error("L’image source ne doit pas dépasser 10 Mo."));
+    return;
+  }
+  const reader = new FileReader();
+  reader.onerror = () => reject(new Error("Impossible de lire cette image."));
+  reader.onload = () => {
+    const image = new Image();
+    image.onerror = () => reject(new Error("Format d’image non pris en charge. Utilisez JPG, PNG ou WebP."));
+    image.onload = () => {
+      const maxSize = 1200;
+      const ratio = Math.min(1, maxSize / Math.max(image.width, image.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(image.width * ratio));
+      canvas.height = Math.max(1, Math.round(image.height * ratio));
+      const context = canvas.getContext("2d");
+      if (!context) {
+        reject(new Error("Impossible de préparer cette image."));
+        return;
+      }
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL("image/webp", 0.82));
+    };
+    image.src = String(reader.result || "");
+  };
+  reader.readAsDataURL(file);
+});
 
 const parseCsvLine = (line: string, separator: string) => {
   const values: string[] = [];
@@ -119,7 +152,9 @@ export default function ProduitsPage() {
   const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [imageProcessing, setImageProcessing] = useState(false);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [activityFilter, setActivityFilter] = useState("active");
@@ -188,6 +223,9 @@ export default function ProduitsPage() {
       return matchesSearch && matchesStatus && matchesCategory && matchesActivity;
     });
   }, [products, search, statusFilter, categoryFilter, activityFilter]);
+  const pageSize = 10;
+  const currentPage = Math.min(page, Math.max(1, Math.ceil(filtered.length / pageSize)));
+  const paginatedProducts = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const productToForm = (product: Product): ProductForm => ({
     nom: product.nom,
@@ -219,20 +257,32 @@ export default function ProduitsPage() {
     setFormOpen(true);
   };
 
-  const handleImage = (file?: File) => {
+  const handleImage = async (file?: File) => {
     if (!file) return;
-    if (!file.type.startsWith("image/") || file.size > 2 * 1024 * 1024) {
-      setFormError("L’image doit être au format image et ne pas dépasser 2 Mo.");
-      return;
+    try {
+      setImageProcessing(true);
+      setFormError("");
+      const compressedImage = await compressProductImage(file);
+      setForm((current) => ({ ...current, image: compressedImage }));
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : "Impossible de traiter cette image.");
+    } finally {
+      setImageProcessing(false);
     }
-    const reader = new FileReader();
-    reader.onload = () => setForm((current) => ({ ...current, image: String(reader.result || "") }));
-    reader.readAsDataURL(file);
   };
 
   const saveProduct = async () => {
-    if (!form.nom.trim() || !form.sku.trim() || !form.categorieId) {
-      setFormError("Le nom, le SKU et la catégorie sont obligatoires.");
+    const requiredErrors: string[] = [];
+    if (!form.nom.trim()) requiredErrors.push("nom du produit");
+    if (!form.sku.trim()) requiredErrors.push("SKU");
+    if (!form.categorieId) requiredErrors.push("catégorie");
+    if (!form.prixVente.trim() || Number(form.prixVente) <= 0) requiredErrors.push("prix de vente supérieur à zéro");
+    if (canViewPurchasePrice && (!form.prixAchat.trim() || Number(form.prixAchat) <= 0)) requiredErrors.push("prix d’achat supérieur à zéro");
+    if (modalMode === "create" && (!form.stockInitial.trim() || Number(form.stockInitial) < 0)) requiredErrors.push("stock initial valide");
+    if (!form.seuilAlerte.trim() || Number(form.seuilAlerte) < 0) requiredErrors.push("seuil d’alerte valide");
+    if (!form.unite.trim()) requiredErrors.push("unité");
+    if (requiredErrors.length > 0) {
+      setFormError(`Veuillez compléter correctement : ${requiredErrors.join(", ")}.`);
       return;
     }
     try {
@@ -373,23 +423,24 @@ export default function ProduitsPage() {
         </div>
 
         <div className="relative z-0 overflow-x-auto">
-          {loading ? <div className="py-16 flex flex-col items-center gap-3 text-slate-400"><Loader2 size={24} className="animate-spin text-indigo-500" /><p className="text-xs">Chargement des produits...</p></div> : <table className="w-full min-w-[920px] text-left text-xs"><thead className="bg-slate-50 text-[10px] uppercase tracking-wider text-slate-400"><tr><th className="px-5 py-4">Produit</th><th className="px-5 py-4">Catégorie</th>{canViewPurchasePrice && <th className="px-5 py-4">Prix d’achat</th>}<th className="px-5 py-4">Prix de vente</th><th className="px-5 py-4">Stock</th><th className="px-5 py-4">Statut</th><th className="px-5 py-4 text-right">Actions</th></tr></thead><tbody className="divide-y divide-slate-100">{filtered.map((product) => <tr key={product._id} className="hover:bg-slate-50/60"><td className="px-5 py-4"><div className="flex items-center gap-3">{product.image ? <img src={product.image} alt="" className="w-10 h-10 rounded-xl object-cover border border-slate-100" /> : <span className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center"><PackagePlus size={16} /></span>}<div><p className="font-bold text-slate-900">{product.nom}</p><p className="text-[10px] text-slate-400 mt-0.5">{product.sku} · {product.unite}</p></div></div></td><td className="px-5 py-4"><span className="inline-flex items-center gap-2"><span className="w-2 h-2 rounded-full" style={{ backgroundColor: product.categorieId?.couleur || "#94a3b8" }} />{product.categorieId?.nom || "Non classé"}</span></td>{canViewPurchasePrice && <td className="px-5 py-4 font-bold text-slate-600">{(product.prixAchat || 0).toLocaleString("fr-FR")} $</td>}<td className="px-5 py-4 font-bold">{product.prixVente.toLocaleString("fr-FR")} $</td><td className="px-5 py-4"><span className="font-black">{product.stock}</span><span className="text-slate-400"> / seuil {product.seuilAlerte}</span></td><td className="px-5 py-4"><StatusBadge status={product.status} /></td><td className="px-5 py-4"><div className="flex justify-end gap-1"><button onClick={() => openProduct(product, "view")} className="p-2 text-slate-400 hover:text-indigo-600" title="Consulter"><Eye size={15} /></button><button disabled={!canEdit} onClick={() => openProduct(product, "edit")} className={`p-2 ${canEdit ? "text-slate-400 hover:text-amber-600" : "text-slate-200 cursor-not-allowed"}`} title={canEdit ? "Modifier" : "Permission MODIFIER_PRODUIT requise"}><Edit2 size={15} /></button><button disabled={!canDelete} onClick={() => { setSelected(product); setDeleteError(""); setDeleteOpen(true); }} className={`p-2 ${canDelete ? "text-slate-400 hover:text-rose-600" : "text-slate-200 cursor-not-allowed"}`} title={canDelete ? "Supprimer" : "Permission SUPPRIMER_PRODUIT requise"}><Trash2 size={15} /></button></div></td></tr>)}</tbody></table>}
+          {loading ? <div className="py-16 flex flex-col items-center gap-3 text-slate-400"><Loader2 size={24} className="animate-spin text-indigo-500" /><p className="text-xs">Chargement des produits...</p></div> : <table className="w-full min-w-[920px] text-left text-xs"><thead className="bg-slate-50 text-[10px] uppercase tracking-wider text-slate-400"><tr><th className="px-5 py-4">Produit</th><th className="px-5 py-4">Catégorie</th>{canViewPurchasePrice && <th className="px-5 py-4">Prix d’achat</th>}<th className="px-5 py-4">Prix de vente</th><th className="px-5 py-4">Stock</th><th className="px-5 py-4">Statut</th><th className="px-5 py-4 text-right">Actions</th></tr></thead><tbody className="divide-y divide-slate-100">{paginatedProducts.map((product) => <tr key={product._id} className="hover:bg-slate-50/60"><td className="px-5 py-4"><div className="flex items-center gap-3">{product.image ? <img src={product.image} alt="" className="w-10 h-10 rounded-xl object-cover border border-slate-100" /> : <span className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center"><PackagePlus size={16} /></span>}<div><p className="font-bold text-slate-900">{product.nom}</p><p className="text-[10px] text-slate-400 mt-0.5">{product.sku} · {product.unite}</p></div></div></td><td className="px-5 py-4"><span className="inline-flex items-center gap-2"><span className="w-2 h-2 rounded-full" style={{ backgroundColor: product.categorieId?.couleur || "#94a3b8" }} />{product.categorieId?.nom || "Non classé"}</span></td>{canViewPurchasePrice && <td className="px-5 py-4 font-bold text-slate-600">{(product.prixAchat || 0).toLocaleString("fr-FR")} $</td>}<td className="px-5 py-4 font-bold">{product.prixVente.toLocaleString("fr-FR")} $</td><td className="px-5 py-4"><span className="font-black">{product.stock}</span><span className="text-slate-400"> / seuil {product.seuilAlerte}</span></td><td className="px-5 py-4"><StatusBadge status={product.status} /></td><td className="px-5 py-4"><div className="flex justify-end gap-1"><button onClick={() => openProduct(product, "view")} className="p-2 text-slate-400 hover:text-indigo-600" title="Consulter"><Eye size={15} /></button><button disabled={!canEdit} onClick={() => openProduct(product, "edit")} className={`p-2 ${canEdit ? "text-slate-400 hover:text-amber-600" : "text-slate-200 cursor-not-allowed"}`} title={canEdit ? "Modifier" : "Permission MODIFIER_PRODUIT requise"}><Edit2 size={15} /></button><button disabled={!canDelete} onClick={() => { setSelected(product); setDeleteError(""); setDeleteOpen(true); }} className={`p-2 ${canDelete ? "text-slate-400 hover:text-rose-600" : "text-slate-200 cursor-not-allowed"}`} title={canDelete ? "Supprimer" : "Permission SUPPRIMER_PRODUIT requise"}><Trash2 size={15} /></button></div></td></tr>)}</tbody></table>}
         </div>
         {!loading && filtered.length === 0 && <div className="py-14 text-center"><PackagePlus size={26} className="mx-auto text-slate-300" /><p className="text-sm font-bold text-slate-700 mt-3">Aucun produit trouvé</p><p className="text-xs text-slate-400 mt-1">Créez un produit ou ajustez vos filtres.</p></div>}
         <div className="px-5 py-4 border-t border-slate-100 text-[11px] text-slate-400">{filtered.length} produit(s) affiché(s)</div>
+        <InventoryPagination page={currentPage} pageSize={pageSize} totalItems={filtered.length} onPageChange={setPage} />
       </div>
 
       <InventoryModal open={formOpen} onClose={() => !saving && setFormOpen(false)} title={modalMode === "create" ? "Nouveau produit" : modalMode === "edit" ? "Modifier le produit" : "Fiche du produit"} subtitle={modalMode === "create" ? "Le stock initial créera automatiquement une entrée de stock." : modalMode === "edit" ? "La quantité se modifie uniquement dans les mouvements de stock." : "Informations enregistrées dans la boutique active."} notice={formError ? <div className="flex items-start gap-2 p-3 rounded-xl bg-rose-50 border border-rose-100 text-xs font-semibold text-rose-700"><XCircle size={15} className="shrink-0" />{formError}</div> : undefined} footer={readOnly ? <button onClick={() => setFormOpen(false)} className={secondaryButton}>Fermer</button> : <><button disabled={saving} onClick={() => setFormOpen(false)} className={secondaryButton}>Annuler</button><button disabled={saving} onClick={saveProduct} className={primaryButton}>{saving && <Loader2 size={14} className="animate-spin" />}{modalMode === "create" ? "Créer le produit" : "Enregistrer"}</button></>}>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <label className="sm:col-span-2 flex items-center gap-4"><span className="w-16 h-16 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center overflow-hidden shrink-0">{form.image ? <img src={form.image} alt="Aperçu" className="w-full h-full object-cover" /> : <ImagePlus size={20} className="text-slate-400" />}</span>{!readOnly && <span className={`${secondaryButton} cursor-pointer`}><ImagePlus size={14} /> Choisir une image<input type="file" accept="image/*" className="hidden" onChange={(event) => handleImage(event.target.files?.[0])} /></span>}</label>
-          <label className="space-y-1.5 sm:col-span-2"><span className="text-[10px] font-bold uppercase text-slate-400">Nom du produit</span><input disabled={readOnly} value={form.nom} onChange={(event) => setForm({ ...form, nom: event.target.value })} className={fieldClass} placeholder="Ex: Clavier mécanique" /></label>
-          <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">SKU</span><input disabled={readOnly} value={form.sku} onChange={(event) => setForm({ ...form, sku: event.target.value.toUpperCase() })} className={fieldClass} placeholder="CLA-MEC-001" /></label>
-          <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Catégorie</span><select disabled={readOnly} value={form.categorieId} onChange={(event) => setForm({ ...form, categorieId: event.target.value })} className={fieldClass}><option value="">Sélectionner...</option>{categories.filter((category) => category.isActive || category._id === form.categorieId).map((category) => <option key={category._id} value={category._id}>{category.nom}</option>)}</select></label>
-          {canViewPurchasePrice && <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Prix d’achat</span><input disabled={readOnly} type="number" min="0" step="0.01" value={form.prixAchat} onChange={(event) => setForm({ ...form, prixAchat: event.target.value })} className={fieldClass} /></label>}
-          <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Prix de vente</span><input disabled={readOnly} type="number" min="0" step="0.01" value={form.prixVente} onChange={(event) => setForm({ ...form, prixVente: event.target.value })} className={fieldClass} /></label>
-          {modalMode === "create" ? <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Stock initial</span><input type="number" min="0" value={form.stockInitial} onChange={(event) => setForm({ ...form, stockInitial: event.target.value })} className={fieldClass} /></label> : <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Stock actuel</span><input disabled value={`${selected?.stock || 0} ${selected?.unite || ""}`} className={`${fieldClass} bg-slate-100`} /></label>}
-          <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Seuil d’alerte</span><input disabled={readOnly} type="number" min="0" value={form.seuilAlerte} onChange={(event) => setForm({ ...form, seuilAlerte: event.target.value })} className={fieldClass} /></label>
-          <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Unité</span><select disabled={readOnly} value={form.unite} onChange={(event) => setForm({ ...form, unite: event.target.value })} className={fieldClass}>{UNITS.map((unit) => <option key={unit}>{unit}</option>)}</select></label>
+          <label className="sm:col-span-2 flex items-center gap-4"><span className="w-16 h-16 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center overflow-hidden shrink-0">{imageProcessing ? <Loader2 size={20} className="animate-spin text-indigo-500" /> : form.image ? <img src={form.image} alt="Aperçu" className="w-full h-full object-cover" /> : <ImagePlus size={20} className="text-slate-400" />}</span>{!readOnly && <span className={`${secondaryButton} cursor-pointer ${imageProcessing ? "opacity-50 pointer-events-none" : ""}`}><ImagePlus size={14} /> {imageProcessing ? "Compression..." : "Choisir une image"}<input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(event) => void handleImage(event.target.files?.[0])} /></span>}<span className="text-[10px] text-slate-400">JPG, PNG ou WebP · compression automatique</span></label>
+          <label className="space-y-1.5 sm:col-span-2"><span className="text-[10px] font-bold uppercase text-slate-400">Nom du produit <b className="text-rose-500">*</b></span><input required disabled={readOnly} value={form.nom} onChange={(event) => setForm({ ...form, nom: event.target.value })} className={fieldClass} placeholder="Ex: Clavier mécanique" /></label>
+          <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">SKU <b className="text-rose-500">*</b></span><input required disabled={readOnly} value={form.sku} onChange={(event) => setForm({ ...form, sku: event.target.value.toUpperCase() })} className={fieldClass} placeholder="CLA-MEC-001" /></label>
+          <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Catégorie <b className="text-rose-500">*</b></span><select required disabled={readOnly} value={form.categorieId} onChange={(event) => setForm({ ...form, categorieId: event.target.value })} className={fieldClass}><option value="">Sélectionner...</option>{categories.filter((category) => category.isActive || category._id === form.categorieId).map((category) => <option key={category._id} value={category._id}>{category.nom}</option>)}</select></label>
+          {canViewPurchasePrice && <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Prix d’achat <b className="text-rose-500">*</b></span><input required disabled={readOnly} type="number" min="0.01" step="0.01" value={form.prixAchat} onChange={(event) => setForm({ ...form, prixAchat: event.target.value })} className={fieldClass} /></label>}
+          <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Prix de vente <b className="text-rose-500">*</b></span><input required disabled={readOnly} type="number" min="0.01" step="0.01" value={form.prixVente} onChange={(event) => setForm({ ...form, prixVente: event.target.value })} className={fieldClass} /></label>
+          {modalMode === "create" ? <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Stock initial <b className="text-rose-500">*</b></span><input required type="number" min="0" value={form.stockInitial} onChange={(event) => setForm({ ...form, stockInitial: event.target.value })} className={fieldClass} /></label> : <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Stock actuel</span><input disabled value={`${selected?.stock || 0} ${selected?.unite || ""}`} className={`${fieldClass} bg-slate-100`} /></label>}
+          <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Seuil d’alerte <b className="text-rose-500">*</b></span><input required disabled={readOnly} type="number" min="0" value={form.seuilAlerte} onChange={(event) => setForm({ ...form, seuilAlerte: event.target.value })} className={fieldClass} /></label>
+          <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Unité <b className="text-rose-500">*</b></span><select required disabled={readOnly} value={form.unite} onChange={(event) => setForm({ ...form, unite: event.target.value })} className={fieldClass}>{UNITS.map((unit) => <option key={unit}>{unit}</option>)}</select></label>
           <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Code-barres</span><input disabled={readOnly} value={form.codeBarres} onChange={(event) => setForm({ ...form, codeBarres: event.target.value })} className={fieldClass} placeholder="Facultatif" /></label>
           <label className="space-y-1.5 sm:col-span-2"><span className="text-[10px] font-bold uppercase text-slate-400">Description</span><textarea disabled={readOnly} rows={3} value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} className={`${fieldClass} h-auto py-3 resize-none`} /></label>
           {modalMode === "edit" && <label className="sm:col-span-2 flex items-center gap-3 p-3 rounded-xl border border-slate-200"><input type="checkbox" checked={form.isActive} onChange={(event) => setForm({ ...form, isActive: event.target.checked })} className="w-4 h-4 accent-indigo-600" /><span className="text-xs font-bold text-slate-700">Produit actif et disponible dans le catalogue</span></label>}

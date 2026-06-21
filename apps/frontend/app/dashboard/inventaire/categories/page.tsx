@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, CheckCircle2, Download, Edit2, FileSpreadsheet, FolderTree, Loader2, Plus, RotateCcw, SlidersHorizontal, Trash2, Upload, XCircle } from "lucide-react";
-import { InventoryModal, PageHeader, SearchInput, fieldClass, primaryButton, secondaryButton } from "../components/inventory-ui";
+import { InventoryModal, InventoryPagination, PageHeader, SearchInput, fieldClass, primaryButton, secondaryButton } from "../components/inventory-ui";
 
 type Category = {
   _id: string;
@@ -90,6 +90,7 @@ const parseCategoryCsv = (content: string): ImportRow[] => {
 export default function CategoriesInventairePage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
@@ -167,6 +168,9 @@ export default function CategoriesInventairePage() {
       return matchesSearch && matchesStatus && matchesUsage;
     });
   }, [categories, search, statusFilter, usageFilter]);
+  const pageSize = 10;
+  const currentPage = Math.min(page, Math.max(1, Math.ceil(filtered.length / pageSize)));
+  const paginatedCategories = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const openCreate = () => {
     setSelected(null);
@@ -327,7 +331,7 @@ export default function CategoriesInventairePage() {
             <table className="w-full min-w-[720px] text-left text-xs">
               <thead className="bg-slate-50 text-[10px] uppercase tracking-wider text-slate-400"><tr><th className="px-5 py-4">Catégorie</th><th className="px-5 py-4">Description</th><th className="px-5 py-4">Produits</th><th className="px-5 py-4">Valeur du stock</th><th className="px-5 py-4">Statut</th><th className="px-5 py-4 text-right">Actions</th></tr></thead>
               <tbody className="divide-y divide-slate-100">
-                {filtered.map((category) => (
+                {paginatedCategories.map((category) => (
                   <tr key={category._id} className="hover:bg-slate-50/60">
                     <td className="px-5 py-4"><div className="flex items-center gap-3"><span className="w-2.5 h-9 rounded-full" style={{ backgroundColor: category.couleur }} /><span className="font-bold text-slate-900">{category.nom}</span></div></td>
                     <td className="px-5 py-4 text-slate-500 max-w-xs">{category.description || "Aucune description"}</td>
@@ -343,6 +347,7 @@ export default function CategoriesInventairePage() {
         </div>
         {!loading && filtered.length === 0 && <div className="py-14 text-center"><FolderTree size={25} className="mx-auto text-slate-300" /><p className="text-sm font-bold text-slate-700 mt-3">Aucune catégorie trouvée</p><p className="text-xs text-slate-400 mt-1">Créez votre première catégorie ou modifiez la recherche.</p></div>}
         <div className="px-5 py-4 border-t border-slate-100 text-[11px] text-slate-400">{filtered.length} catégorie(s)</div>
+        <InventoryPagination page={currentPage} pageSize={pageSize} totalItems={filtered.length} onPageChange={setPage} />
       </div>
 
       <InventoryModal open={formOpen} onClose={() => !saving && setFormOpen(false)} title={selected ? "Modifier la catégorie" : "Nouvelle catégorie"} subtitle="Le nom doit être unique dans la boutique active." notice={formError ? <div className="flex items-start gap-2 p-3 rounded-xl bg-rose-50 border border-rose-100 text-xs font-semibold text-rose-700"><XCircle size={15} className="shrink-0 mt-0.5" /><span>{formError}</span></div> : undefined} footer={<><button disabled={saving} onClick={() => setFormOpen(false)} className={secondaryButton}>Annuler</button><button disabled={saving} onClick={saveCategory} className={primaryButton}>{saving && <Loader2 size={14} className="animate-spin" />}{selected ? "Enregistrer" : "Créer la catégorie"}</button></>}>

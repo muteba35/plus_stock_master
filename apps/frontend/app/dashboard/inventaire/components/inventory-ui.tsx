@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Search, X, type LucideIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, X, type LucideIcon } from "lucide-react";
 
 export type ProductStatus = "Disponible" | "Stock faible" | "Rupture";
 
@@ -50,6 +50,23 @@ export function SearchInput({ value, onChange, placeholder }: { value: string; o
 export function StatusBadge({ status }: { status: ProductStatus }) {
   const style = status === "Disponible" ? "bg-emerald-50 text-emerald-600" : status === "Stock faible" ? "bg-amber-50 text-amber-700" : "bg-rose-50 text-rose-600";
   return <span className={`inline-flex px-2 py-1 rounded-md text-[10px] font-bold whitespace-nowrap ${style}`}>{status}</span>;
+}
+
+export function InventoryPagination({ page, pageSize, totalItems, onPageChange }: { page: number; pageSize: number; totalItems: number; onPageChange: (page: number) => void }) {
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  if (totalPages <= 1) return null;
+  const start = Math.max(1, Math.min(page - 2, totalPages - 4));
+  const pages = Array.from({ length: Math.min(5, totalPages) }, (_, index) => start + index).filter((value) => value <= totalPages);
+  return (
+    <div className="flex items-center justify-between gap-3 px-4 py-3 border-t border-slate-100 bg-white rounded-b-2xl">
+      <span className="text-[10px] font-medium text-slate-400">Page {page} sur {totalPages}</span>
+      <div className="flex items-center gap-1">
+        <button type="button" disabled={page <= 1} onClick={() => onPageChange(page - 1)} className="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed" title="Page précédente"><ChevronLeft size={15} /></button>
+        {pages.map((pageNumber) => <button type="button" key={pageNumber} onClick={() => onPageChange(pageNumber)} className={`w-8 h-8 rounded-lg text-[11px] font-bold border ${pageNumber === page ? "bg-indigo-600 border-indigo-600 text-white" : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"}`}>{pageNumber}</button>)}
+        <button type="button" disabled={page >= totalPages} onClick={() => onPageChange(page + 1)} className="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed" title="Page suivante"><ChevronRight size={15} /></button>
+      </div>
+    </div>
+  );
 }
 
 export function InventoryModal({ title, subtitle, open, onClose, children, footer, notice }: { title: string; subtitle: string; open: boolean; onClose: () => void; children: React.ReactNode; footer: React.ReactNode; notice?: React.ReactNode }) {

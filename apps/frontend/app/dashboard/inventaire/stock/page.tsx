@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, CheckCircle2, Eye, FileSpreadsheet, FileText, Loader2, Plus, RotateCcw, SlidersHorizontal, XCircle } from "lucide-react";
-import { InventoryModal, MetricCard, PageHeader, SearchInput, fieldClass, primaryButton, secondaryButton } from "../components/inventory-ui";
+import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, CheckCircle2, Eye, FileSpreadsheet, FileText, History, Loader2, Plus, RotateCcw, SlidersHorizontal, XCircle } from "lucide-react";
+import { InventoryModal, InventoryPagination, MetricCard, PageHeader, SearchInput, fieldClass, primaryButton, secondaryButton } from "../components/inventory-ui";
+import InventoryAuditTable, { type AuditEntry } from "./components/InventoryAuditTable";
 
 type ProductOption = { _id: string; nom: string; sku: string; stock: number; unite: string };
 type Movement = {
@@ -18,7 +19,6 @@ type Movement = {
   motif: string;
   createdAt: string;
 };
-
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://plus-stock-master.onrender.com/api";
 const requestHeaders = () => {
   const token = localStorage.getItem("token");
@@ -35,11 +35,15 @@ const getStoredAccess = () => {
 
 export default function MouvementsStockPage() {
   const [movements, setMovements] = useState<Movement[]>([]);
+  const [journal, setJournal] = useState<AuditEntry[]>([]);
   const [products, setProducts] = useState<ProductOption[]>([]);
   const [summary, setSummary] = useState({ entries: 0, exits: 0, adjustments: 0 });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
+  const [activeView, setActiveView] = useState<"movements" | "journal">("movements");
+  const [movementPage, setMovementPage] = useState(1);
+  const [journalPage, setJournalPage] = useState(1);
   const [typeFilter, setTypeFilter] = useState("all");
   const [periodFilter, setPeriodFilter] = useState("all");
   const [filterOpen, setFilterOpen] = useState(false);
@@ -70,6 +74,7 @@ export default function MouvementsStockPage() {
       if (!response.ok || !data.success) throw new Error(data.message || "Impossible de charger les mouvements.");
       setMovements(data.data || []);
       setProducts(data.products || []);
+      setJournal(data.journal || []);
       setSummary(data.summary || { entries: 0, exits: 0, adjustments: 0 });
     } catch (error) {
       showMessage("error", error instanceof Error ? error.message : "Erreur de connexion au serveur.");
@@ -96,6 +101,21 @@ export default function MouvementsStockPage() {
       return matchesSearch && matchesType && matchesPeriod;
     });
   }, [movements, search, typeFilter, periodFilter]);
+  const filteredJournal = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    const now = new Date();
+    return journal.filter((entry) => {
+      const date = new Date(entry.createdAt);
+      const matchesSearch = entry.label.toLowerCase().includes(query) || entry.action.toLowerCase().includes(query) || entry.entityType.toLowerCase().includes(query) || `${entry.utilisateurId?.prenom || ""} ${entry.utilisateurId?.nom || ""}`.toLowerCase().includes(query);
+      const matchesPeriod = periodFilter === "all" || (periodFilter === "today" && date.toDateString() === now.toDateString()) || (periodFilter === "month" && date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear());
+      return matchesSearch && matchesPeriod;
+    });
+  }, [journal, search, periodFilter]);
+  const pageSize = 10;
+  const currentMovementPage = Math.min(movementPage, Math.max(1, Math.ceil(filtered.length / pageSize)));
+  const currentJournalPage = Math.min(journalPage, Math.max(1, Math.ceil(filteredJournal.length / pageSize)));
+  const paginatedMovements = filtered.slice((currentMovementPage - 1) * pageSize, currentMovementPage * pageSize);
+  const paginatedJournal = filteredJournal.slice((currentJournalPage - 1) * pageSize, currentJournalPage * pageSize);
 
   const selectedProduct = products.find((product) => product._id === form.produitId);
   const openCreate = () => {
@@ -161,11 +181,16 @@ export default function MouvementsStockPage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4"><MetricCard label="Entrées ce mois" value={String(summary.entries)} detail="Unités réceptionnées" icon={ArrowDownLeft} tone="emerald" /><MetricCard label="Sorties ce mois" value={String(summary.exits)} detail="Sorties manuelles enregistrées" icon={ArrowUpRight} tone="rose" /><MetricCard label="Ajustements" value={String(summary.adjustments)} detail="Comptages corrigés ce mois" icon={ArrowLeftRight} tone="amber" /></div>
 
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-visible">
+      <div className="inline-flex self-start p-1 bg-slate-100 border border-slate-200 rounded-xl gap-1"><button onClick={() => setActiveView("movements")} className={`h-9 px-3 rounded-lg text-xs font-bold flex items-center gap-2 ${activeView === "movements" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500"}`}><ArrowLeftRight size={14} /> Mouvements de stock</button><button onClick={() => setActiveView("journal")} className={`h-9 px-3 rounded-lg text-xs font-bold flex items-center gap-2 ${activeView === "journal" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500"}`}><History size={14} /> Journal inventaire</button></div>
+
+      <InventoryAuditTable visible={activeView === "journal"} loading={loading} entries={paginatedJournal} totalItems={filteredJournal.length} search={search} page={currentJournalPage} pageSize={pageSize} onSearch={setSearch} onPageChange={setJournalPage} formatDate={formatDate} />
+
+      <div className={`bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-visible ${activeView === "movements" ? "block" : "hidden"}`}>
         <div className="relative z-30 p-4 border-b border-slate-100 flex gap-2 bg-white rounded-t-2xl"><SearchInput value={search} onChange={setSearch} placeholder="Rechercher un produit, SKU, motif ou référence..." /><div className="relative" ref={filterRef}><button onClick={() => setFilterOpen((current) => !current)} className={`h-10 w-10 rounded-xl border flex items-center justify-center relative ${filterOpen || activeFilterCount ? "border-indigo-300 bg-indigo-50 text-indigo-600" : "border-slate-200 text-slate-500"}`} title="Filtrer"><SlidersHorizontal size={16} />{activeFilterCount > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-indigo-600 text-white text-[9px] font-bold flex items-center justify-center">{activeFilterCount}</span>}</button>{filterOpen && <div className="absolute right-0 top-12 z-[70] w-[min(19rem,calc(100vw-2rem))] bg-white border border-slate-200 rounded-xl shadow-[0_18px_45px_-12px_rgba(15,23,42,0.25)] p-4 space-y-4"><div className="flex justify-between"><p className="text-xs font-bold">Filtres</p><button onClick={resetFilters} className="text-[10px] font-bold text-indigo-600 flex items-center gap-1"><RotateCcw size={11} /> Réinitialiser</button></div><label className="block space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Type</span><select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)} className={fieldClass}><option value="all">Tous</option><option value="ENTREE">Entrées</option><option value="SORTIE">Sorties</option><option value="AJUSTEMENT">Ajustements</option></select></label><label className="block space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Période</span><select value={periodFilter} onChange={(event) => setPeriodFilter(event.target.value)} className={fieldClass}><option value="all">Toutes les dates</option><option value="today">Aujourd’hui</option><option value="month">Ce mois</option></select></label><button onClick={() => setFilterOpen(false)} className={`${primaryButton} w-full`}>Appliquer</button></div>}</div></div>
-        <div className="relative z-0 overflow-x-auto">{loading ? <div className="py-16 flex flex-col items-center gap-3 text-slate-400"><Loader2 size={24} className="animate-spin text-indigo-500" /><p className="text-xs">Chargement des mouvements...</p></div> : <table className="w-full min-w-[900px] text-left text-xs"><thead className="bg-slate-50 text-[10px] uppercase tracking-wider text-slate-400"><tr><th className="px-5 py-4">Référence</th><th className="px-5 py-4">Produit</th><th className="px-5 py-4">Opération</th><th className="px-5 py-4">Variation</th><th className="px-5 py-4">Stock</th><th className="px-5 py-4">Date</th><th className="px-5 py-4">Effectué par</th><th className="px-5 py-4 text-right">Détail</th></tr></thead><tbody className="divide-y divide-slate-100">{filtered.map((movement) => <tr key={movement._id} className="hover:bg-slate-50/60"><td className="px-5 py-4 font-mono text-[11px] text-slate-500">{movement.reference}</td><td className="px-5 py-4"><p className="font-bold text-slate-900">{movement.produitId?.nom || "Produit archivé"}</p><p className="text-[10px] text-slate-400">{movement.produitId?.sku}</p></td><td className="px-5 py-4"><span className={`inline-flex items-center gap-1.5 font-bold ${movement.type === "ENTREE" ? "text-emerald-600" : movement.type === "SORTIE" ? "text-rose-600" : "text-amber-600"}`}>{movement.type === "ENTREE" ? <ArrowDownLeft size={14} /> : movement.type === "SORTIE" ? <ArrowUpRight size={14} /> : <ArrowLeftRight size={14} />}{typeLabel(movement.type)}</span></td><td className={`px-5 py-4 font-black ${movement.variation > 0 ? "text-emerald-600" : movement.variation < 0 ? "text-rose-600" : "text-slate-500"}`}>{movement.variation > 0 ? "+" : ""}{movement.variation}</td><td className="px-5 py-4"><span className="text-slate-400">{movement.stockAvant}</span><span className="mx-1.5 text-slate-300">→</span><strong>{movement.stockApres}</strong></td><td className="px-5 py-4 text-slate-500">{formatDate(movement.createdAt)}</td><td className="px-5 py-4 text-slate-600">{movement.utilisateurId ? `${movement.utilisateurId.prenom} ${movement.utilisateurId.nom}` : "Système"}</td><td className="px-5 py-4 text-right"><button onClick={() => { setSelectedMovement(movement); setDetailOpen(true); }} className="p-2 text-slate-400 hover:text-indigo-600" title="Consulter"><Eye size={15} /></button></td></tr>)}</tbody></table>}</div>
+        <div className="relative z-0 overflow-x-auto">{loading ? <div className="py-16 flex flex-col items-center gap-3 text-slate-400"><Loader2 size={24} className="animate-spin text-indigo-500" /><p className="text-xs">Chargement des mouvements...</p></div> : <table className="w-full min-w-[900px] text-left text-xs"><thead className="bg-slate-50 text-[10px] uppercase tracking-wider text-slate-400"><tr><th className="px-5 py-4">Référence</th><th className="px-5 py-4">Produit</th><th className="px-5 py-4">Opération</th><th className="px-5 py-4">Variation</th><th className="px-5 py-4">Stock</th><th className="px-5 py-4">Date</th><th className="px-5 py-4">Effectué par</th><th className="px-5 py-4 text-right">Détail</th></tr></thead><tbody className="divide-y divide-slate-100">{paginatedMovements.map((movement) => <tr key={movement._id} className="hover:bg-slate-50/60"><td className="px-5 py-4 font-mono text-[11px] text-slate-500">{movement.reference}</td><td className="px-5 py-4"><p className="font-bold text-slate-900">{movement.produitId?.nom || "Produit archivé"}</p><p className="text-[10px] text-slate-400">{movement.produitId?.sku}</p></td><td className="px-5 py-4"><span className={`inline-flex items-center gap-1.5 font-bold ${movement.type === "ENTREE" ? "text-emerald-600" : movement.type === "SORTIE" ? "text-rose-600" : "text-amber-600"}`}>{movement.type === "ENTREE" ? <ArrowDownLeft size={14} /> : movement.type === "SORTIE" ? <ArrowUpRight size={14} /> : <ArrowLeftRight size={14} />}{typeLabel(movement.type)}</span></td><td className={`px-5 py-4 font-black ${movement.variation > 0 ? "text-emerald-600" : movement.variation < 0 ? "text-rose-600" : "text-slate-500"}`}>{movement.variation > 0 ? "+" : ""}{movement.variation}</td><td className="px-5 py-4"><span className="text-slate-400">{movement.stockAvant}</span><span className="mx-1.5 text-slate-300">→</span><strong>{movement.stockApres}</strong></td><td className="px-5 py-4 text-slate-500">{formatDate(movement.createdAt)}</td><td className="px-5 py-4 text-slate-600">{movement.utilisateurId ? `${movement.utilisateurId.prenom} ${movement.utilisateurId.nom}` : "Système"}</td><td className="px-5 py-4 text-right"><button onClick={() => { setSelectedMovement(movement); setDetailOpen(true); }} className="p-2 text-slate-400 hover:text-indigo-600" title="Consulter"><Eye size={15} /></button></td></tr>)}</tbody></table>}</div>
         {!loading && filtered.length === 0 && <div className="py-14 text-center"><ArrowLeftRight size={26} className="mx-auto text-slate-300" /><p className="text-sm font-bold text-slate-700 mt-3">Aucun mouvement trouvé</p></div>}
         <div className="px-5 py-4 border-t border-slate-100 text-[11px] text-slate-400">{filtered.length} mouvement(s)</div>
+        <InventoryPagination page={currentMovementPage} pageSize={pageSize} totalItems={filtered.length} onPageChange={setMovementPage} />
       </div>
 
       <InventoryModal open={formOpen} onClose={() => !saving && setFormOpen(false)} title="Nouveau mouvement" subtitle="Cette opération modifiera immédiatement le stock du produit." notice={formError ? <div className="flex items-start gap-2 p-3 rounded-xl bg-rose-50 border border-rose-100 text-xs font-semibold text-rose-700"><XCircle size={15} className="shrink-0" />{formError}</div> : undefined} footer={<><button disabled={saving} onClick={() => setFormOpen(false)} className={secondaryButton}>Annuler</button><button disabled={saving} onClick={createMovement} className={primaryButton}>{saving && <Loader2 size={14} className="animate-spin" />} Enregistrer</button></>}>
