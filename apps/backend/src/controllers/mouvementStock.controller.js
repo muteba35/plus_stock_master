@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
-import { Boutique, MouvementStock, Produit } from "../models/Utilisateur.js";
+import { Boutique, InventaireAudit, MouvementStock, Produit } from "../models/Utilisateur.js";
+import { logInventoryAction } from "../utils/inventoryAudit.js";
 
 const getBoutiqueId = (req) => {
   if (req.user?.isOwner && req.query?.boutiqueId) return req.query.boutiqueId;
@@ -29,6 +30,10 @@ export const getMouvements = async (req, res) => {
     const products = await Produit.find({ boutiqueId, isDeleted: false, isActive: true })
       .select("nom sku stock unite")
       .sort({ nom: 1 });
+    const journal = await InventaireAudit.find({ boutiqueId })
+      .populate("utilisateurId", "nom prenom")
+      .sort({ createdAt: -1 })
+      .limit(500);
 
     const startOfMonth = new Date();
     startOfMonth.setDate(1);
@@ -47,6 +52,7 @@ export const getMouvements = async (req, res) => {
       success: true,
       data: movements,
       products,
+      journal,
       summary: { entries: summary.entries || 0, exits: summary.exits || 0, adjustments: summary.adjustments || 0 },
     });
   } catch (error) {
@@ -129,6 +135,7 @@ export const createMouvement = async (req, res) => {
     rollback = null;
     await movement.populate("produitId", "nom sku unite");
     await movement.populate("utilisateurId", "nom prenom");
+    await logInventoryAction({ boutiqueId, utilisateurId: req.user.id, action: `MOUVEMENT_${type}`, entityType: "MOUVEMENT_STOCK", entityId: movement._id, label: `${type === "ENTREE" ? "Entrée" : type === "SORTIE" ? "Sortie" : "Ajustement"} de stock : ${movement.produitId?.nom || "Produit"}`, details: { variation, stockAvant: stockBefore, stockApres: stockAfter, reference: movement.reference } });
 
     return res.status(201).json({ success: true, message: "Mouvement enregistre avec succes.", data: movement });
   } catch (error) {

@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { Boutique, Categorie, MouvementStock, Produit } from "../models/Utilisateur.js";
+import { logInventoryAction } from "../utils/inventoryAudit.js";
 
 const getBoutiqueId = (req) => {
   if (req.user?.isOwner && req.query?.boutiqueId) return req.query.boutiqueId;
@@ -98,8 +99,8 @@ export const createProduit = async (req, res) => {
     const seuilAlerte = Number(req.body.seuilAlerte ?? 5);
 
     if (!nom || !sku) return res.status(400).json({ success: false, message: "Le nom et le SKU sont obligatoires." });
-    if (![prixVente, prixAchat, stockInitial, seuilAlerte].every(Number.isFinite) || [prixVente, prixAchat, stockInitial, seuilAlerte].some((value) => value < 0)) {
-      return res.status(400).json({ success: false, message: "Les prix, le stock et le seuil doivent etre des nombres positifs." });
+    if (![prixVente, prixAchat, stockInitial, seuilAlerte].every(Number.isFinite) || prixVente <= 0 || stockInitial < 0 || seuilAlerte < 0 || (req.body.prixAchat !== undefined && prixAchat <= 0)) {
+      return res.status(400).json({ success: false, message: "Le prix de vente et le prix d'achat renseigne doivent etre superieurs a zero; le stock et le seuil ne peuvent pas etre negatifs." });
     }
 
     const category = await validateCategory(req.body.categorieId, boutiqueId);
@@ -136,6 +137,7 @@ export const createProduit = async (req, res) => {
     }
 
     await createdProduct.populate("categorieId", "nom couleur");
+    await logInventoryAction({ boutiqueId, utilisateurId: req.user.id, action: "PRODUIT_CREE", entityType: "PRODUIT", entityId: createdProduct._id, label: `Produit créé : ${createdProduct.nom}`, details: { sku: createdProduct.sku, stockInitial } });
     return res.status(201).json({
       success: true,
       message: "Produit cree avec succes.",
@@ -240,6 +242,9 @@ export const importProduits = async (req, res) => {
         }));
       if (movements.length > 0) await MouvementStock.insertMany(movements, { ordered: false });
     }
+    if (inserted.length > 0) {
+      await logInventoryAction({ boutiqueId, utilisateurId: req.user.id, action: "PRODUITS_IMPORTES", entityType: "PRODUIT", label: `${inserted.length} produit(s) importé(s)`, details: { count: inserted.length } });
+    }
 
     return res.status(201).json({
       success: true,
@@ -283,7 +288,7 @@ export const updateProduit = async (req, res) => {
     for (const field of ["prixVente", "seuilAlerte"]) {
       if (req.body[field] !== undefined) {
         const value = Number(req.body[field]);
-        if (!Number.isFinite(value) || value < 0) return res.status(400).json({ success: false, message: `${field} doit etre un nombre positif.` });
+        if (!Number.isFinite(value) || (field === "prixVente" ? value <= 0 : value < 0)) return res.status(400).json({ success: false, message: `${field} contient une valeur invalide.` });
         product[field] = value;
       }
     }
@@ -292,12 +297,13 @@ export const updateProduit = async (req, res) => {
         return res.status(403).json({ success: false, message: "Vous n'avez pas la permission de modifier le prix d'achat." });
       }
       const value = Number(req.body.prixAchat);
-      if (!Number.isFinite(value) || value < 0) return res.status(400).json({ success: false, message: "prixAchat doit etre un nombre positif." });
+      if (!Number.isFinite(value) || value <= 0) return res.status(400).json({ success: false, message: "prixAchat doit etre superieur a zero." });
       product.prixAchat = value;
     }
 
     await product.save();
     await product.populate("categorieId", "nom couleur");
+    await logInventoryAction({ boutiqueId, utilisateurId: req.user.id, action: "PRODUIT_MODIFIE", entityType: "PRODUIT", entityId: product._id, label: `Produit modifié : ${product.nom}`, details: { sku: product.sku } });
     return res.status(200).json({ success: true, message: "Produit mis a jour avec succes.", data: serializeProduct(product, canViewPurchasePrice(req)) });
   } catch (error) {
     if (error?.code === 11000) {
@@ -327,6 +333,7 @@ export const deleteProduit = async (req, res) => {
     product.isDeleted = true;
     product.isActive = false;
     await product.save();
+    await logInventoryAction({ boutiqueId, utilisateurId: req.user.id, action: "PRODUIT_SUPPRIME", entityType: "PRODUIT", entityId: product._id, label: `Produit supprimé : ${product.nom}`, details: { sku: product.sku } });
     return res.status(200).json({ success: true, message: "Produit supprime avec succes." });
   } catch (error) {
     console.error("deleteProduit:", error);

@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { Boutique, MouvementStock, Produit } from "../models/Utilisateur.js";
+import { logInventoryAction } from "../utils/inventoryAudit.js";
 
 const getBoutiqueId = (req) => {
   if (req.user?.isOwner && req.query?.boutiqueId) return req.query.boutiqueId;
@@ -93,6 +94,7 @@ export const reapprovisionnerProduit = async (req, res) => {
       motif: "Reapprovisionnement depuis une alerte de stock",
       reference: String(req.body.reference || "").trim() || `REA-${Date.now().toString(36).toUpperCase()}`,
     });
+    await logInventoryAction({ boutiqueId, utilisateurId: req.user.id, action: "REAPPROVISIONNEMENT", entityType: "MOUVEMENT_STOCK", entityId: movement._id, label: `Réapprovisionnement : ${productBefore.nom}`, details: { quantite: quantity, stockAvant: productBefore.stock, stockApres: productBefore.stock + quantity, reference: movement.reference } });
 
     return res.status(201).json({
       success: true,

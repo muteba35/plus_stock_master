@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { Boutique, Categorie, Produit } from "../models/Utilisateur.js";
+import { logInventoryAction } from "../utils/inventoryAudit.js";
 
 const getBoutiqueId = (req) => {
   if (req.user?.isOwner && req.query?.boutiqueId) return req.query.boutiqueId;
@@ -69,6 +70,7 @@ export const createCategorie = async (req, res) => {
     if (duplicate) return res.status(409).json({ success: false, message: "Cette categorie existe deja dans la boutique." });
 
     const categorie = await Categorie.create({ nom, description, couleur, boutiqueId });
+    await logInventoryAction({ boutiqueId, utilisateurId: req.user.id, action: "CATEGORIE_CREEE", entityType: "CATEGORIE", entityId: categorie._id, label: `Catégorie créée : ${categorie.nom}`, details: { nom: categorie.nom } });
     return res.status(201).json({ success: true, message: "Categorie creee avec succes.", data: serializeCategorie(categorie) });
   } catch (error) {
     if (error?.code === 11000) return res.status(409).json({ success: false, message: "Cette categorie existe deja dans la boutique." });
@@ -125,6 +127,9 @@ export const importCategories = async (req, res) => {
 
     let inserted = [];
     if (newRows.length > 0) inserted = await Categorie.insertMany(newRows, { ordered: false });
+    if (inserted.length > 0) {
+      await logInventoryAction({ boutiqueId, utilisateurId: req.user.id, action: "CATEGORIES_IMPORTEES", entityType: "CATEGORIE", label: `${inserted.length} catégorie(s) importée(s)`, details: { count: inserted.length } });
+    }
 
     return res.status(201).json({
       success: true,
@@ -166,6 +171,7 @@ export const updateCategorie = async (req, res) => {
     if (req.body.isActive !== undefined) categorie.isActive = Boolean(req.body.isActive);
 
     await categorie.save();
+    await logInventoryAction({ boutiqueId, utilisateurId: req.user.id, action: "CATEGORIE_MODIFIEE", entityType: "CATEGORIE", entityId: categorie._id, label: `Catégorie modifiée : ${categorie.nom}`, details: { nom: categorie.nom } });
     return res.status(200).json({ success: true, message: "Categorie mise a jour avec succes.", data: serializeCategorie(categorie) });
   } catch (error) {
     if (error?.code === 11000) return res.status(409).json({ success: false, message: "Une autre categorie porte deja ce nom." });
@@ -192,6 +198,7 @@ export const deleteCategorie = async (req, res) => {
 
     const categorie = await Categorie.findOneAndDelete({ _id: req.params.id, boutiqueId });
     if (!categorie) return res.status(404).json({ success: false, message: "Categorie introuvable ou acces refuse." });
+    await logInventoryAction({ boutiqueId, utilisateurId: req.user.id, action: "CATEGORIE_SUPPRIMEE", entityType: "CATEGORIE", entityId: categorie._id, label: `Catégorie supprimée : ${categorie.nom}`, details: { nom: categorie.nom } });
     return res.status(200).json({ success: true, message: "Categorie supprimee avec succes." });
   } catch (error) {
     console.error("deleteCategorie:", error);

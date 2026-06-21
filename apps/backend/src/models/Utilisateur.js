@@ -158,6 +158,21 @@ const mouvementStockSchema = new mongoose.Schema(
 
 mouvementStockSchema.index({ boutiqueId: 1, produitId: 1, createdAt: -1 });
 
+const inventaireAuditSchema = new mongoose.Schema(
+  {
+    boutiqueId: { type: mongoose.Schema.Types.ObjectId, ref: "Boutique", required: true },
+    utilisateurId: { type: mongoose.Schema.Types.ObjectId, ref: "Utilisateur", required: true },
+    action: { type: String, required: true, trim: true },
+    entityType: { type: String, required: true, trim: true },
+    entityId: { type: mongoose.Schema.Types.ObjectId, default: null },
+    label: { type: String, required: true, trim: true, maxlength: 250 },
+    details: { type: mongoose.Schema.Types.Mixed, default: {} },
+  },
+  { timestamps: true }
+);
+
+inventaireAuditSchema.index({ boutiqueId: 1, createdAt: -1 });
+
 const utilisateurSchema = new mongoose.Schema(
   {
     nom: { type: String, required: [true, "Le nom est requis"], trim: true },
@@ -268,7 +283,8 @@ const Departement = mongoose.model("Departement", departementSchema);
 const Categorie = mongoose.model("Categorie", categorieSchema);
 const Produit = mongoose.model("Produit", produitSchema);
 const MouvementStock = mongoose.model("MouvementStock", mouvementStockSchema);
+const InventaireAudit = mongoose.model("InventaireAudit", inventaireAuditSchema);
 const Utilisateur = mongoose.model("Utilisateur", utilisateurSchema);
 const Boutique = mongoose.model("Boutique", boutiqueSchema);
 
-export { Permission, Role, RolePermission, Departement, Categorie, Produit, MouvementStock, Utilisateur, Boutique };
+export { Permission, Role, RolePermission, Departement, Categorie, Produit, MouvementStock, InventaireAudit, Utilisateur, Boutique };
