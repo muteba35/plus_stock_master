@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { Plus, Search, X, Building, AlertTriangle, FileText, Loader2, CheckCircle2, SlidersHorizontal } from "lucide-react";
+import { Plus, Search, X, Building, AlertTriangle, FileText, Loader2, CheckCircle2, SlidersHorizontal, FileSpreadsheet } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import DeptModal from "./components/DeptModal";
 import DeptTable from "./components/DeptTable";
+import TeamPagination from "../TeamPagination";
+import TeamCsvImportModal, { type TeamCsvRow } from "../TeamCsvImportModal";
 
 interface Department {
   _id: string;
@@ -27,6 +29,7 @@ export default function DepartementsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [usageFilter, setUsageFilter] = useState("all");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [page, setPage] = useState(1);
   const filterMenuRef = useRef<HTMLDivElement | null>(null);
 
   // 2. ÉTATS DES PERMISSIONS
@@ -34,6 +37,7 @@ export default function DepartementsPage() {
   
   // Modals d'ouverture
   const [isModalOpen, setIsModalOpen] = useState(false); 
+  const [isImportOpen, setIsImportOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);   
   const [isDeleteOpen, setIsDeleteOpen] = useState(false); 
 
@@ -109,6 +113,16 @@ export default function DepartementsPage() {
   const canEdit = userPermissions.includes("MODIFIER_DEPARTEMENT");
   const canDelete = userPermissions.includes("SUPPRIMER_DEPARTEMENT");
 
+  const importDepartments = async (rows: TeamCsvRow[]) => {
+    const token = localStorage.getItem("token");
+    for (const row of rows) {
+      const response = await fetch(backendBaseUrl, { method: "POST", headers: { "Content-Type": "application/json", Authorization: token ? `Bearer ${token}` : "" }, body: JSON.stringify({ nom: row.nom, description: row.description }) });
+      const data = await response.json();
+      if (!response.ok || data.status !== "success") throw new Error(`Ligne ${row.line} : ${data.message || "Import impossible."}`);
+    }
+    await fetchDepartments();
+  };
+
   // Filtrage
   const filteredDepartments = departments.filter((dept) => {
     const query = searchTerm.toLowerCase();
@@ -124,6 +138,9 @@ export default function DepartementsPage() {
 
     return matchesSearch && matchesUsage;
   });
+  const pageSize = 10;
+  const currentPage = Math.min(page, Math.max(1, Math.ceil(filteredDepartments.length / pageSize)));
+  const paginatedDepartments = filteredDepartments.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   // Déclencheur Modification
   const handleEditInit = (id: string) => {
@@ -230,14 +247,7 @@ export default function DepartementsPage() {
         </div>
         
         {/* BOUTON D'AJOUT : Masqué si l'utilisateur n'a pas la permission de créer */}
-        {canCreate && (
-          <button 
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-sm active:scale-98"
-          >
-            <Plus size={14} /> Nouveau Département
-          </button>
-        )}
+        {canCreate && <div className="flex flex-wrap justify-end gap-2"><button onClick={() => setIsImportOpen(true)} className="flex items-center gap-2 border border-slate-200 bg-white hover:border-indigo-300 text-slate-600 text-xs font-bold px-4 py-2.5 rounded-xl"><FileSpreadsheet size={14} /> Importer Excel</button><button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-sm active:scale-98"><Plus size={14} /> Nouveau Département</button></div>}
       </div>
 
       {/* BARRE DE RECHERCHE */}
@@ -302,18 +312,13 @@ export default function DepartementsPage() {
           <Loader2 className="text-indigo-600 animate-spin mb-2" size={24} />
           <p className="text-xs text-slate-400 font-medium">Récupération des données sécurisées...</p>
         </div>
-      ) : (
-        <DeptTable 
-          departments={filteredDepartments} 
-          onEdit={canEdit ? handleEditInit : undefined}
-          onDelete={canDelete ? handleDeleteInit : undefined}
-        />
-      )}
+      ) : (<div><DeptTable departments={paginatedDepartments} onEdit={canEdit ? handleEditInit : undefined} onDelete={canDelete ? handleDeleteInit : undefined} /><TeamPagination page={currentPage} totalItems={filteredDepartments.length} pageSize={pageSize} onPageChange={setPage} /></div>)}
 
       {/* MODAL CRÉATION (Protégé également pour éviter l'affichage forcé) */}
       {canCreate && (
         <DeptModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={fetchDepartments} />
       )}
+      <TeamCsvImportModal open={isImportOpen} onClose={() => setIsImportOpen(false)} title="Importer des départements" columns={[{ key: "nom", label: "nom", required: true }, { key: "description", label: "description" }]} example={{ nom: "Logistique", description: "Gestion des stocks et livraisons" }} onImport={importDepartments} />
 
       {/* MODAL MODIFICATION */}
       {isEditOpen && canEdit && (
@@ -360,7 +365,7 @@ export default function DepartementsPage() {
 
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
-                    <Building size={12} /> Nom du département
+                    <Building size={12} /> Nom du département <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="text"

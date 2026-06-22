@@ -320,7 +320,7 @@ export default function EmployeModal({
                   {boutiques.length > 0 && (
                     <div className="space-y-1.5 relative md:col-span-2">
                       <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
-                        <Store size={12} /> Boutique / Site
+                        <Store size={12} /> Boutique / Site <span className="text-rose-500">*</span>
                       </label>
                       <div
                         onClick={() => {
@@ -389,7 +389,7 @@ export default function EmployeModal({
 
                   <div className="space-y-1.5 relative">
                     <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
-                      <ShieldCheck size={12} /> Role d&apos;exploitation
+                      <ShieldCheck size={12} /> Role d&apos;exploitation <span className="text-rose-500">*</span>
                     </label>
                     <div
                       onClick={() => {
@@ -463,7 +463,7 @@ export default function EmployeModal({
 
                   <div className="space-y-1.5 relative">
                     <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
-                      <Briefcase size={12} /> Departement
+                      <Briefcase size={12} /> Departement <span className="text-rose-500">*</span>
                     </label>
                     <div
                       onClick={() => {
@@ -568,7 +568,7 @@ function FormInput({ label, icon: Icon, as = "input", children, rightElement, ..
   return (
     <div className="space-y-1.5">
       <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
-        <Icon size={12} /> {label}
+        <Icon size={12} /> {label} {props.required && <span className="text-rose-500">*</span>}
       </label>
 
       <div className="relative">

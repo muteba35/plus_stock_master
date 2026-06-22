@@ -26,9 +26,12 @@ import {
   XCircle,
   Store,
   SlidersHorizontal,
+  FileSpreadsheet,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import EmployeModal, { EmployeOption } from "./components/EmployeModal";
+import TeamPagination from "../TeamPagination";
+import TeamCsvImportModal, { type TeamCsvRow } from "../TeamCsvImportModal";
 
 export interface Employe {
   id: string;
@@ -168,6 +171,8 @@ export default function EmployesPage() {
   const [departmentFilter, setDepartmentFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [isImportOpen, setIsImportOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedEmploye, setSelectedEmploye] = useState<Employe | null>(null);
   const [activeActionModal, setActiveActionModal] = useState<"edit" | "reset" | "status" | "delete" | null>(null);
@@ -305,6 +310,9 @@ export default function EmployesPage() {
 
     return matchesSearch && matchesRole && matchesDepartment && matchesStatus;
   });
+  const pageSize = 10;
+  const currentPage = Math.min(page, Math.max(1, Math.ceil(filteredEmployes.length / pageSize)));
+  const paginatedEmployes = filteredEmployes.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const handleCreateEmploye = async (payload: {
     firstName: string;
@@ -335,6 +343,29 @@ export default function EmployesPage() {
       showToast("error", message);
       throw new Error(message);
     }
+  };
+
+  const importEmployes = async (rows: TeamCsvRow[]) => {
+    const credentials: string[][] = [];
+    for (const row of rows) {
+      const boutique = boutiques.find((item) => item.name.trim().toLowerCase() === row.boutique.trim().toLowerCase());
+      if (!boutique) throw new Error(`Ligne ${row.line} : boutique « ${row.boutique} » introuvable.`);
+      const query = `?boutiqueId=${encodeURIComponent(boutique.id)}`;
+      const [rolesResponse, departmentsResponse] = await Promise.all([fetch(`${API_URL}/roles${query}`, { headers: getAuthHeaders() }), fetch(`${API_URL}/departements${query}`, { headers: getAuthHeaders() })]);
+      const rolesData = await rolesResponse.json(); const departmentsData = await departmentsResponse.json();
+      const role = (rolesData.roles || []).find((item: ApiRole) => item.nom.trim().toLowerCase() === row.role.trim().toLowerCase());
+      const department = (departmentsData.data || []).find((item: ApiDepartement) => item.nom.trim().toLowerCase() === row.departement.trim().toLowerCase());
+      if (!role) throw new Error(`Ligne ${row.line} : rôle « ${row.role} » introuvable dans cette boutique.`);
+      if (!department) throw new Error(`Ligne ${row.line} : département « ${row.departement} » introuvable dans cette boutique.`);
+      const response = await fetch(`${API_URL}/employes`, { method: "POST", headers: getAuthHeaders(), body: JSON.stringify({ firstName: row.prenom, lastName: row.nom, email: row.email, phone: row.telephone, boutiqueId: boutique.id, roleId: role._id, departementId: department._id }) });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(`Ligne ${row.line} : ${data.message || "Import impossible."}`);
+      credentials.push([row.prenom, row.nom, row.email, data.temporaryPassword || ""]);
+    }
+    await fetchEmployes();
+    const csv = `\uFEFFprenom;nom;email;code_temporaire\r\n${credentials.map((values) => values.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(";")).join("\r\n")}`;
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" })); const anchor = document.createElement("a"); anchor.href = url; anchor.download = "acces-temporaires-employes.csv"; anchor.click(); URL.revokeObjectURL(url);
+    showToast("success", `${rows.length} employé(s) importé(s). Les codes temporaires ont été téléchargés.`);
   };
 
   const handleUpdateEmploye = async (updatedEmp: Employe) => {
@@ -471,12 +502,7 @@ export default function EmployesPage() {
           <h1 className="text-xl font-bold text-slate-900">Annuaire du Personnel</h1>
           <p className="text-xs text-slate-400 font-medium">Gerez les acces et le statut de vos collaborateurs.</p>
         </div>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-sm"
-        >
-          <UserPlus size={14} /> Nouvel Employe
-        </button>
+        <div className="flex flex-wrap justify-end gap-2"><button onClick={() => setIsImportOpen(true)} className="flex items-center gap-2 border border-slate-200 bg-white hover:border-indigo-300 text-slate-600 text-xs font-bold px-4 py-2.5 rounded-xl"><FileSpreadsheet size={14} /> Importer Excel</button><button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-sm"><UserPlus size={14} /> Nouvel Employe</button></div>
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-visible">
@@ -569,7 +595,7 @@ export default function EmployesPage() {
                   </td>
                 </tr>
               ) : (
-                filteredEmployes.map((emp) => (
+                paginatedEmployes.map((emp) => (
                   <tr key={emp.id} className="hover:bg-slate-50/50 transition-colors">
                     <td className="px-6 py-4 flex items-center gap-3">
                       {emp.avatarUrl ? (
@@ -614,6 +640,7 @@ export default function EmployesPage() {
             </tbody>
           </table>
         </div>
+        <TeamPagination page={currentPage} totalItems={filteredEmployes.length} pageSize={pageSize} onPageChange={setPage} />
       </div>
 
       <EmployeModal
@@ -625,6 +652,7 @@ export default function EmployesPage() {
         onBoutiqueChange={fetchReferences}
         onCreate={handleCreateEmploye}
       />
+      <TeamCsvImportModal open={isImportOpen} onClose={() => setIsImportOpen(false)} title="Importer des employés" columns={[{ key: "prenom", label: "prenom", required: true }, { key: "nom", label: "nom", required: true }, { key: "email", label: "email", required: true }, { key: "telephone", label: "telephone", required: true }, { key: "boutique", label: "boutique", required: true }, { key: "role", label: "role", required: true }, { key: "departement", label: "departement", required: true }]} example={{ prenom: "Sarah", nom: "Mwamba", email: "sarah@example.com", telephone: "0812345678", boutique: "Boutique Centre", role: "Gestionnaire stock", departement: "Logistique" }} onImport={importEmployes} />
 
       <AnimatePresence>
         {activeActionModal && selectedEmploye && (
@@ -673,7 +701,7 @@ const FormInput: React.FC<FormInputProps> = ({ label, icon: Icon, ...props }) =>
   return (
     <div className="space-y-1.5">
       <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
-        <Icon size={12} /> {label}
+        <Icon size={12} /> {label} {props.required && <span className="text-rose-500">*</span>}
       </label>
       <div className="relative">
         <Icon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={15} />
@@ -815,7 +843,7 @@ function EditInterface({ employe, roles, departements, boutiques, onBoutiqueChan
           {boutiques.length > 0 && (
             <div className="space-y-2 md:col-span-2">
               <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
-                <Store size={12} /> Site de rattachement
+                <Store size={12} /> Site de rattachement <span className="text-rose-500">*</span>
               </label>
               <div className="flex flex-wrap gap-2">
                 {boutiques.map((boutique) => {
@@ -847,7 +875,7 @@ function EditInterface({ employe, roles, departements, boutiques, onBoutiqueChan
 
           <div className="space-y-1.5 relative">
             <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
-              <ShieldCheck size={12} /> Role d&apos;exploitation
+              <ShieldCheck size={12} /> Role d&apos;exploitation <span className="text-rose-500">*</span>
             </label>
             <div onClick={() => { if (!isSaving && !isLoadingReferences) { setShowRoleDropdown(!showRoleDropdown); setShowDeptDropdown(false); } }} className={`w-full text-xs font-medium px-3 py-2.5 border border-slate-200 rounded-xl bg-white flex justify-between items-center transition-colors ${isLoadingReferences ? "cursor-wait opacity-70" : "cursor-pointer hover:border-indigo-500"}`}>
               <span className={formData.role ? "text-slate-800" : "text-slate-400"}>{isLoadingReferences ? "Chargement des roles..." : formData.role || "Choisir un role"}</span>
@@ -879,7 +907,7 @@ function EditInterface({ employe, roles, departements, boutiques, onBoutiqueChan
 
           <div className="space-y-1.5 relative">
             <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
-              <Briefcase size={12} /> Departement
+              <Briefcase size={12} /> Departement <span className="text-rose-500">*</span>
             </label>
             <div onClick={() => { if (!isSaving && !isLoadingReferences) { setShowDeptDropdown(!showDeptDropdown); setShowRoleDropdown(false); } }} className={`w-full text-xs font-medium px-3 py-2.5 border border-slate-200 rounded-xl bg-white flex justify-between items-center transition-colors ${isLoadingReferences ? "cursor-wait opacity-70" : "cursor-pointer hover:border-indigo-500"}`}>
               <span className={formData.department ? "text-slate-800" : "text-slate-400"}>{isLoadingReferences ? "Chargement des departements..." : formData.department || "Choisir un departement"}</span>

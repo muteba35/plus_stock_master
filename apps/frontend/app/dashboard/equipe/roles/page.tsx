@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { Plus, Search, Eye, Edit2, Trash2, Loader2, CheckCircle2, XCircle, AlertCircle, SlidersHorizontal } from "lucide-react";
+import { Plus, Search, Eye, Edit2, Trash2, Loader2, CheckCircle2, XCircle, AlertCircle, SlidersHorizontal, AlertTriangle, FileSpreadsheet } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import RoleModal from "./components/RoleModal";
+import TeamPagination from "../TeamPagination";
+import TeamCsvImportModal, { type TeamCsvRow } from "../TeamCsvImportModal";
 
 export interface PermissionObj {
   _id: string;
@@ -43,6 +45,10 @@ export default function RolesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [modalMode, setModalMode] = useState<"create" | "edit" | "view">("create");
+  const [roleToDelete, setRoleToDelete] = useState<Role | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [page, setPage] = useState(1);
+  const [isImportOpen, setIsImportOpen] = useState(false);
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   // ÉTAT DES PERMISSIONS LOCALE
@@ -135,6 +141,7 @@ export default function RolesPage() {
 
   const handleDeleteRole = async (id: string) => {
     try {
+      setDeleting(true);
       const response = await fetch(`${API_URL}/roles/${id}`, {
         method: "DELETE",
         headers: getAuthHeaders(),
@@ -145,13 +152,14 @@ export default function RolesPage() {
         setRoles(roles.filter((role) => role.id !== id));
         showToast("success", data.message || "Le rôle a été supprimé avec succès.");
         window.dispatchEvent(new Event("userProfileUpdated"));
+        setRoleToDelete(null);
       } else {
         showToast("error", data.message || "Erreur lors de la suppression.");
       }
     } catch (error) {
       console.error("Erreur suppression :", error);
       showToast("error", "Impossible de joindre le serveur backend.");
-    }
+    } finally { setDeleting(false); }
   };
 
   const handleSaveRole = async (name: string, description: string, permissionsIds: string[]) => {
@@ -193,6 +201,23 @@ export default function RolesPage() {
     }
   };
 
+  const importRoles = async (rows: TeamCsvRow[]) => {
+    const permissionsResponse = await fetch(`${API_URL}/roles/permissions`, { headers: getAuthHeaders() });
+    const permissionsData = await permissionsResponse.json();
+    if (!permissionsResponse.ok || !permissionsData.success) throw new Error(permissionsData.message || "Impossible de charger les permissions.");
+    const available = (permissionsData.permissions || []) as PermissionObj[];
+    for (const row of rows) {
+      const codes = row.permissions.split("|").map((code) => code.trim().toLowerCase()).filter(Boolean);
+      const permissionIds = codes.map((code) => available.find((permission) => (permission.nom || permission.code || "").toLowerCase() === code)?._id).filter(Boolean) as string[];
+      if (permissionIds.length !== codes.length) throw new Error(`Ligne ${row.line} : une permission est inconnue. Utilisez les codes exacts séparés par |.`);
+      const response = await fetch(`${API_URL}/roles`, { method: "POST", headers: getAuthHeaders(), body: JSON.stringify({ nom: row.nom, description: row.description, permissions: permissionIds }) });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(`Ligne ${row.line} : ${data.message || "Import impossible."}`);
+    }
+    await fetchRoles();
+    showToast("success", `${rows.length} rôle(s) importé(s).`);
+  };
+
   const handleOpenCreate = () => {
     setSelectedRole(null);
     setModalMode("create");
@@ -228,6 +253,9 @@ export default function RolesPage() {
 
     return matchesSearch && matchesStatus && matchesUsage;
   });
+  const pageSize = 10;
+  const currentPage = Math.min(page, Math.max(1, Math.ceil(filteredRoles.length / pageSize)));
+  const paginatedRoles = filteredRoles.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
     <div className="space-y-6 bg-[#f9fafd] p-6 rounded-3xl min-h-screen text-slate-800 relative overflow-hidden">
@@ -265,14 +293,7 @@ export default function RolesPage() {
         </div>
         
         {/* BOUTON DE CRÉATION PROTÉGÉ */}
-        {canCreate && (
-          <button
-            onClick={handleOpenCreate}
-            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-md shadow-indigo-600/10 active:scale-[0.98]"
-          >
-            <Plus size={14} /> Créer un rôle
-          </button>
-        )}
+        {canCreate && <div className="flex flex-wrap justify-end gap-2"><button onClick={() => setIsImportOpen(true)} className="flex items-center gap-2 border border-slate-200 bg-white hover:border-indigo-300 text-slate-600 text-xs font-bold px-4 py-2.5 rounded-xl"><FileSpreadsheet size={14} /> Importer Excel</button><button onClick={handleOpenCreate} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-md shadow-indigo-600/10 active:scale-[0.98]"><Plus size={14} /> Créer un rôle</button></div>}
       </div>
 
       {/* TABLEAU */}
@@ -369,7 +390,7 @@ export default function RolesPage() {
                     </td>
                   </tr>
                 ) : (
-                  filteredRoles.map((role) => {
+                  paginatedRoles.map((role) => {
                     const isAdmin = role.name.toLowerCase() === "admin général" || role.name.toLowerCase() === "superadmin";
 
                     return (
@@ -448,11 +469,7 @@ export default function RolesPage() {
                             {/* BOUTON SUPPRIMER PROTÉGÉ */}
                             {canDelete && (
                               <button 
-                                onClick={() => {
-                                  if(confirm(`Supprimer définitivement le rôle "${role.name}" ?`)) {
-                                    handleDeleteRole(role.id);
-                                  }
-                                }}
+                                onClick={() => setRoleToDelete(role)}
                                 disabled={isAdmin}
                                 className={`p-1.5 transition-colors ${
                                   isAdmin ? "text-slate-200 cursor-not-allowed" : "text-slate-400 hover:text-rose-600"
@@ -472,7 +489,12 @@ export default function RolesPage() {
             </table>
           )}
         </div>
+        <TeamPagination page={currentPage} totalItems={filteredRoles.length} pageSize={pageSize} onPageChange={setPage} />
       </div>
+
+      <AnimatePresence>
+        {roleToDelete && <div className="fixed inset-0 z-[120] flex items-center justify-center p-4"><motion.button type="button" aria-label="Fermer" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => !deleting && setRoleToDelete(null)} className="absolute inset-0 bg-slate-950/45 backdrop-blur-sm" /><motion.div initial={{ opacity: 0, y: 16, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8, scale: 0.98 }} className="relative z-10 w-full max-w-md bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden"><div className="p-5 border-b border-slate-100 flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center"><AlertTriangle size={19} /></div><div><h3 className="text-sm font-bold text-slate-900">Supprimer le rôle</h3><p className="text-[11px] text-slate-400 mt-0.5">Cette action est définitive.</p></div></div><div className="p-5 text-xs text-slate-600 leading-relaxed">Voulez-vous vraiment supprimer le rôle <strong className="text-slate-900">{roleToDelete.name}</strong> ? Un rôle encore affecté à des employés ne pourra pas être supprimé.</div><div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-2"><button type="button" disabled={deleting} onClick={() => setRoleToDelete(null)} className="px-4 py-2 text-xs font-bold text-slate-600 rounded-xl hover:bg-slate-200">Annuler</button><button type="button" disabled={deleting} onClick={() => void handleDeleteRole(roleToDelete.id)} className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl flex items-center gap-2 disabled:opacity-50">{deleting && <Loader2 size={14} className="animate-spin" />} Supprimer</button></div></motion.div></div>}
+      </AnimatePresence>
 
       <RoleModal
         isOpen={isModalOpen}
@@ -483,6 +505,7 @@ export default function RolesPage() {
         apiHeaders={getAuthHeaders()}
         apiUrl={API_URL}
       />
+      <TeamCsvImportModal open={isImportOpen} onClose={() => setIsImportOpen(false)} title="Importer des rôles" columns={[{ key: "nom", label: "nom", required: true }, { key: "description", label: "description", required: true }, { key: "permissions", label: "permissions", required: true }]} example={{ nom: "Gestionnaire stock", description: "Gère les produits et mouvements", permissions: "VOIR_LISTE_PRODUITS|CREER_ENTREE_STOCK" }} onImport={importRoles} />
     </div>
   );
 }

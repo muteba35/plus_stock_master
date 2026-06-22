@@ -130,7 +130,7 @@ export default function DeptModal({ isOpen, onClose, onSuccess }: DeptModalProps
 
               <div className="space-y-1.5">
                 <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
-                  <Building size={12} /> Nom du département
+                  <Building size={12} /> Nom du département <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"

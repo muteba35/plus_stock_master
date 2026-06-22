@@ -164,9 +164,19 @@ function RoleModalContent({ role, mode, onSave, onClose, apiHeaders, apiUrl }: O
     setSelectedPermissions(areAllPermissionsSelected ? [] : allPermissionIds);
   };
 
+  const handleToggleModule = (moduleName: string) => {
+    if (mode === "view" || !canSave) return;
+    const moduleIds = availableModules.find((group) => group.module === moduleName)?.permissions.map((permission) => permission.id) || [];
+    const allSelected = moduleIds.length > 0 && moduleIds.every((id) => selectedPermissions.includes(id));
+    setSelectedPermissions((current) => allSelected
+      ? current.filter((id) => !moduleIds.includes(id))
+      : Array.from(new Set([...current, ...moduleIds]))
+    );
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!canSave) return;
+    if (!canSave || selectedPermissions.length === 0) return;
     onSave(formData.name, formData.description, selectedPermissions);
   };
 
@@ -245,7 +255,7 @@ function RoleModalContent({ role, mode, onSave, onClose, apiHeaders, apiUrl }: O
           {/* PERMISSIONS SÉLECTEUR */}
           <div className="space-y-1.5 relative">
             <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
-              <ShieldCheck size={12} /> Droits &amp; Permissions d`accès
+              <ShieldCheck size={12} /> Droits &amp; Permissions d`accès <span className="text-rose-500">*</span>
             </label>
 
             <div
@@ -332,9 +342,10 @@ function RoleModalContent({ role, mode, onSave, onClose, apiHeaders, apiUrl }: O
                     ) : (
                       filteredModules.map((group) => (
                         <div key={group.module} className="space-y-2.5">
-                          <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-1">
-                            {group.module}
-                          </h4>
+                          <button type="button" disabled={mode === "view" || !canSave} onClick={() => handleToggleModule(group.module)} className="w-full flex items-center justify-between gap-3 border-b border-slate-100 pb-2 disabled:cursor-default">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{group.module}</span>
+                            <span className="flex items-center gap-2 text-[10px] font-bold text-indigo-600"><span className={`w-4 h-4 rounded flex items-center justify-center border ${availableModules.find((item) => item.module === group.module)?.permissions.every((permission) => selectedPermissions.includes(permission.id)) ? "bg-indigo-600 border-indigo-600 text-white" : "bg-white border-slate-300"}`}>{availableModules.find((item) => item.module === group.module)?.permissions.every((permission) => selectedPermissions.includes(permission.id)) && <Check size={10} strokeWidth={3} />}</span>Tout sélectionner</span>
+                          </button>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             {group.permissions.map((p) => {
                               const isChecked = selectedPermissions.includes(p.id);
@@ -383,6 +394,7 @@ function RoleModalContent({ role, mode, onSave, onClose, apiHeaders, apiUrl }: O
                 </motion.div>
               )}
             </AnimatePresence>
+            {mode !== "view" && selectedPermissions.length === 0 && <p className="text-[10px] font-semibold text-rose-500">Sélectionnez au moins une permission.</p>}
           </div>
         </form>
       </div>
@@ -401,9 +413,9 @@ function RoleModalContent({ role, mode, onSave, onClose, apiHeaders, apiUrl }: O
           <button
             type="submit"
             form="role-form"
-            disabled={!canSave}
+            disabled={!canSave || selectedPermissions.length === 0}
             className={`px-6 py-2 text-xs font-bold rounded-xl transition-colors shadow-sm ${
-              canSave 
+              canSave && selectedPermissions.length > 0
                 ? "bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-600/10 active:scale-95" 
                 : "bg-slate-200 text-slate-400 cursor-not-allowed"
             }`}
@@ -421,7 +433,7 @@ function FormInput({ label, icon: Icon, ...props }: FormInputProps) {
   return (
     <div className="space-y-1.5">
       <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
-        <Icon size={12} /> {label}
+        <Icon size={12} /> {label} {props.required && <span className="text-rose-500">*</span>}
       </label>
       <input
         {...props}
