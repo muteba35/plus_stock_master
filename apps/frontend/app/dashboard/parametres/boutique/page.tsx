@@ -10,6 +10,7 @@ import {
   Coins,
   Edit2,
   Eye,
+  FileSpreadsheet,
   Loader2,
   Plus,
   Power,
@@ -22,6 +23,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
+import TeamCsvImportModal, { type TeamCsvRow } from "../../equipe/TeamCsvImportModal";
 
 interface Boutique {
   id: string;
@@ -46,27 +48,27 @@ interface BoutiqueForm {
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://plus-stock-master.onrender.com/api";
 
 const SECTEURS = [
-  "Commerce GÃ©nÃ©ral",
-  "SupermarchÃ©",
+  "Commerce GÃƒÂ©nÃƒÂ©ral",
+  "SupermarchÃƒÂ©",
   "Pharmacie",
   "Restaurant",
   "Fast-food",
   "Bar",
-  "CafÃ©",
-  "Boutique de vÃªtements",
+  "CafÃƒÂ©",
+  "Boutique de vÃƒÂªtements",
   "Salon de coiffure",
   "Quincaillerie",
   "Autre",
 ];
 
-const DEVISES = ["USD ($)", "CDF (FC)", "EUR (â‚¬)"];
-const TAILLES = ["1-2 employÃ©s", "3-10 employÃ©s", "10+ employÃ©s"];
+const DEVISES = ["USD ($)", "CDF (FC)", "EUR (Ã¢â€šÂ¬)"];
+const TAILLES = ["1-2 employÃƒÂ©s", "3-10 employÃƒÂ©s", "10+ employÃƒÂ©s"];
 
 const DEFAULT_FORM: BoutiqueForm = {
   nom: "",
-  secteurActivite: "Commerce GÃ©nÃ©ral",
+  secteurActivite: "Commerce GÃƒÂ©nÃƒÂ©ral",
   deviseParDefaut: "USD ($)",
-  tailleBusiness: "1-2 employÃ©s",
+  tailleBusiness: "1-2 employÃƒÂ©s",
 };
 
 const readApiMessage = async (response: Response, fallback: string) => {
@@ -102,6 +104,7 @@ export default function BoutiquePage() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const filterMenuRef = useRef<HTMLDivElement | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"create" | "edit" | "view">("create");
   const [selectedBoutique, setSelectedBoutique] = useState<Boutique | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -325,6 +328,35 @@ export default function BoutiquePage() {
     }
   };
 
+  const importBoutiques = async (rows: TeamCsvRow[]) => {
+    let imported = 0;
+
+    for (const row of rows) {
+      const payload = {
+        nom: row.nom?.trim(),
+        secteurActivite: row.secteur?.trim() || row.secteurActivite?.trim(),
+        deviseParDefaut: row.devise?.trim() || row.deviseParDefaut?.trim(),
+        tailleBusiness: row.taille?.trim() || row.tailleBusiness?.trim(),
+      };
+
+      const response = await fetch(`${API_URL}/boutiques`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(payload),
+      });
+
+      const { data, message } = await readApiMessage(response, `Erreur sur la ligne ${row.line}.`);
+      if (!response.ok || !data?.success) {
+        throw new Error(`Ligne ${row.line}: ${message}`);
+      }
+
+      syncSession(data);
+      imported += 1;
+    }
+
+    await fetchBoutiques();
+    showToast("success", `${imported} boutique(s) importee(s) avec succes.`);
+  };
   const handleActivateBoutique = async (boutique: Boutique) => {
     if (boutique.isActive) return;
 
@@ -411,13 +443,22 @@ export default function BoutiquePage() {
         </div>
 
         {canCreate && (
-          <button
-            type="button"
-            onClick={handleOpenCreate}
-            className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-md shadow-indigo-600/10 active:scale-[0.98]"
-          >
-            <Plus size={14} /> Nouvelle boutique
-          </button>
+          <div className="flex flex-col min-[420px]:flex-row gap-2">
+            <button
+              type="button"
+              onClick={() => setIsImportOpen(true)}
+              className="flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold px-4 py-2.5 rounded-xl border border-slate-200 transition-all"
+            >
+              <FileSpreadsheet size={14} /> Importer Excel
+            </button>
+            <button
+              type="button"
+              onClick={handleOpenCreate}
+              className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-md shadow-indigo-600/10 active:scale-[0.98]"
+            >
+              <Plus size={14} /> Nouvelle boutique
+            </button>
+          </div>
         )}
       </div>
 
@@ -620,6 +661,20 @@ export default function BoutiquePage() {
           )}
         </div>
       </div>
+
+      <TeamCsvImportModal
+        open={isImportOpen}
+        onClose={() => setIsImportOpen(false)}
+        title="Importer des boutiques"
+        columns={[
+          { key: "nom", label: "nom", required: true },
+          { key: "secteur", label: "secteur", required: true },
+          { key: "devise", label: "devise", required: true },
+          { key: "taille", label: "taille", required: true },
+        ]}
+        example={{ nom: "Boutique Gombe", secteur: "Commerce Général", devise: "CDF (FC)", taille: "3-10 employés" }}
+        onImport={importBoutiques}
+      />
 
       <BoutiqueModal
         isOpen={isModalOpen}

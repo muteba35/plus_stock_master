@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, CheckCircle2, Download, Edit2, FileSpreadsheet, FolderTree, Loader2, Plus, RotateCcw, SlidersHorizontal, Trash2, Upload, XCircle } from "lucide-react";
 import { InventoryModal, InventoryPagination, PageHeader, SearchInput, fieldClass, primaryButton, secondaryButton } from "../components/inventory-ui";
+import { formatMoney, getActiveBoutiqueCurrency } from "../components/currency";
 
 type Category = {
   _id: string;
@@ -107,6 +108,7 @@ export default function CategoriesInventairePage() {
   const [form, setForm] = useState<CategoryForm>(EMPTY_FORM);
   const [formError, setFormError] = useState("");
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [currency, setCurrency] = useState("USD ($)");
   const [{ permissions, isOwner }] = useState(getStoredAccess);
 
   const canCreate = isOwner || permissions.includes("CREER_CATEGORIE");
@@ -139,6 +141,13 @@ export default function CategoriesInventairePage() {
       setLoading(false);
     }
   }, [showMessage]);
+
+  useEffect(() => {
+    const syncCurrency = () => setCurrency(getActiveBoutiqueCurrency());
+    syncCurrency();
+    window.addEventListener("userProfileUpdated", syncCurrency);
+    return () => window.removeEventListener("userProfileUpdated", syncCurrency);
+  }, []);
 
   useEffect(() => {
     void fetchCategories();
@@ -336,7 +345,7 @@ export default function CategoriesInventairePage() {
                     <td className="px-5 py-4"><div className="flex items-center gap-3"><span className="w-2.5 h-9 rounded-full" style={{ backgroundColor: category.couleur }} /><span className="font-bold text-slate-900">{category.nom}</span></div></td>
                     <td className="px-5 py-4 text-slate-500 max-w-xs">{category.description || "Aucune description"}</td>
                     <td className="px-5 py-4"><span className="inline-flex items-center gap-1.5 bg-slate-100 px-2 py-1 rounded-md font-bold"><FolderTree size={12} /> {category.productCount || 0}</span></td>
-                    <td className="px-5 py-4 font-bold">{(category.stockValue || 0).toLocaleString("fr-FR")} $</td>
+                    <td className="px-5 py-4 font-bold">{formatMoney(category.stockValue || 0, currency)}</td>
                     <td className="px-5 py-4"><span className={`px-2 py-1 rounded-md text-[10px] font-bold ${category.isActive ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-500"}`}>{category.isActive ? "Active" : "Inactive"}</span></td>
                     <td className="px-5 py-4"><div className="flex justify-end gap-1"><button disabled={!canEdit} onClick={() => openEdit(category)} className={`p-2 transition-colors ${canEdit ? "text-slate-400 hover:text-amber-600" : "text-slate-200 cursor-not-allowed"}`} title={canEdit ? "Modifier" : "Permission MODIFIER_CATEGORIE requise"}><Edit2 size={15} /></button>{canDelete && <button onClick={() => { setSelected(category); setDeleteOpen(true); }} className="p-2 text-slate-400 hover:text-rose-600" title="Supprimer"><Trash2 size={15} /></button>}</div></td>
                   </tr>
