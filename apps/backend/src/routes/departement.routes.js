@@ -7,7 +7,7 @@ import {
   deleteDepartement 
 } from '../controllers/departement.controller.js'; 
 
-import { protect, checkPermission } from '../middlewares/authMiddleware.js'; 
+import { protect, checkPermission, checkAnyPermission } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
@@ -17,7 +17,7 @@ router.use(protect);
 // 1. Créer et Lire sur la racine
 router.route('/')
   .post(checkPermission('CREER_DEPARTEMENT'), createDepartement) // La secrétaire aura ça
-  .get(checkPermission('VOIR_DEPARTEMENTS'), getDepartements);
+  .get(checkAnyPermission('VOIR_DEPARTEMENTS', 'VOIR_EQUIPE'), getDepartements);
 
 // 2. Actions par ID
 router.route('/:id')

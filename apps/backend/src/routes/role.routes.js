@@ -9,7 +9,7 @@ import {
 } from '../controllers/role.controller.js'; 
 
 // Middlewares de sécurité
-import { protect, checkPermission } from '../middlewares/authMiddleware.js'; 
+import { protect, checkPermission, checkAnyPermission } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
@@ -30,7 +30,7 @@ router.get('/permissions', checkPermission('VOIR_ROLES'), getAvailablePermission
 // 1. Créer un rôle & Récupérer tous les rôles de la boutique active
 router.route('/')
   .post(checkPermission('CREER_ROLE'), createRole) // Granularité : Création
-  .get(checkPermission('VOIR_ROLES'), getRoles);
+  .get(checkAnyPermission('VOIR_ROLES', 'VOIR_EQUIPE'), getRoles);
 
 // 2. Récupérer, Modifier ou Supprimer un rôle spécifique via son ID
 router.route('/:id')

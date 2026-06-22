@@ -41,7 +41,7 @@ const permissions = [
   { nom: "SUPPRIMER_CATEGORIE", module: "INVENTAIRE", description: "Supprimer une catégorie qui ne contient aucun produit" },
 
   // --- MODULE : EQUIPE (Mis à jour) ---
- 
+  { nom: "VOIR_EQUIPE", module: "EQUIPE", description: "Consulter la vue d'ensemble et les indicateurs du module equipe" },
   { nom: "VOIR_ROLES", module: "EQUIPE", description: "Permet de consulter la liste des rôles et habilitations" }, 
   { nom: "CREER_ROLE", module: "EQUIPE", description: "Permet de créer un nouveau rôle de sécurité" },
   { nom: "MODIFIER_ROLE", module: "EQUIPE", description: "Permet de modifier les permissions d'un rôle existant" },
@@ -55,6 +55,7 @@ const permissions = [
   { nom: "MODIFIER_EMPLOYE", module: "EQUIPE", description: "Changer les accès ou infos d'un collègue" },
   { nom: "SUSPENDRE_EMPLOYE", module: "EQUIPE", description: "Suspendre l'accès d'un travailleur" },
   { nom: "BLOQUER_EMPLOYE", module: "EQUIPE", description: "Bloquer l'accès d'un travailleur" },
+  { nom: "SUPPRIMER_EMPLOYE", module: "EQUIPE", description: "Supprimer definitivement un employe de la boutique" },
   { nom: "RESET_PASSWORD_EMPLOYE", module: "EQUIPE", description: "Permet au propriétaire de réinitialiser le mot de passe d'un employé bloqué" },
 
   // --- MODULE : PROFIL ---

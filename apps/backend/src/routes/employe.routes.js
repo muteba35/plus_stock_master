@@ -9,7 +9,7 @@ import {
   deleteEmploye
 } from "../controllers/employe.controller.js";
 
-import { protect, checkPermission } from "../middlewares/authMiddleware.js";
+import { protect, checkPermission, checkAnyPermission } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
@@ -19,7 +19,7 @@ router.use(protect);
 // Liste + creation
 router
   .route("/")
-  .get(checkPermission("VOIR_EMPLOYES"), getEmployes)
+  .get(checkAnyPermission("VOIR_EMPLOYES", "VOIR_EQUIPE"), getEmployes)
   .post(checkPermission("AJOUTER_EMPLOYE"), createEmploye);
 
 // Detail + modification + suppression

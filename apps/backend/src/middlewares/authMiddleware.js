@@ -101,3 +101,16 @@ export const checkPermission = (requiredPermission) => {
     return next();
   };
 };
+
+export const checkAnyPermission = (...requiredPermissions) => {
+  return (req, res, next) => {
+    if (!req.user || !req.user.permissions) {
+      return res.status(401).json({ message: "Action non autorisee. Profil non identifie." });
+    }
+    const hasAccess = req.user.isOwner || requiredPermissions.some((permission) => req.user.permissions.includes(permission));
+    if (!hasAccess) {
+      return res.status(403).json({ message: `Acces interdit. Une de ces permissions est requise : ${requiredPermissions.join(", ")}.` });
+    }
+    return next();
+  };
+};
