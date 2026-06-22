@@ -1,6 +1,6 @@
 import express from "express";
 import { createMouvement, getMouvements } from "../controllers/mouvementStock.controller.js";
-import { checkPermission, protect } from "../middlewares/authMiddleware.js";
+import { protect } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 const permissionByMovementType = {
@@ -22,9 +22,23 @@ const checkMovementPermission = (req, res, next) => {
   });
 };
 
+const checkMovementReadPermission = (req, res, next) => {
+  const permissions = req.user?.permissions || [];
+  if (
+    req.user?.isOwner ||
+    permissions.includes("VOIR_MOUVEMENTS_STOCK") ||
+    permissions.includes("VOIR_MES_OPERATIONS_INVENTAIRE")
+  ) return next();
+
+  return res.status(403).json({
+    success: false,
+    message: "Acces interdit. Une permission de consultation des mouvements est requise.",
+  });
+};
+
 router.use(protect);
 router.route("/")
-  .get(checkPermission("VOIR_MOUVEMENTS_STOCK"), getMouvements)
+  .get(checkMovementReadPermission, getMouvements)
   .post(checkMovementPermission, createMouvement);
 
 export default router;

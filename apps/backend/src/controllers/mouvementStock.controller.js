@@ -22,7 +22,13 @@ export const getMouvements = async (req, res) => {
       return res.status(403).json({ success: false, message: "Cette boutique n'appartient pas a votre compte." });
     }
 
-    const movements = await MouvementStock.find({ boutiqueId })
+    const canViewAllOperations =
+      req.user?.isOwner || req.user?.permissions?.includes("VOIR_MOUVEMENTS_STOCK");
+    const operationFilter = canViewAllOperations
+      ? { boutiqueId }
+      : { boutiqueId, utilisateurId: req.user.id };
+
+    const movements = await MouvementStock.find(operationFilter)
       .populate("produitId", "nom sku unite")
       .populate("utilisateurId", "nom prenom")
       .sort({ createdAt: -1 })
@@ -30,7 +36,7 @@ export const getMouvements = async (req, res) => {
     const products = await Produit.find({ boutiqueId, isDeleted: false, isActive: true })
       .select("nom sku stock unite")
       .sort({ nom: 1 });
-    const journal = await InventaireAudit.find({ boutiqueId })
+    const journal = await InventaireAudit.find(operationFilter)
       .populate("utilisateurId", "nom prenom")
       .sort({ createdAt: -1 })
       .limit(500);
@@ -39,7 +45,11 @@ export const getMouvements = async (req, res) => {
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
     const [summary = {}] = await MouvementStock.aggregate([
-      { $match: { boutiqueId: new mongoose.Types.ObjectId(boutiqueId), createdAt: { $gte: startOfMonth } } },
+      { $match: {
+        boutiqueId: new mongoose.Types.ObjectId(boutiqueId),
+        ...(!canViewAllOperations ? { utilisateurId: new mongoose.Types.ObjectId(req.user.id) } : {}),
+        createdAt: { $gte: startOfMonth },
+      } },
       { $group: {
         _id: null,
         entries: { $sum: { $cond: [{ $eq: ["$type", "ENTREE"] }, "$quantite", 0] } },
@@ -53,6 +63,7 @@ export const getMouvements = async (req, res) => {
       data: movements,
       products,
       journal,
+      scope: canViewAllOperations ? "all" : "own",
       summary: { entries: summary.entries || 0, exits: summary.exits || 0, adjustments: summary.adjustments || 0 },
     });
   } catch (error) {

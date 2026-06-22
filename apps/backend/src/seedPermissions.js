@@ -32,6 +32,7 @@ const permissions = [
   { nom: "CREER_SORTIE_STOCK", module: "INVENTAIRE", description: "Enregistrer une sortie manuelle de stock" },
   { nom: "CREER_AJUSTEMENT_STOCK", module: "INVENTAIRE", description: "Corriger le stock après un comptage physique" },
   { nom: "VOIR_MOUVEMENTS_STOCK", module: "INVENTAIRE", description: "Consulter l'historique des entrées, sorties et ajustements de stock" },
+  { nom: "VOIR_MES_OPERATIONS_INVENTAIRE", module: "INVENTAIRE", description: "Consulter uniquement ses propres mouvements de stock et actions dans le journal d'inventaire" },
   { nom: "EXPORTER_MOUVEMENTS_STOCK", module: "INVENTAIRE", description: "Exporter l'historique des mouvements de stock en Excel ou PDF" },
   { nom: "SUPPRIMER_PRODUIT", module: "INVENTAIRE", description: "Retirer un produit du système" },
   { nom: "VOIR_CATEGORIES", module: "INVENTAIRE", description: "Consulter les catégories de produits de la boutique" },
