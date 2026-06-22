@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, CheckCircle2, Eye, FileSpreadsheet, FileText, History, Loader2, Plus, RotateCcw, SlidersHorizontal, XCircle } from "lucide-react";
+import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, CheckCircle2, Eye, FileSpreadsheet, FileText, History, Loader2, Plus, RotateCcw, Search, SlidersHorizontal, XCircle } from "lucide-react";
 import { InventoryModal, InventoryPagination, MetricCard, PageHeader, SearchInput, fieldClass, primaryButton, secondaryButton } from "../components/inventory-ui";
 import InventoryAuditTable, { type AuditEntry } from "./components/InventoryAuditTable";
 
@@ -37,6 +37,7 @@ export default function MouvementsStockPage() {
   const [movements, setMovements] = useState<Movement[]>([]);
   const [journal, setJournal] = useState<AuditEntry[]>([]);
   const [products, setProducts] = useState<ProductOption[]>([]);
+  const [operationScope, setOperationScope] = useState<"all" | "own">("all");
   const [summary, setSummary] = useState({ entries: 0, exits: 0, adjustments: 0 });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -48,6 +49,7 @@ export default function MouvementsStockPage() {
   const [periodFilter, setPeriodFilter] = useState("all");
   const [filterOpen, setFilterOpen] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
+  const [productSearch, setProductSearch] = useState("");
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedMovement, setSelectedMovement] = useState<Movement | null>(null);
   const [form, setForm] = useState({ produitId: "", type: "ENTREE", quantite: "", motif: "", reference: "" });
@@ -75,6 +77,7 @@ export default function MouvementsStockPage() {
       setMovements(data.data || []);
       setProducts(data.products || []);
       setJournal(data.journal || []);
+      setOperationScope(data.scope === "own" ? "own" : "all");
       setSummary(data.summary || { entries: 0, exits: 0, adjustments: 0 });
     } catch (error) {
       showMessage("error", error instanceof Error ? error.message : "Erreur de connexion au serveur.");
@@ -116,11 +119,19 @@ export default function MouvementsStockPage() {
   const currentJournalPage = Math.min(journalPage, Math.max(1, Math.ceil(filteredJournal.length / pageSize)));
   const paginatedMovements = filtered.slice((currentMovementPage - 1) * pageSize, currentMovementPage * pageSize);
   const paginatedJournal = filteredJournal.slice((currentJournalPage - 1) * pageSize, currentJournalPage * pageSize);
+  const filteredProducts = useMemo(() => {
+    const query = productSearch.trim().toLowerCase();
+    if (!query) return products;
+    return products.filter((product) =>
+      product.nom.toLowerCase().includes(query) || product.sku.toLowerCase().includes(query)
+    );
+  }, [products, productSearch]);
 
   const selectedProduct = products.find((product) => product._id === form.produitId);
   const openCreate = () => {
     const firstAllowedType = canCreateEntry ? "ENTREE" : canCreateExit ? "SORTIE" : "AJUSTEMENT";
     setForm({ produitId: products[0]?._id || "", type: firstAllowedType, quantite: "", motif: "", reference: "" });
+    setProductSearch("");
     setFormError("");
     setFormOpen(true);
   };
@@ -177,6 +188,7 @@ export default function MouvementsStockPage() {
   return (
     <div className="space-y-6 bg-[#f9fafd] p-3 sm:p-6 rounded-2xl sm:rounded-3xl min-h-screen text-slate-800 overflow-x-hidden">
       <PageHeader title="Mouvements de stock" subtitle="Historique sécurisé des entrées, sorties et ajustements." action={<div className="flex flex-wrap justify-end gap-2"><button onClick={exportExcel} disabled={!canExport || filtered.length === 0} className={`${secondaryButton} disabled:opacity-40 disabled:cursor-not-allowed`} title={canExport ? "Exporter les résultats filtrés vers Excel" : "Permission EXPORTER_MOUVEMENTS_STOCK requise"}><FileSpreadsheet size={15} /> Excel</button><button onClick={exportPdf} disabled={!canExport || filtered.length === 0} className={`${secondaryButton} disabled:opacity-40 disabled:cursor-not-allowed`} title={canExport ? "Exporter les résultats filtrés en PDF" : "Permission EXPORTER_MOUVEMENTS_STOCK requise"}><FileText size={15} /> PDF</button>{canCreateMovement && <button onClick={openCreate} className={primaryButton}><Plus size={15} /> Nouveau mouvement</button>}</div>} />
+      {operationScope === "own" && <div className="flex items-center gap-2 p-3 rounded-xl border border-indigo-100 bg-indigo-50 text-indigo-700 text-xs font-semibold"><History size={15} />Cette vue affiche uniquement vos propres opérations d’inventaire.</div>}
       {message && <div className={`flex items-center gap-2 p-3 rounded-xl border text-xs font-semibold ${message.type === "success" ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-rose-50 text-rose-700 border-rose-100"}`}>{message.type === "success" ? <CheckCircle2 size={15} /> : <XCircle size={15} />}{message.text}</div>}
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4"><MetricCard label="Entrées ce mois" value={String(summary.entries)} detail="Unités réceptionnées" icon={ArrowDownLeft} tone="emerald" /><MetricCard label="Sorties ce mois" value={String(summary.exits)} detail="Sorties manuelles enregistrées" icon={ArrowUpRight} tone="rose" /><MetricCard label="Ajustements" value={String(summary.adjustments)} detail="Comptages corrigés ce mois" icon={ArrowLeftRight} tone="amber" /></div>
@@ -194,7 +206,7 @@ export default function MouvementsStockPage() {
       </div>
 
       <InventoryModal open={formOpen} onClose={() => !saving && setFormOpen(false)} title="Nouveau mouvement" subtitle="Cette opération modifiera immédiatement le stock du produit." notice={formError ? <div className="flex items-start gap-2 p-3 rounded-xl bg-rose-50 border border-rose-100 text-xs font-semibold text-rose-700"><XCircle size={15} className="shrink-0" />{formError}</div> : undefined} footer={<><button disabled={saving} onClick={() => setFormOpen(false)} className={secondaryButton}>Annuler</button><button disabled={saving} onClick={createMovement} className={primaryButton}>{saving && <Loader2 size={14} className="animate-spin" />} Enregistrer</button></>}>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4"><label className="space-y-1.5 sm:col-span-2"><span className="text-[10px] font-bold uppercase text-slate-400">Produit</span><select value={form.produitId} onChange={(event) => setForm({ ...form, produitId: event.target.value })} className={fieldClass}><option value="">Sélectionner...</option>{products.map((product) => <option key={product._id} value={product._id}>{product.nom} · stock {product.stock} {product.unite}</option>)}</select>{selectedProduct && <p className="text-[10px] text-slate-400">Stock disponible : <strong className="text-slate-700">{selectedProduct.stock} {selectedProduct.unite}</strong></p>}</label><label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Type de mouvement</span><select value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value })} className={fieldClass}>{canCreateEntry && <option value="ENTREE">Entrée</option>}{canCreateExit && <option value="SORTIE">Sortie manuelle</option>}{canCreateAdjustment && <option value="AJUSTEMENT">Ajustement d’inventaire</option>}</select></label><label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">{form.type === "AJUSTEMENT" ? "Stock réellement compté" : form.type === "SORTIE" ? "Quantité à retirer" : "Quantité à ajouter"}</span><input type="number" min={form.type === "AJUSTEMENT" ? 0 : 0.01} step="0.01" value={form.quantite} onChange={(event) => setForm({ ...form, quantite: event.target.value })} className={fieldClass} /></label><label className="space-y-1.5 sm:col-span-2"><span className="text-[10px] font-bold uppercase text-slate-400">Motif</span><input value={form.motif} onChange={(event) => setForm({ ...form, motif: event.target.value })} className={fieldClass} placeholder={form.type === "ENTREE" ? "Ex: Livraison fournisseur" : form.type === "SORTIE" ? "Ex: Produit endommagé" : "Ex: Correction après inventaire"} /></label><label className="space-y-1.5 sm:col-span-2"><span className="text-[10px] font-bold uppercase text-slate-400">Référence externe (facultatif)</span><input value={form.reference} onChange={(event) => setForm({ ...form, reference: event.target.value })} className={fieldClass} placeholder="Ex: BL-2026-0042" /></label></div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4"><label className="space-y-1.5 sm:col-span-2"><span className="text-[10px] font-bold uppercase text-slate-400">Produit</span><div className="relative"><Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" /><input value={productSearch} onChange={(event) => setProductSearch(event.target.value)} className={`${fieldClass} pl-10`} placeholder="Rechercher par nom ou SKU..." /></div><select value={form.produitId} onChange={(event) => setForm({ ...form, produitId: event.target.value })} className={fieldClass}><option value="">Sélectionner...</option>{filteredProducts.map((product) => <option key={product._id} value={product._id}>{product.nom} · {product.sku} · stock {product.stock} {product.unite}</option>)}</select>{filteredProducts.length === 0 && <p className="text-[10px] font-semibold text-rose-500">Aucun produit ne correspond à cette recherche.</p>}{selectedProduct && <p className="text-[10px] text-slate-400">Stock disponible : <strong className="text-slate-700">{selectedProduct.stock} {selectedProduct.unite}</strong></p>}</label><label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Type de mouvement</span><select value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value })} className={fieldClass}>{canCreateEntry && <option value="ENTREE">Entrée</option>}{canCreateExit && <option value="SORTIE">Sortie manuelle</option>}{canCreateAdjustment && <option value="AJUSTEMENT">Ajustement d’inventaire</option>}</select></label><label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">{form.type === "AJUSTEMENT" ? "Stock réellement compté" : form.type === "SORTIE" ? "Quantité à retirer" : "Quantité à ajouter"}</span><input type="number" min={form.type === "AJUSTEMENT" ? 0 : 0.01} step="0.01" value={form.quantite} onChange={(event) => setForm({ ...form, quantite: event.target.value })} className={fieldClass} /></label><label className="space-y-1.5 sm:col-span-2"><span className="text-[10px] font-bold uppercase text-slate-400">Motif</span><input value={form.motif} onChange={(event) => setForm({ ...form, motif: event.target.value })} className={fieldClass} placeholder={form.type === "ENTREE" ? "Ex: Livraison fournisseur" : form.type === "SORTIE" ? "Ex: Produit endommagé" : "Ex: Correction après inventaire"} /></label><label className="space-y-1.5 sm:col-span-2"><span className="text-[10px] font-bold uppercase text-slate-400">Référence externe (facultatif)</span><input value={form.reference} onChange={(event) => setForm({ ...form, reference: event.target.value })} className={fieldClass} placeholder="Ex: BL-2026-0042" /></label></div>
       </InventoryModal>
 
       <InventoryModal open={detailOpen} onClose={() => setDetailOpen(false)} title="Détail du mouvement" subtitle={selectedMovement?.reference || ""} footer={<button onClick={() => setDetailOpen(false)} className={secondaryButton}>Fermer</button>}><div className="grid grid-cols-2 gap-4 text-xs">{selectedMovement && <><div><p className="text-[10px] uppercase font-bold text-slate-400">Produit</p><p className="font-bold mt-1">{selectedMovement.produitId?.nom || "Produit archivé"}</p></div><div><p className="text-[10px] uppercase font-bold text-slate-400">Opération</p><p className="font-bold mt-1">{typeLabel(selectedMovement.type)}</p></div><div><p className="text-[10px] uppercase font-bold text-slate-400">Stock avant</p><p className="font-black text-lg mt-1">{selectedMovement.stockAvant}</p></div><div><p className="text-[10px] uppercase font-bold text-slate-400">Stock après</p><p className="font-black text-lg mt-1">{selectedMovement.stockApres}</p></div><div className="col-span-2"><p className="text-[10px] uppercase font-bold text-slate-400">Motif</p><p className="font-medium mt-1 p-3 bg-slate-50 rounded-xl">{selectedMovement.motif}</p></div><div><p className="text-[10px] uppercase font-bold text-slate-400">Date</p><p className="font-medium mt-1">{formatDate(selectedMovement.createdAt)}</p></div><div><p className="text-[10px] uppercase font-bold text-slate-400">Auteur</p><p className="font-medium mt-1">{selectedMovement.utilisateurId ? `${selectedMovement.utilisateurId.prenom} ${selectedMovement.utilisateurId.nom}` : "Système"}</p></div></>}</div></InventoryModal>

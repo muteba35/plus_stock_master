@@ -49,6 +49,7 @@ interface SubMenuItem {
   name: string;
   href: string;
   permission?: string;
+  permissions?: string[];
 }
 
 interface NavigationItem {
@@ -57,6 +58,7 @@ interface NavigationItem {
   icon: React.ComponentType<{ size: number; className?: string }>;
   module: string;
   permission?: string;
+  permissions?: string[];
   subMenu?: SubMenuItem[];
 }
 
@@ -268,6 +270,9 @@ export default function DashboardLayout({
     return permissions.some((permission) => userPermissions.includes(permission));
   };
 
+  const canAccessNavigationItem = (item: { permission?: string; permissions?: string[] }) =>
+    item.permissions ? hasAnyPermission(item.permissions) : hasPermission(item.permission);
+
   const toggleSubMenu = (menuName: string) => {
     setOpenSubMenus((prev) => ({
       ...prev,
@@ -323,7 +328,7 @@ export default function DashboardLayout({
         { name: "Vue Globale", href: "/dashboard/inventaire", permission: "VOIR_RESUME_INVENTAIRE" },
         { name: "Gestion Produits", href: "/dashboard/inventaire/produits", permission: "VOIR_LISTE_PRODUITS" },
         { name: "Catégories", href: "/dashboard/inventaire/categories", permission: "VOIR_CATEGORIES" },
-        { name: "Mouvements Stock", href: "/dashboard/inventaire/stock", permission: "VOIR_MOUVEMENTS_STOCK" },
+        { name: "Mouvements Stock", href: "/dashboard/inventaire/stock", permissions: ["VOIR_MOUVEMENTS_STOCK", "VOIR_MES_OPERATIONS_INVENTAIRE"] },
         { name: "Alertes Rupture", href: "/dashboard/inventaire/alertes", permission: "VOIR_ALERTES_STOCK" },
       ],
     },
@@ -382,8 +387,8 @@ export default function DashboardLayout({
   const routePermissions = [
     { href: "/dashboard/profil", permissions: ["MODIFIER_PROFIL_RESTREINT", "MODIFIER_PROFIL_TOTAL"] },
     ...navigation.flatMap((item) => [
-      ...(item.href ? [{ href: item.href, permission: item.permission }] : []),
-      ...(item.subMenu || []).map((sub) => ({ href: sub.href, permission: sub.permission })),
+      ...(item.href ? [{ href: item.href, permission: item.permission, permissions: item.permissions }] : []),
+      ...(item.subMenu || []).map((sub) => ({ href: sub.href, permission: sub.permission, permissions: sub.permissions })),
     ]),
   ];
   const currentRoute = routePermissions
@@ -397,9 +402,9 @@ export default function DashboardLayout({
   const canRenderCurrentRoute =
     !isEmployeeWithNoPermission &&
     (currentRoute
-      ? "permissions" in currentRoute
+      ? currentRoute.permissions?.length
         ? hasAnyPermission(currentRoute.permissions)
-        : hasPermission(currentRoute.permission)
+        : hasPermission("permission" in currentRoute ? currentRoute.permission : undefined)
       : true);
 
   if (!isMounted) {
@@ -480,10 +485,10 @@ export default function DashboardLayout({
           {/* NAVIGATION */}
           <nav className="p-4 mt-4 pb-6 space-y-1.5 flex-1">
             {navigation.map((item) => {
-              if (item.permission && !hasPermission(item.permission)) return null;
+              if ((item.permission || item.permissions) && !canAccessNavigationItem(item)) return null;
 
               const hasSubMenu = item.subMenu && item.subMenu.length > 0;
-              const allowedSubMenus = item.subMenu?.filter((sub) => hasPermission(sub.permission)) || [];
+              const allowedSubMenus = item.subMenu?.filter((sub) => canAccessNavigationItem(sub)) || [];
 
               if (hasSubMenu && allowedSubMenus.length === 0) return null;
 
