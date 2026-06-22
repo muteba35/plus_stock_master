@@ -612,7 +612,7 @@ export default function DashboardLayout({
 
       {/* CONTENU PRINCIPAL */}
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-4 sm:px-6 lg:px-8 shadow-sm sticky top-0 z-30 shrink-0">
+        <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-4 sm:px-6 lg:px-8 shadow-sm sticky top-0 z-[80] shrink-0">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <button
               onClick={() => setIsMobileSidebarOpen(true)}
@@ -694,8 +694,8 @@ export default function DashboardLayout({
 
               {showUserMenu && (
                 <>
-                  <div className="fixed inset-0 z-20" onClick={() => setShowUserMenu(false)} />
-                  <div className="absolute right-0 mt-3 w-56 bg-white border border-slate-200 rounded-xl shadow-xl py-2 z-30">
+                  <div className="fixed inset-0 z-[90]" onClick={() => setShowUserMenu(false)} />
+                  <div className="absolute right-0 mt-3 w-56 bg-white border border-slate-200 rounded-xl shadow-2xl shadow-slate-900/10 py-2 z-[100]">
                     <div className="px-4 py-2.5 border-b border-slate-100 bg-slate-50/50 rounded-t-xl">
                       <p className="text-xs font-black text-slate-800 truncate uppercase tracking-wider">
                         {user.prenom} {user.nom}
