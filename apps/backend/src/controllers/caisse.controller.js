@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { Boutique, MouvementStock, Produit, RetourClient, Vente } from "../models/Utilisateur.js";
+import { Boutique, ExchangeRate, MouvementStock, Produit, RetourClient, Vente } from "../models/Utilisateur.js";
 import { logInventoryAction } from "../utils/inventoryAudit.js";
 
 const TVA_RATE = 0.16;
@@ -21,6 +21,27 @@ const invoiceReference = () => `FAC-${new Date().getFullYear()}-${Date.now().toS
 
 const roundMoney = (value) => Math.round((Number(value) + Number.EPSILON) * 100) / 100;
 
+const getRateForSale = (source, cible, rates) => {
+  if (!source || !cible || source === cible) return 1;
+  const direct = rates.find((rate) => rate.source === source && rate.cible === cible);
+  if (direct) return Number(direct.taux);
+  const inverse = rates.find((rate) => rate.source === cible && rate.cible === source);
+  if (inverse) return 1 / Number(inverse.taux);
+  throw new Error(`Taux manquant : ${source} vers ${cible}.`);
+};
+
+const compactRateSnapshot = (rates, referenceCurrency, usedCurrencies) => {
+  const snapshot = [];
+  usedCurrencies.forEach((currency) => {
+    snapshot.push({
+      source: currency,
+      cible: referenceCurrency,
+      taux: getRateForSale(currency, referenceCurrency, rates),
+    });
+  });
+  return snapshot;
+};
+
 const serializeSale = (sale) => ({
   _id: sale._id,
   reference: sale.reference,
@@ -29,6 +50,10 @@ const serializeSale = (sale) => ({
   utilisateurId: sale.utilisateurId,
   clientNom: sale.clientNom,
   devise: sale.devise,
+  deviseReference: sale.deviseReference,
+  devisePaiement: sale.devisePaiement,
+  tauxPaiement: sale.tauxPaiement,
+  tauxUtilises: sale.tauxUtilises,
   paiement: sale.paiement,
   statut: sale.statut,
   sousTotalHT: sale.sousTotalHT,
@@ -38,6 +63,7 @@ const serializeSale = (sale) => ({
   tvaRate: sale.tvaRate,
   tvaMontant: sale.tvaMontant,
   totalTTC: sale.totalTTC,
+  montantRecuOriginal: sale.montantRecuOriginal,
   montantRecu: sale.montantRecu,
   monnaieRendue: sale.monnaieRendue,
   lignes: sale.lignes,
@@ -53,7 +79,8 @@ export const createVente = async (req, res) => {
     const paiement = String(req.body.paiement || "").trim();
     const clientNom = String(req.body.clientNom || "Client comptoir").trim();
     const remisePourcentage = Number(req.body.remisePourcentage || 0);
-    const montantRecu = Number(req.body.montantRecu || 0);
+    const montantRecuOriginal = Number(req.body.montantRecu || 0);
+    const devisePaiement = String(req.body.devisePaiement || "").trim();
 
     if (!boutiqueId) return res.status(400).json({ success: false, message: "Boutique active introuvable." });
     if (!(await ensureBoutiqueAccess(req, boutiqueId))) {
@@ -98,15 +125,14 @@ export const createVente = async (req, res) => {
       return res.status(404).json({ success: false, message: "Un produit du panier est introuvable ou inactif." });
     }
 
-    const currencies = new Set(products.map((product) => product.devise || "USD ($)"));
-    if (currencies.size > 1) {
-      return res.status(409).json({
-        success: false,
-        message: "Les devises sont mélangées dans le panier. Le module de taux de change sera nécessaire pour autoriser cela.",
-      });
-    }
+    const boutique = await Boutique.findById(boutiqueId);
+    const deviseReference = boutique?.deviseParDefaut || "USD ($)";
+    const paymentCurrency = devisePaiement || deviseReference;
+    const exchangeRates = await ExchangeRate.find({ boutiqueId, isActive: true });
+    const usedCurrencies = new Set(products.map((product) => product.devise || "USD ($)"));
+    usedCurrencies.add(paymentCurrency);
 
-    const devise = [...currencies][0] || "USD ($)";
+    const devise = deviseReference;
     const saleLines = [];
     let sousTotalHT = 0;
     let coutTotal = 0;
@@ -117,8 +143,12 @@ export const createVente = async (req, res) => {
         return res.status(409).json({ success: false, message: `Stock insuffisant pour ${product.nom}.` });
       }
 
-      const prixUnitaireHT = Number(product.prixVente || 0);
-      const coutUnitaire = Number(product.prixAchat || 0);
+      const productCurrency = product.devise || deviseReference;
+      const tauxConversion = getRateForSale(productCurrency, deviseReference, exchangeRates);
+      const prixUnitaireHTOriginal = Number(product.prixVente || 0);
+      const prixUnitaireHT = roundMoney(prixUnitaireHTOriginal * tauxConversion);
+      const coutUnitaire = roundMoney(Number(product.prixAchat || 0) * tauxConversion);
+      const ligneTotalHTOriginal = roundMoney(prixUnitaireHTOriginal * quantite);
       const ligneTotalHT = roundMoney(prixUnitaireHT * quantite);
       sousTotalHT += ligneTotalHT;
       coutTotal += coutUnitaire * quantite;
@@ -128,6 +158,11 @@ export const createVente = async (req, res) => {
         nomProduit: product.nom,
         sku: product.sku,
         quantite,
+        deviseOriginale: productCurrency,
+        tauxConversion,
+        prixUnitaireHTOriginal,
+        totalHTOriginal: ligneTotalHTOriginal,
+        totalTTCOriginal: roundMoney(ligneTotalHTOriginal * (1 + TVA_RATE)),
         prixUnitaireHT,
         prixUnitaireTTC: roundMoney(prixUnitaireHT * (1 + TVA_RATE)),
         totalHT: ligneTotalHT,
@@ -140,6 +175,8 @@ export const createVente = async (req, res) => {
     const taxableAmount = roundMoney(sousTotalHT - remiseMontant);
     const tvaMontant = roundMoney(taxableAmount * TVA_RATE);
     const totalTTC = roundMoney(taxableAmount + tvaMontant);
+    const tauxPaiement = getRateForSale(paymentCurrency, deviseReference, exchangeRates);
+    const montantRecu = paiement === "Espèces" ? roundMoney(montantRecuOriginal * tauxPaiement) : totalTTC;
     const monnaieRendue = paiement === "Espèces" ? roundMoney(Math.max(0, montantRecu - totalTTC)) : 0;
 
     if (paiement === "Espèces" && montantRecu < totalTTC) {
@@ -170,6 +207,10 @@ export const createVente = async (req, res) => {
       factureReference: invoiceReference(),
       clientNom,
       devise,
+      deviseReference,
+      devisePaiement: paymentCurrency,
+      tauxPaiement,
+      tauxUtilises: compactRateSnapshot(exchangeRates, deviseReference, usedCurrencies),
       paiement,
       statut: "PAYEE",
       sousTotalHT,
@@ -181,6 +222,7 @@ export const createVente = async (req, res) => {
       totalTTC,
       coutTotal: roundMoney(coutTotal),
       margeEstimee: roundMoney(taxableAmount - coutTotal),
+      montantRecuOriginal: paiement === "Espèces" ? montantRecuOriginal : totalTTC,
       montantRecu: paiement === "Espèces" ? montantRecu : totalTTC,
       monnaieRendue,
       lignes: saleLines,
@@ -222,6 +264,9 @@ export const createVente = async (req, res) => {
     console.error("createVente:", error);
     if (error?.name === "ValidationError") {
       return res.status(400).json({ success: false, message: Object.values(error.errors)[0]?.message || "Données invalides." });
+    }
+    if (error?.message?.startsWith("Taux manquant")) {
+      return res.status(400).json({ success: false, message: error.message });
     }
     return res.status(500).json({ success: false, message: "Impossible d'enregistrer la vente." });
   }

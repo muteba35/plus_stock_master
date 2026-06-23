@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import { Boutique, Permission, Utilisateur } from "../models/Utilisateur.js";
+import { Boutique, ExchangeRate, Permission, Utilisateur } from "../models/Utilisateur.js";
 
 const normalizeBoutique = (boutique, activeId) => ({
   id: boutique._id,
@@ -129,10 +129,10 @@ export const updateBoutique = async (req, res) => {
     if (!user) return;
 
     const { id } = req.params;
-    const { nom, secteurActivite, deviseParDefaut, tailleBusiness } = req.body;
+    const { nom, secteurActivite, tailleBusiness } = req.body;
     const cleanNom = String(nom || "").trim();
 
-    if (!cleanNom || !secteurActivite || !deviseParDefaut || !tailleBusiness) {
+    if (!cleanNom || !secteurActivite || !tailleBusiness) {
       return res.status(400).json({ message: "Tous les champs de la boutique sont requis." });
     }
 
@@ -159,7 +159,6 @@ export const updateBoutique = async (req, res) => {
 
     boutique.nom = cleanNom;
     boutique.secteurActivite = secteurActivite;
-    boutique.deviseParDefaut = deviseParDefaut;
     boutique.tailleBusiness = tailleBusiness;
 
     await boutique.save();
@@ -253,3 +252,111 @@ export const setActiveBoutique = async (req, res) => {
     return res.status(500).json({ message: "Erreur lors du changement de boutique active." });
   }
 };
+
+
+const SUPPORTED_CURRENCIES = ["USD ($)", "CDF (FC)", "EUR (€)"];
+const DEFAULT_EXCHANGE_RATES = [
+  { source: "USD ($)", cible: "CDF (FC)", taux: 2300 },
+  { source: "EUR (€)", cible: "CDF (FC)", taux: 2500 },
+  { source: "EUR (€)", cible: "USD ($)", taux: 1.08 },
+];
+
+const buildRatePairs = (rates) => {
+  const direct = new Map();
+  rates.forEach((rate) => {
+    if (!SUPPORTED_CURRENCIES.includes(rate.source) || !SUPPORTED_CURRENCIES.includes(rate.cible)) return;
+    if (!Number.isFinite(Number(rate.taux)) || Number(rate.taux) <= 0) return;
+    direct.set(`${rate.source}->${rate.cible}`, Number(rate.taux));
+    direct.set(`${rate.cible}->${rate.source}`, 1 / Number(rate.taux));
+  });
+
+  return [...direct.entries()].map(([key, taux]) => {
+    const [source, cible] = key.split("->");
+    return { source, cible, taux: Math.round((taux + Number.EPSILON) * 1000000) / 1000000 };
+  });
+};
+
+const getActiveBoutiqueForSettings = async (req, res) => {
+  const boutiqueId = req.user?.boutiqueActive || req.user?.boutiqueId;
+  if (!boutiqueId) {
+    res.status(400).json({ success: false, message: "Boutique active introuvable." });
+    return null;
+  }
+
+  const boutique = await Boutique.findOne({ _id: boutiqueId, isDeleted: false });
+  if (!boutique) {
+    res.status(404).json({ success: false, message: "Boutique introuvable." });
+    return null;
+  }
+
+  return boutique;
+};
+
+export const getCurrencySettings = async (req, res) => {
+  try {
+    const boutique = await getActiveBoutiqueForSettings(req, res);
+    if (!boutique) return;
+
+    let rates = await ExchangeRate.find({ boutiqueId: boutique._id, isActive: true }).sort({ source: 1, cible: 1 });
+
+    if (rates.length === 0) {
+      rates = await ExchangeRate.insertMany(
+        buildRatePairs(DEFAULT_EXCHANGE_RATES).map((rate) => ({ ...rate, boutiqueId: boutique._id }))
+      );
+    }
+
+    return res.status(200).json({
+      success: true,
+      deviseReference: boutique.deviseParDefaut,
+      supportedCurrencies: SUPPORTED_CURRENCIES,
+      rates,
+    });
+  } catch (error) {
+    console.error("getCurrencySettings:", error);
+    return res.status(500).json({ success: false, message: "Impossible de charger les taux de change." });
+  }
+};
+
+export const updateCurrencySettings = async (req, res) => {
+  try {
+    const boutique = await getActiveBoutiqueForSettings(req, res);
+    if (!boutique) return;
+
+    const deviseReference = String(req.body.deviseReference || boutique.deviseParDefaut);
+    const rates = Array.isArray(req.body.rates) ? req.body.rates : [];
+
+    if (!SUPPORTED_CURRENCIES.includes(deviseReference)) {
+      return res.status(400).json({ success: false, message: "Devise de référence invalide." });
+    }
+
+    const normalizedRates = buildRatePairs(rates);
+    if (normalizedRates.length === 0) {
+      return res.status(400).json({ success: false, message: "Ajoutez au moins un taux de change valide." });
+    }
+
+    boutique.deviseParDefaut = deviseReference;
+    await boutique.save();
+
+    for (const rate of normalizedRates) {
+      await ExchangeRate.findOneAndUpdate(
+        { boutiqueId: boutique._id, source: rate.source, cible: rate.cible },
+        { $set: { taux: rate.taux, isActive: true } },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      );
+    }
+
+    const savedRates = await ExchangeRate.find({ boutiqueId: boutique._id, isActive: true }).sort({ source: 1, cible: 1 });
+
+    return res.status(200).json({
+      success: true,
+      message: "Devise et taux de change mis à jour.",
+      deviseReference: boutique.deviseParDefaut,
+      rates: savedRates,
+    });
+  } catch (error) {
+    console.error("updateCurrencySettings:", error);
+    return res.status(500).json({ success: false, message: "Impossible d'enregistrer les taux de change." });
+  }
+};
+
+

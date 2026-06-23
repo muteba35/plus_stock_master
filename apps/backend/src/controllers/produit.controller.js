@@ -13,6 +13,12 @@ const ensureBoutiqueAccess = async (req, boutiqueId) => {
 };
 
 const canViewPurchasePrice = (req) => req.user?.isOwner || req.user?.permissions?.includes("VOIR_PRIX_ACHAT");
+const SUPPORTED_CURRENCIES = ["USD ($)", "CDF (FC)", "EUR (€)"];
+
+const normalizeCurrency = (value, fallback = "USD ($)") => {
+  const currency = String(value || "").trim();
+  return SUPPORTED_CURRENCIES.includes(currency) ? currency : fallback;
+};
 
 const getBoutiqueCurrency = async (boutiqueId) => {
   const boutique = await Boutique.findOne({ _id: boutiqueId, isDeleted: false }).select("deviseParDefaut");
@@ -96,7 +102,8 @@ export const createProduit = async (req, res) => {
       return res.status(403).json({ success: false, message: "Cette boutique n'appartient pas a votre compte." });
     }
 
-    const devise = await getBoutiqueCurrency(boutiqueId);
+    const boutiqueCurrency = await getBoutiqueCurrency(boutiqueId);
+    const devise = normalizeCurrency(req.body.devise, boutiqueCurrency);
     const nom = String(req.body.nom || "").trim();
     const sku = String(req.body.sku || "").trim().toUpperCase();
     const prixVente = Number(req.body.prixVente);
@@ -175,7 +182,7 @@ export const importProduits = async (req, res) => {
     if (rows.length === 0) return res.status(400).json({ success: false, message: "Le fichier ne contient aucun produit." });
     if (rows.length > 500) return res.status(400).json({ success: false, message: "Un import est limite a 500 produits." });
 
-    const devise = await getBoutiqueCurrency(boutiqueId);
+    const boutiqueCurrency = await getBoutiqueCurrency(boutiqueId);
     const categories = await Categorie.find({ boutiqueId, isActive: true });
     const categoryByName = new Map(categories.map((category) => [category.nom.toLocaleLowerCase("fr"), category]));
     const existingProducts = await Produit.find({ boutiqueId, isDeleted: false }).select("sku codeBarres");
@@ -197,6 +204,7 @@ export const importProduits = async (req, res) => {
       const stockInitial = Number(row?.stockInitial || 0);
       const seuilAlerte = Number(row?.seuilAlerte ?? 5);
       const codeBarres = String(row?.codeBarres || "").trim();
+      const devise = normalizeCurrency(row?.devise, boutiqueCurrency);
       const numbers = [prixAchat, prixVente, stockInitial, seuilAlerte];
 
       let reason = "";
@@ -293,6 +301,11 @@ export const updateProduit = async (req, res) => {
     if (req.body.codeBarres !== undefined) product.codeBarres = String(req.body.codeBarres).trim();
     if (req.body.image !== undefined) product.image = String(req.body.image);
     if (req.body.isActive !== undefined) product.isActive = Boolean(req.body.isActive);
+    if (req.body.devise !== undefined) {
+      const devise = normalizeCurrency(req.body.devise, "");
+      if (!devise) return res.status(400).json({ success: false, message: "Devise du produit invalide." });
+      product.devise = devise;
+    }
 
     for (const field of ["prixVente", "seuilAlerte"]) {
       if (req.body[field] !== undefined) {

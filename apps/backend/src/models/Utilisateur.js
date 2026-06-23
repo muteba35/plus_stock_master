@@ -452,6 +452,11 @@ const venteLineSchema = new mongoose.Schema(
 
     quantite: { type: Number, required: true, min: 0 },
 
+    deviseOriginale: { type: String, enum: ["USD ($)", "CDF (FC)", "EUR (€)"], default: "USD ($)" },
+    tauxConversion: { type: Number, default: 1, min: 0 },
+    prixUnitaireHTOriginal: { type: Number, default: 0, min: 0 },
+    totalHTOriginal: { type: Number, default: 0, min: 0 },
+    totalTTCOriginal: { type: Number, default: 0, min: 0 },
     prixUnitaireHT: { type: Number, required: true, min: 0 },
 
     prixUnitaireTTC: { type: Number, required: true, min: 0 },
@@ -498,6 +503,19 @@ const venteSchema = new mongoose.Schema(
 
     },
 
+    deviseReference: { type: String, enum: ["USD ($)", "CDF (FC)", "EUR (€)"], default: "USD ($)" },
+    devisePaiement: { type: String, enum: ["USD ($)", "CDF (FC)", "EUR (€)"], default: "USD ($)" },
+    tauxPaiement: { type: Number, default: 1, min: 0 },
+    tauxUtilises: {
+      type: [
+        {
+          source: { type: String, required: true },
+          cible: { type: String, required: true },
+          taux: { type: Number, required: true },
+        },
+      ],
+      default: [],
+    },
     paiement: { type: String, enum: ["Espèces", "Carte", "Mobile"], required: true },
 
     statut: { type: String, enum: ["PAYEE", "ANNULEE", "REMBOURSEE"], default: "PAYEE" },
@@ -520,6 +538,7 @@ const venteSchema = new mongoose.Schema(
 
     margeEstimee: { type: Number, default: 0, select: false },
 
+    montantRecuOriginal: { type: Number, default: 0, min: 0 },
     montantRecu: { type: Number, default: 0, min: 0 },
 
     monnaieRendue: { type: Number, default: 0, min: 0 },
@@ -627,6 +646,20 @@ retourClientSchema.index({ boutiqueId: 1, createdAt: -1 });
 retourClientSchema.index({ boutiqueId: 1, venteId: 1 });
 
 
+
+
+const exchangeRateSchema = new mongoose.Schema(
+  {
+    boutiqueId: { type: mongoose.Schema.Types.ObjectId, ref: "Boutique", required: true },
+    source: { type: String, enum: ["USD ($)", "CDF (FC)", "EUR (€)"], required: true },
+    cible: { type: String, enum: ["USD ($)", "CDF (FC)", "EUR (€)"], required: true },
+    taux: { type: Number, required: true, min: 0.000001 },
+    isActive: { type: Boolean, default: true },
+  },
+  { timestamps: true }
+);
+
+exchangeRateSchema.index({ boutiqueId: 1, source: 1, cible: 1 }, { unique: true });
 
 const utilisateurSchema = new mongoose.Schema(
 
@@ -964,10 +997,11 @@ const InventaireAudit = mongoose.model("InventaireAudit", inventaireAuditSchema)
 const Utilisateur = mongoose.model("Utilisateur", utilisateurSchema);
 
 const Boutique = mongoose.model("Boutique", boutiqueSchema);
+const ExchangeRate = mongoose.model("ExchangeRate", exchangeRateSchema);
 
 
 
 
 
-export { Permission, Role, RolePermission, Departement, Categorie, Produit, MouvementStock, Vente, RetourClient, InventaireAudit, Utilisateur, Boutique };
+export { Permission, Role, RolePermission, Departement, Categorie, Produit, MouvementStock, Vente, RetourClient, InventaireAudit, Utilisateur, Boutique, ExchangeRate };
 
