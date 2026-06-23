@@ -227,6 +227,11 @@ export default function CashRegisterPage() {
     try {
       setScannerStatus("");
 
+      if (!window.isSecureContext) {
+        setScannerStatus("La caméra nécessite HTTPS ou localhost. Testez sur http://localhost:3000 ou sur le site Netlify en HTTPS.");
+        return;
+      }
+
       if (!navigator.mediaDevices?.getUserMedia) {
         setScannerStatus("La caméra n'est pas disponible sur ce navigateur. Utilisez la saisie manuelle.");
         return;
@@ -243,8 +248,15 @@ export default function CashRegisterPage() {
       }
 
       const reader = new BrowserMultiFormatReader();
-      scannerControlsRef.current = await reader.decodeFromVideoDevice(
-        undefined,
+      scannerControlsRef.current = await reader.decodeFromConstraints(
+        {
+          video: {
+            facingMode: { ideal: "environment" },
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          },
+          audio: false,
+        },
         videoRef.current,
         (result, error) => {
           if (result) {
@@ -254,12 +266,21 @@ export default function CashRegisterPage() {
           }
 
           if (error?.name && !["NotFoundException", "ChecksumException", "FormatException"].includes(error.name)) {
-            setScannerStatus("Lecture interrompue. Vous pouvez saisir le code manuellement.");
+            setScannerStatus("La lecture est active, mais aucun code lisible n'a encore été détecté.");
           }
         }
       );
-    } catch {
-      setScannerStatus("Impossible d'ouvrir la caméra. Vérifiez l'autorisation du navigateur ou utilisez la saisie manuelle.");
+      setScannerStatus("Caméra active. Placez un code-barres ou un QR code bien éclairé dans le cadre.");
+    } catch (scanError) {
+      const errorName = scanError instanceof Error ? scanError.name : "";
+      const errorMessage = scanError instanceof Error ? scanError.message : "";
+      const denied = errorName === "NotAllowedError" || errorMessage.toLowerCase().includes("permission");
+
+      setScannerStatus(
+        denied
+          ? "Autorisation caméra refusée. Cliquez sur le cadenas du navigateur, autorisez la caméra, puis réessayez."
+          : "Impossible d'ouvrir la caméra. Vérifiez qu'une caméra est disponible et qu'aucune autre application ne l'utilise."
+      );
       stopCameraScanner();
     }
   };
@@ -501,7 +522,7 @@ export default function CashRegisterPage() {
           <form onSubmit={(event) => { event.preventDefault(); handleManualScan(); }} className="space-y-2">
             <input autoFocus value={scanCode} onChange={(event) => setScanCode(event.target.value)} placeholder="Code-barres ou SKU" className={fieldClass} />
             <p className="text-[11px] text-slate-400 leading-relaxed">
-              Si la caméra n'est pas supportée, utilisez une douchette ou tapez le code. Le système vérifie le SKU ou le code-barres et ajoute le produit si le stock est disponible.
+              Pour tester sans vraie étiquette, tapez un SKU ou un code-barres enregistré puis cliquez sur Ajouter. La caméra lit uniquement une image de code-barres ou de QR code, pas un texte simple imprimé.
             </p>
           </form>
         </div>
