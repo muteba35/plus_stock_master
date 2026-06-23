@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { Boutique, MouvementStock, Produit, Vente } from "../models/Utilisateur.js";
+import { Boutique, MouvementStock, Produit, RetourClient, Vente } from "../models/Utilisateur.js";
 import { logInventoryAction } from "../utils/inventoryAudit.js";
 
 const TVA_RATE = 0.16;
@@ -15,6 +15,8 @@ const ensureBoutiqueAccess = async (req, boutiqueId) => {
 };
 
 const saleReference = () => `VTE-${new Date().getFullYear()}-${Date.now().toString(36).toUpperCase()}`;
+const returnReference = () => `RET-${new Date().getFullYear()}-${Date.now().toString(36).toUpperCase()}`;
+
 const invoiceReference = () => `FAC-${new Date().getFullYear()}-${Date.now().toString(36).toUpperCase()}`;
 
 const roundMoney = (value) => Math.round((Number(value) + Number.EPSILON) * 100) / 100;
@@ -100,7 +102,7 @@ export const createVente = async (req, res) => {
     if (currencies.size > 1) {
       return res.status(409).json({
         success: false,
-        message: "Les devises sont melangees dans le panier. Le module de taux de change sera necessaire pour autoriser cela.",
+        message: "Les devises sont mélangées dans le panier. Le module de taux de change sera nécessaire pour autoriser cela.",
       });
     }
 
@@ -141,7 +143,7 @@ export const createVente = async (req, res) => {
     const monnaieRendue = paiement === "Espèces" ? roundMoney(Math.max(0, montantRecu - totalTTC)) : 0;
 
     if (paiement === "Espèces" && montantRecu < totalTTC) {
-      return res.status(400).json({ success: false, message: "Le montant recu est inferieur au total TTC." });
+      return res.status(400).json({ success: false, message: "Le montant reçu est inferieur au total TTC." });
     }
 
     for (const line of saleLines) {
@@ -212,14 +214,14 @@ export const createVente = async (req, res) => {
     rollbackUpdates.length = 0;
     return res.status(201).json({
       success: true,
-      message: "Vente enregistree avec succes.",
+      message: "Vente enregistrée avec succes.",
       data: serializeSale(vente),
     });
   } catch (error) {
     for (const rollback of rollbackUpdates.reverse()) await rollback().catch(() => undefined);
     console.error("createVente:", error);
     if (error?.name === "ValidationError") {
-      return res.status(400).json({ success: false, message: Object.values(error.errors)[0]?.message || "Donnees invalides." });
+      return res.status(400).json({ success: false, message: Object.values(error.errors)[0]?.message || "Données invalides." });
     }
     return res.status(500).json({ success: false, message: "Impossible d'enregistrer la vente." });
   }
@@ -275,5 +277,214 @@ export const getFactures = async (req, res) => {
   } catch (error) {
     console.error("getFactures:", error);
     return res.status(500).json({ success: false, message: "Impossible de charger les factures." });
+  }
+};
+
+
+const serializeReturn = (retour) => ({
+  _id: retour._id,
+  reference: retour.reference,
+  venteId: retour.venteId,
+  venteReference: retour.venteReference,
+  factureReference: retour.factureReference,
+  utilisateurId: retour.utilisateurId,
+  clientNom: retour.clientNom,
+  devise: retour.devise,
+  typeRetour: retour.typeRetour,
+  motif: retour.motif,
+  statut: retour.statut,
+  montantTotalTTC: retour.montantTotalTTC,
+  lignes: retour.lignes,
+  createdAt: retour.createdAt,
+});
+
+export const getRetours = async (req, res) => {
+  try {
+    const boutiqueId = getBoutiqueId(req);
+    if (!boutiqueId) return res.status(400).json({ success: false, message: "Boutique active introuvable." });
+    if (!(await ensureBoutiqueAccess(req, boutiqueId))) {
+      return res.status(403).json({ success: false, message: "Cette boutique n'appartient pas a votre compte." });
+    }
+
+    const retours = await RetourClient.find({ boutiqueId })
+      .populate("utilisateurId", "nom prenom")
+      .sort({ createdAt: -1 })
+      .limit(500);
+
+    const ventes = await Vente.find({ boutiqueId, statut: { $in: ["PAYEE", "REMBOURSEE"] } })
+      .populate("utilisateurId", "nom prenom")
+      .sort({ createdAt: -1 })
+      .limit(250);
+
+    return res.status(200).json({
+      success: true,
+      data: retours.map(serializeReturn),
+      ventes: ventes.map(serializeSale),
+    });
+  } catch (error) {
+    console.error("getRetours:", error);
+    return res.status(500).json({ success: false, message: "Impossible de charger les retours clients." });
+  }
+};
+
+export const createRetour = async (req, res) => {
+  try {
+    const boutiqueId = getBoutiqueId(req);
+    const venteId = String(req.body.venteId || "");
+    const produitId = String(req.body.produitId || "");
+    const quantite = Number(req.body.quantite || 0);
+    const typeRetour = String(req.body.typeRetour || "REMBOURSEMENT").toUpperCase();
+    const remiseEnStock = Boolean(req.body.remiseEnStock);
+    const motif = String(req.body.motif || "").trim();
+
+    if (!boutiqueId) return res.status(400).json({ success: false, message: "Boutique active introuvable." });
+    if (!(await ensureBoutiqueAccess(req, boutiqueId))) {
+      return res.status(403).json({ success: false, message: "Cette boutique n'appartient pas a votre compte." });
+    }
+    if (!mongoose.isValidObjectId(venteId) || !mongoose.isValidObjectId(produitId)) {
+      return res.status(400).json({ success: false, message: "Vente ou produit invalide." });
+    }
+    if (!Number.isFinite(quantite) || quantite <= 0) {
+      return res.status(400).json({ success: false, message: "La quantité retournée est invalide." });
+    }
+    if (!["REMBOURSEMENT", "ECHANGE", "AVOIR"].includes(typeRetour)) {
+      return res.status(400).json({ success: false, message: "Type de retour invalide." });
+    }
+    if (motif.length < 4) {
+      return res.status(400).json({ success: false, message: "Le motif du retour est requis." });
+    }
+
+    const vente = await Vente.findOne({ _id: venteId, boutiqueId, statut: { $in: ["PAYEE", "REMBOURSEE"] } });
+    if (!vente) {
+      return res.status(404).json({ success: false, message: "Vente introuvable pour cette boutique." });
+    }
+
+    const line = vente.lignes.find((item) => item.produitId?.toString() === produitId);
+    if (!line) {
+      return res.status(404).json({ success: false, message: "Ce produit n'existe pas dans la vente sélectionnée." });
+    }
+
+    const alreadyReturned = await RetourClient.aggregate([
+      {
+        $match: {
+          boutiqueId: new mongoose.Types.ObjectId(boutiqueId),
+          venteId: new mongoose.Types.ObjectId(venteId),
+          statut: "VALIDE",
+        },
+      },
+      { $unwind: "$lignes" },
+      { $match: { "lignes.produitId": new mongoose.Types.ObjectId(produitId) } },
+      { $group: { _id: null, quantite: { $sum: "$lignes.quantite" } } },
+    ]);
+
+    const returnedQty = alreadyReturned[0]?.quantite || 0;
+    const remainingQty = Number(line.quantite || 0) - returnedQty;
+    if (quantite > remainingQty) {
+      return res.status(409).json({
+        success: false,
+        message: `Quantité impossible. Il reste ${remainingQty} unité(s) retournable(s) pour ce produit.`,
+      });
+    }
+
+    const unitTTC = Number(line.totalTTC || 0) / Number(line.quantite || 1);
+    const montantTTC = roundMoney(unitTTC * quantite);
+    const reference = returnReference();
+
+    const retour = await RetourClient.create({
+      boutiqueId,
+      venteId,
+      utilisateurId: req.user.id,
+      reference,
+      venteReference: vente.reference,
+      factureReference: vente.factureReference,
+      clientNom: vente.clientNom,
+      devise: vente.devise,
+      typeRetour,
+      motif,
+      statut: "VALIDE",
+      montantTotalTTC: montantTTC,
+      lignes: [
+        {
+          produitId,
+          nomProduit: line.nomProduit,
+          sku: line.sku,
+          quantite,
+          montantTTC,
+          remiseEnStock,
+        },
+      ],
+    });
+
+    if (remiseEnStock) {
+      const before = await Produit.findOneAndUpdate(
+        { _id: produitId, boutiqueId, isDeleted: false },
+        { $inc: { stock: quantite } },
+        { returnDocument: "before" }
+      );
+
+      if (!before) {
+        await RetourClient.deleteOne({ _id: retour._id });
+        return res.status(404).json({ success: false, message: "Produit introuvable pour la remise en stock." });
+      }
+
+      await MouvementStock.create({
+        produitId,
+        boutiqueId,
+        utilisateurId: req.user.id,
+        type: "ENTREE",
+        quantite,
+        variation: quantite,
+        stockAvant: before.stock,
+        stockApres: before.stock + quantite,
+        motif: "Retour client remis en stock",
+        reference,
+      });
+    }
+
+    const totalSoldQty = vente.lignes.reduce((sum, item) => sum + Number(item.quantite || 0), 0);
+    const returnedAfter = await RetourClient.aggregate([
+      {
+        $match: {
+          boutiqueId: new mongoose.Types.ObjectId(boutiqueId),
+          venteId: new mongoose.Types.ObjectId(venteId),
+          statut: "VALIDE",
+        },
+      },
+      { $unwind: "$lignes" },
+      { $group: { _id: null, quantite: { $sum: "$lignes.quantite" } } },
+    ]);
+    if ((returnedAfter[0]?.quantite || 0) >= totalSoldQty) {
+      vente.statut = "REMBOURSEE";
+      await vente.save();
+    }
+
+    await logInventoryAction({
+      boutiqueId,
+      utilisateurId: req.user.id,
+      action: "RETOUR_CLIENT",
+      entityType: "RETOUR_CLIENT",
+      entityId: retour._id,
+      label: `Retour client : ${reference}`,
+      details: {
+        venteReference: vente.reference,
+        montantTotalTTC: montantTTC,
+        typeRetour,
+        remiseEnStock,
+        quantite,
+      },
+    });
+
+    const populated = await RetourClient.findById(retour._id).populate("utilisateurId", "nom prenom");
+    return res.status(201).json({
+      success: true,
+      message: "Retour client enregistré avec succès.",
+      data: serializeReturn(populated),
+    });
+  } catch (error) {
+    console.error("createRetour:", error);
+    if (error?.name === "ValidationError") {
+      return res.status(400).json({ success: false, message: Object.values(error.errors)[0]?.message || "Données invalides." });
+    }
+    return res.status(500).json({ success: false, message: "Impossible d'enregistrer le retour client." });
   }
 };
