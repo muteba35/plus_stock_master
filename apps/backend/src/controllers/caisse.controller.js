@@ -250,3 +250,30 @@ export const getVentes = async (req, res) => {
     return res.status(500).json({ success: false, message: "Impossible de charger les ventes." });
   }
 };
+
+
+export const getFactures = async (req, res) => {
+  try {
+    const boutiqueId = getBoutiqueId(req);
+    if (!boutiqueId) return res.status(400).json({ success: false, message: "Boutique active introuvable." });
+    if (!(await ensureBoutiqueAccess(req, boutiqueId))) {
+      return res.status(403).json({ success: false, message: "Cette boutique n'appartient pas a votre compte." });
+    }
+
+    const canViewAll = req.user?.isOwner || req.user?.permissions?.includes("VOIR_HISTORIQUE_VENTES");
+    const filter = canViewAll ? { boutiqueId } : { boutiqueId, utilisateurId: req.user.id };
+    const factures = await Vente.find(filter)
+      .populate("utilisateurId", "nom prenom")
+      .sort({ createdAt: -1 })
+      .limit(500);
+
+    return res.status(200).json({
+      success: true,
+      data: factures.map(serializeSale),
+      scope: canViewAll ? "all" : "own",
+    });
+  } catch (error) {
+    console.error("getFactures:", error);
+    return res.status(500).json({ success: false, message: "Impossible de charger les factures." });
+  }
+};
