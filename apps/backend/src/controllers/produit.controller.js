@@ -14,6 +14,11 @@ const ensureBoutiqueAccess = async (req, boutiqueId) => {
 
 const canViewPurchasePrice = (req) => req.user?.isOwner || req.user?.permissions?.includes("VOIR_PRIX_ACHAT");
 
+const getBoutiqueCurrency = async (boutiqueId) => {
+  const boutique = await Boutique.findOne({ _id: boutiqueId, isDeleted: false }).select("deviseParDefaut");
+  return boutique?.deviseParDefaut || "USD ($)";
+};
+
 const productStatus = (stock, threshold) => {
   if (stock <= 0) return "Rupture";
   if (stock <= threshold) return "Stock faible";
@@ -91,6 +96,7 @@ export const createProduit = async (req, res) => {
       return res.status(403).json({ success: false, message: "Cette boutique n'appartient pas a votre compte." });
     }
 
+    const devise = await getBoutiqueCurrency(boutiqueId);
     const nom = String(req.body.nom || "").trim();
     const sku = String(req.body.sku || "").trim().toUpperCase();
     const prixVente = Number(req.body.prixVente);
@@ -114,6 +120,7 @@ export const createProduit = async (req, res) => {
       boutiqueId,
       prixAchat,
       prixVente,
+      devise,
       stock: stockInitial,
       seuilAlerte,
       unite: String(req.body.unite || "Pièce").trim(),
@@ -168,6 +175,7 @@ export const importProduits = async (req, res) => {
     if (rows.length === 0) return res.status(400).json({ success: false, message: "Le fichier ne contient aucun produit." });
     if (rows.length > 500) return res.status(400).json({ success: false, message: "Un import est limite a 500 produits." });
 
+    const devise = await getBoutiqueCurrency(boutiqueId);
     const categories = await Categorie.find({ boutiqueId, isActive: true });
     const categoryByName = new Map(categories.map((category) => [category.nom.toLocaleLowerCase("fr"), category]));
     const existingProducts = await Produit.find({ boutiqueId, isDeleted: false }).select("sku codeBarres");
@@ -215,6 +223,7 @@ export const importProduits = async (req, res) => {
         boutiqueId,
         prixAchat,
         prixVente,
+        devise,
         stock: stockInitial,
         seuilAlerte,
         unite: String(row?.unite || "Pièce").trim(),

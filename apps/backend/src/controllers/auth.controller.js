@@ -1169,7 +1169,7 @@ export const getMe = async (req, res) => {
         email: user.email,
         telephone: user.telephone || "",
         roleId: user.roleId?._id || user.roleId || null,
-        role: user.roleId?.nom || (isOwner ? "Admin GÃ©nÃ©ral" : "EmployÃ©"),
+        role: user.roleId?.nom || (isOwner ? "Admin Général" : "Employé"),
         departementId: user.departementId || null, // <-- AJOUT ICI
         departement: user.departementId?.nom || "",
         avatar: user.avatar || "",

@@ -26,7 +26,7 @@ export const getVueGlobaleInventaire = async (req, res) => {
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
 
-    const [productStatsResult, movementsToday, categoriesActive, recentMovements, priorityProducts] = await Promise.all([
+    const [productStatsResult, valuationByCurrency, movementsToday, categoriesActive, recentMovements, priorityProducts] = await Promise.all([
       Produit.aggregate([
         { $match: { boutiqueId: objectBoutiqueId, isDeleted: false, isActive: true } },
         { $group: {
@@ -38,6 +38,14 @@ export const getVueGlobaleInventaire = async (req, res) => {
           outOfStock: { $sum: { $cond: [{ $lte: ["$stock", 0] }, 1, 0] } },
           totalUnits: { $sum: "$stock" },
         } },
+      ]),
+      Produit.aggregate([
+        { $match: { boutiqueId: objectBoutiqueId, isDeleted: false, isActive: true } },
+        { $group: {
+          _id: { $ifNull: ["$devise", "USD ($)"] },
+          value: { $sum: { $multiply: ["$stock", canViewPurchasePrice ? "$prixAchat" : "$prixVente"] } },
+        } },
+        { $sort: { _id: 1 } },
       ]),
       MouvementStock.countDocuments({ boutiqueId, createdAt: { $gte: startOfDay } }),
       Categorie.countDocuments({ boutiqueId, isActive: true }),
@@ -59,7 +67,7 @@ export const getVueGlobaleInventaire = async (req, res) => {
       data: {
         metrics: {
           totalProducts: stats.totalProducts,
-          stockValue: stats.stockValue,
+          stockValues: valuationByCurrency.map((item) => ({ devise: item._id, value: item.value })),
           movementsToday,
           categoriesActive,
           totalUnits: stats.totalUnits,

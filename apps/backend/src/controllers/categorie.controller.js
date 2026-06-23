@@ -19,7 +19,8 @@ const ensureBoutiqueAccess = async (req, boutiqueId) => {
 const serializeCategorie = (categorie, stats = {}) => ({
   ...categorie.toObject(),
   productCount: stats.productCount || 0,
-  stockValue: stats.stockValue || 0,
+  stockValues: stats.stockValues || [],
+  saleValues: stats.saleValues || [],
 });
 
 export const getCategories = async (req, res) => {
@@ -36,12 +37,24 @@ export const getCategories = async (req, res) => {
     const productStats = await Produit.aggregate([
       { $match: { boutiqueId: new mongoose.Types.ObjectId(boutiqueId), isDeleted: false } },
       { $group: {
-        _id: "$categorieId",
+        _id: {
+          categorieId: "$categorieId",
+          devise: { $ifNull: ["$devise", "USD ($)"] },
+        },
         productCount: { $sum: 1 },
-        stockValue: { $sum: { $multiply: ["$stock", "$prixVente"] } },
+        stockValue: { $sum: { $multiply: ["$stock", "$prixAchat"] } },
+        saleValue: { $sum: { $multiply: ["$stock", "$prixVente"] } },
       } },
     ]);
-    const statsByCategory = new Map(productStats.map((stats) => [stats._id.toString(), stats]));
+    const statsByCategory = new Map();
+    productStats.forEach((stats) => {
+      const categoryId = stats._id.categorieId.toString();
+      const current = statsByCategory.get(categoryId) || { productCount: 0, stockValues: [], saleValues: [] };
+      current.productCount += stats.productCount;
+      current.stockValues.push({ devise: stats._id.devise, value: stats.stockValue });
+      current.saleValues.push({ devise: stats._id.devise, value: stats.saleValue });
+      statsByCategory.set(categoryId, current);
+    });
     return res.status(200).json({
       success: true,
       results: categories.length,
@@ -205,3 +218,4 @@ export const deleteCategorie = async (req, res) => {
     return res.status(500).json({ success: false, message: "Impossible de supprimer la categorie." });
   }
 };
+
