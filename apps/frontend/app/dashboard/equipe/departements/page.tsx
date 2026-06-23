@@ -7,6 +7,7 @@ import DeptModal from "./components/DeptModal";
 import DeptTable from "./components/DeptTable";
 import TeamPagination from "../TeamPagination";
 import TeamCsvImportModal, { type TeamCsvRow } from "../TeamCsvImportModal";
+import ModalPortal from "../../components/ModalPortal";
 
 interface Department {
   _id: string;
@@ -320,9 +321,10 @@ export default function DepartementsPage() {
       )}
       <TeamCsvImportModal open={isImportOpen} onClose={() => setIsImportOpen(false)} title="Importer des départements" columns={[{ key: "nom", label: "nom", required: true }, { key: "description", label: "description" }]} example={{ nom: "Logistique", description: "Gestion des stocks et livraisons" }} onImport={importDepartments} />
 
+      <ModalPortal>
       {/* MODAL MODIFICATION */}
       {isEditOpen && canEdit && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
           <div 
             onClick={() => { if (!isActionLoading && !actionSuccess) setIsEditOpen(false); }} 
             className="absolute inset-0" 
@@ -417,7 +419,7 @@ export default function DepartementsPage() {
 
       {/* MODAL SUPPRESSION */}
       {isDeleteOpen && canDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
           <div 
             onClick={() => { if (!isActionLoading && !actionSuccess) setIsDeleteOpen(false); }} 
             className="absolute inset-0" 
@@ -466,6 +468,7 @@ export default function DepartementsPage() {
           </div>
         </div>
       )}
+      </ModalPortal>
 
     </div>
   );

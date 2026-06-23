@@ -2,6 +2,7 @@
 
 import React, { useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import ModalPortal from "../../../components/ModalPortal";
 import {
   X,
   User,
@@ -240,9 +241,10 @@ export default function EmployeModal({
   };
 
   return (
-    <AnimatePresence>
+    <ModalPortal>
+      <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -560,7 +562,8 @@ export default function EmployeModal({
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+      </AnimatePresence>
+    </ModalPortal>
   );
 }
 

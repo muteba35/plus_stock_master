@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import TeamCsvImportModal, { type TeamCsvRow } from "../../equipe/TeamCsvImportModal";
+import ModalPortal from "../../components/ModalPortal";
 
 interface Boutique {
   id: string;
@@ -48,27 +49,27 @@ interface BoutiqueForm {
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://plus-stock-master.onrender.com/api";
 
 const SECTEURS = [
-  "Commerce GÃƒÂ©nÃƒÂ©ral",
-  "SupermarchÃƒÂ©",
+  "Commerce Général",
+  "Supermarché",
   "Pharmacie",
   "Restaurant",
   "Fast-food",
   "Bar",
-  "CafÃƒÂ©",
-  "Boutique de vÃƒÂªtements",
+  "Café",
+  "Boutique de vêtements",
   "Salon de coiffure",
   "Quincaillerie",
   "Autre",
 ];
 
-const DEVISES = ["USD ($)", "CDF (FC)", "EUR (Ã¢â€šÂ¬)"];
-const TAILLES = ["1-2 employÃƒÂ©s", "3-10 employÃƒÂ©s", "10+ employÃƒÂ©s"];
+const DEVISES = ["USD ($)", "CDF (FC)", "EUR (€)"];
+const TAILLES = ["1-2 employés", "3-10 employés", "10+ employés"];
 
 const DEFAULT_FORM: BoutiqueForm = {
   nom: "",
-  secteurActivite: "Commerce GÃƒÂ©nÃƒÂ©ral",
+  secteurActivite: "Commerce Général",
   deviseParDefaut: "USD ($)",
-  tailleBusiness: "1-2 employÃƒÂ©s",
+  tailleBusiness: "1-2 employés",
 };
 
 const readApiMessage = async (response: Response, fallback: string) => {
@@ -221,7 +222,7 @@ export default function BoutiquePage() {
     () =>
       boutiques.filter((boutique) => {
         const query = searchTerm.toLowerCase();
-        const statusLabel = boutique.isActive ? "active" : (boutique.statutPaiement || "disponible").toLowerCase();
+        const statusLabel = boutique.isActive ? "active" : "non active";
         const matchesSearch =
           boutique.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
           boutique.secteurActivite.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -594,7 +595,7 @@ export default function BoutiquePage() {
                             boutique.isActive ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-500"
                           }`}
                         >
-                          {boutique.isActive ? "Active" : boutique.statutPaiement || "Disponible"}
+                          {boutique.isActive ? "Active" : "Non active"}
                         </span>
                       </td>
 
@@ -727,9 +728,10 @@ function DeleteBoutiqueModal({
   onConfirm: () => void;
 }) {
   return (
-    <AnimatePresence>
+    <ModalPortal>
+      <AnimatePresence>
       {boutique && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -801,7 +803,8 @@ function DeleteBoutiqueModal({
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+      </AnimatePresence>
+    </ModalPortal>
   );
 }
 
@@ -828,9 +831,10 @@ function BoutiqueModal({
   const title = mode === "create" ? "Nouvelle Boutique" : mode === "edit" ? "Modifier la Boutique" : "Detail de la Boutique";
 
   return (
-    <AnimatePresence>
+    <ModalPortal>
+      <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -945,7 +949,8 @@ function BoutiqueModal({
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+      </AnimatePresence>
+    </ModalPortal>
   );
 }
 

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import ModalPortal from "../../../components/ModalPortal";
 import { X, Shield, FileText, ShieldCheck, Check, ChevronDown, LucideIcon, Loader2, Search, AlertCircle } from "lucide-react";
 import { Role } from "../page"; 
 
@@ -37,9 +38,10 @@ interface GroupedModule {
 
 export default function RoleModal({ isOpen, onClose, role, mode, onSave, apiHeaders, apiUrl }: RoleModalProps) {
   return (
-    <AnimatePresence>
+    <ModalPortal>
+      <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -59,7 +61,8 @@ export default function RoleModal({ isOpen, onClose, role, mode, onSave, apiHead
           />
         </div>
       )}
-    </AnimatePresence>
+      </AnimatePresence>
+    </ModalPortal>
   );
 }
 

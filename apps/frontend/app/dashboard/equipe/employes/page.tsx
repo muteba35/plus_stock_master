@@ -32,6 +32,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import EmployeModal, { EmployeOption } from "./components/EmployeModal";
 import TeamPagination from "../TeamPagination";
 import TeamCsvImportModal, { type TeamCsvRow } from "../TeamCsvImportModal";
+import ModalPortal from "../../components/ModalPortal";
 
 export interface Employe {
   id: string;
@@ -654,9 +655,10 @@ export default function EmployesPage() {
       />
       <TeamCsvImportModal open={isImportOpen} onClose={() => setIsImportOpen(false)} title="Importer des employés" columns={[{ key: "prenom", label: "prenom", required: true }, { key: "nom", label: "nom", required: true }, { key: "email", label: "email", required: true }, { key: "telephone", label: "telephone", required: true }, { key: "boutique", label: "boutique", required: true }, { key: "role", label: "role", required: true }, { key: "departement", label: "departement", required: true }]} example={{ prenom: "Sarah", nom: "Mwamba", email: "sarah@example.com", telephone: "0812345678", boutique: "Boutique Centre", role: "Gestionnaire stock", departement: "Logistique" }} onImport={importEmployes} />
 
+      <ModalPortal>
       <AnimatePresence>
         {activeActionModal && selectedEmploye && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -693,6 +695,7 @@ export default function EmployesPage() {
           </div>
         )}
       </AnimatePresence>
+      </ModalPortal>
     </div>
   );
 }
