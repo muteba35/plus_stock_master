@@ -309,13 +309,14 @@ export default function InvoicesPage() {
               <div className="border border-slate-100 rounded-xl overflow-hidden">
                 <table className="w-full text-xs">
                   <thead className="bg-slate-50 text-slate-400 uppercase text-[10px] font-bold">
-                    <tr><th className="text-left p-3">Article</th><th className="p-3">Qté</th><th className="text-right p-3">Total TTC</th></tr>
+                    <tr><th className="text-left p-3">Article</th><th className="p-3">Qté</th><th className="text-right p-3">Prix HT</th><th className="text-right p-3">Total TTC</th></tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {selectedInvoice.lignes.map((line) => (
                       <tr key={`${line.produitId}-${line.sku}`}>
                         <td className="p-3"><strong>{line.nomProduit}</strong><p className="text-[10px] text-slate-400 mt-1">SKU : {line.sku || "-"}</p></td>
                         <td className="p-3 text-center font-bold">{line.quantite}</td>
+                        <td className="p-3 text-right font-bold">{formatMoney(line.prixUnitaireHT, selectedInvoice.devise)}</td>
                         <td className="p-3 text-right font-black">{formatMoney(line.totalTTC, selectedInvoice.devise)}</td>
                       </tr>
                     ))}

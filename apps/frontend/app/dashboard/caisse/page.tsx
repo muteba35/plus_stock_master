@@ -1,5 +1,6 @@
 "use client";
 
+import { BrowserMultiFormatReader, type IScannerControls } from "@zxing/browser";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Banknote,
@@ -73,20 +74,13 @@ export default function CashRegisterPage() {
   const [{ permissions, isOwner }] = useState(getStoredPermissions);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const scanTimerRef = useRef<number | null>(null);
+  const scannerControlsRef = useRef<IScannerControls | null>(null);
 
   const canDiscount = isOwner || permissions.includes("APPLIQUER_REMISE");
 
   const stopCameraScanner = useCallback(() => {
-    if (scanTimerRef.current) {
-      window.clearInterval(scanTimerRef.current);
-      scanTimerRef.current = null;
-    }
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-    }
+    scannerControlsRef.current?.stop();
+    scannerControlsRef.current = null;
     setCameraActive(false);
   }, []);
 
@@ -224,6 +218,7 @@ export default function CashRegisterPage() {
 
     addProduct(product);
     setScanCode("");
+    setScannerStatus("");
     setScannerOpen(false);
     setMessage(`${product.nom} ajouté au panier par scan.`);
   }, [products, cartCurrency, cart.length]);
@@ -231,52 +226,38 @@ export default function CashRegisterPage() {
   const startCameraScanner = async () => {
     try {
       setScannerStatus("");
+
       if (!navigator.mediaDevices?.getUserMedia) {
         setScannerStatus("La caméra n'est pas disponible sur ce navigateur. Utilisez la saisie manuelle.");
         return;
       }
 
-      const BarcodeDetectorClass = (window as unknown as {
-        BarcodeDetector?: new (options?: { formats?: string[] }) => {
-          detect: (source: HTMLVideoElement) => Promise<Array<{ rawValue?: string }>>;
-        };
-      }).BarcodeDetector;
-
-      if (!BarcodeDetectorClass) {
-        setScannerStatus("La caméra peut s'ouvrir, mais la détection automatique n'est pas supportée ici. Utilisez la saisie manuelle.");
-      }
-
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: "environment" } },
-        audio: false,
-      });
-      streamRef.current = stream;
+      stopCameraScanner();
       setCameraActive(true);
+      await new Promise((resolve) => window.requestAnimationFrame(resolve));
 
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
+      if (!videoRef.current) {
+        setScannerStatus("La zone caméra n'est pas prête. Réessayez dans un instant.");
+        setCameraActive(false);
+        return;
       }
 
-      if (!BarcodeDetectorClass || !videoRef.current) return;
-
-      const detector = new BarcodeDetectorClass({
-        formats: ["ean_13", "ean_8", "code_128", "code_39", "upc_a", "upc_e", "qr_code"],
-      });
-
-      scanTimerRef.current = window.setInterval(async () => {
-        if (!videoRef.current) return;
-        try {
-          const codes = await detector.detect(videoRef.current);
-          const value = codes[0]?.rawValue;
-          if (value) {
+      const reader = new BrowserMultiFormatReader();
+      scannerControlsRef.current = await reader.decodeFromVideoDevice(
+        undefined,
+        videoRef.current,
+        (result, error) => {
+          if (result) {
             stopCameraScanner();
-            resolveScannedProduct(value);
+            resolveScannedProduct(result.getText());
+            return;
           }
-        } catch {
-          setScannerStatus("Détection caméra interrompue. Vous pouvez saisir le code manuellement.");
+
+          if (error?.name && !["NotFoundException", "ChecksumException", "FormatException"].includes(error.name)) {
+            setScannerStatus("Lecture interrompue. Vous pouvez saisir le code manuellement.");
+          }
         }
-      }, 700);
+      );
     } catch {
       setScannerStatus("Impossible d'ouvrir la caméra. Vérifiez l'autorisation du navigateur ou utilisez la saisie manuelle.");
       stopCameraScanner();
@@ -502,11 +483,10 @@ export default function CashRegisterPage() {
         }
       >
         <div className="space-y-4">
-          <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-950 aspect-video flex items-center justify-center">
-            {cameraActive ? (
-              <video ref={videoRef} className="w-full h-full object-cover" muted playsInline />
-            ) : (
-              <div className="text-center text-white/70 p-6">
+          <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-slate-950 aspect-video flex items-center justify-center">
+            <video ref={videoRef} className={`w-full h-full object-cover ${cameraActive ? "block" : "hidden"}`} muted playsInline />
+            {!cameraActive && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white/70 p-6">
                 <Camera size={30} className="mx-auto mb-3" />
                 <p className="text-xs font-bold">Caméra en attente</p>
                 <p className="text-[11px] mt-1">Le navigateur demandera l'autorisation d'accès.</p>
