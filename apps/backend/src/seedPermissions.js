@@ -21,6 +21,7 @@ const permissions = [
   { nom: "APPLIQUER_REMISE", module: "VENTE", description: "Permet d'appliquer des réductions sur le prix de vente" },
   { nom: "ANNULER_VENTE", module: "VENTE", description: "Permet de supprimer une vente déjà validée (Droit sensible)" },
   { nom: "IMPRIMER_FACTURE", module: "VENTE", description: "Permet de générer le ticket de caisse" },
+  { nom: "VOIR_MES_VENTES", module: "VENTE", description: "Consulter uniquement les ventes que l\'utilisateur a lui-même encaissées" },
 
   // --- MODULE : INVENTAIRE ---
   { nom: "VOIR_RESUME_INVENTAIRE", module: "INVENTAIRE", description: "Consulter la vue globale et les indicateurs de l'inventaire" },
