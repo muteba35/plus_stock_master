@@ -38,6 +38,7 @@ type ProductForm = {
   codeBarres: string;
   image: string;
   isActive: boolean;
+  devise: string;
 };
 type ImportProductRow = {
   line: number;
@@ -51,10 +52,12 @@ type ImportProductRow = {
   seuilAlerte: string;
   unite: string;
   codeBarres: string;
+  devise: string;
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://plus-stock-master.onrender.com/api";
-const EMPTY_FORM: ProductForm = { nom: "", sku: "", description: "", categorieId: "", prixAchat: "", prixVente: "", stockInitial: "", seuilAlerte: "5", unite: "Pièce", codeBarres: "", image: "", isActive: true };
+const DEVISES = ["USD ($)", "CDF (FC)", "EUR (€)"];
+const EMPTY_FORM: ProductForm = { nom: "", sku: "", description: "", categorieId: "", prixAchat: "", prixVente: "", stockInitial: "", seuilAlerte: "5", unite: "Pièce", codeBarres: "", image: "", isActive: true, devise: "USD ($)" };
 const UNITS = ["Pièce", "Boîte", "Paquet", "Kg", "Gramme", "Litre", "Mètre"];
 
 const requestHeaders = () => {
@@ -132,7 +135,7 @@ const parseProductCsv = (content: string): ImportProductRow[] => {
   const indexes = {
     nom: indexOf("nom", "name", "produit"), sku: indexOf("sku", "reference"), categorie: indexOf("categorie", "category"),
     description: indexOf("description"), prixAchat: indexOf("prix_achat", "purchase_price"), prixVente: indexOf("prix_vente", "sale_price"),
-    stockInitial: indexOf("stock_initial", "stock"), seuilAlerte: indexOf("seuil_alerte", "seuil"), unite: indexOf("unite", "unit"), codeBarres: indexOf("code_barres", "barcode"),
+    stockInitial: indexOf("stock_initial", "stock"), seuilAlerte: indexOf("seuil_alerte", "seuil"), unite: indexOf("unite", "unit"), codeBarres: indexOf("code_barres", "barcode"), devise: indexOf("devise", "currency"),
   };
   if (indexes.nom < 0 || indexes.sku < 0 || indexes.categorie < 0 || indexes.prixVente < 0) {
     throw new Error("Colonnes obligatoires : nom, sku, categorie et prix_vente.");
@@ -144,7 +147,7 @@ const parseProductCsv = (content: string): ImportProductRow[] => {
       line: lineIndex + 2,
       nom: valueAt(values, indexes.nom), sku: valueAt(values, indexes.sku).toUpperCase(), categorie: valueAt(values, indexes.categorie),
       description: valueAt(values, indexes.description), prixAchat: valueAt(values, indexes.prixAchat, "0"), prixVente: valueAt(values, indexes.prixVente),
-      stockInitial: valueAt(values, indexes.stockInitial, "0"), seuilAlerte: valueAt(values, indexes.seuilAlerte, "5"), unite: valueAt(values, indexes.unite, "Pièce"), codeBarres: valueAt(values, indexes.codeBarres),
+      stockInitial: valueAt(values, indexes.stockInitial, "0"), seuilAlerte: valueAt(values, indexes.seuilAlerte, "5"), unite: valueAt(values, indexes.unite, "Pièce"), codeBarres: valueAt(values, indexes.codeBarres), devise: valueAt(values, indexes.devise, getActiveBoutiqueCurrency()),
     };
   });
 };
@@ -249,12 +252,13 @@ export default function ProduitsPage() {
     codeBarres: product.codeBarres || "",
     image: product.image || "",
     isActive: product.isActive,
+    devise: product.devise || currency,
   });
 
   const openCreate = () => {
     setSelected(null);
     setModalMode("create");
-    setForm({ ...EMPTY_FORM, categorieId: categories.find((category) => category.isActive)?._id || "" });
+    setForm({ ...EMPTY_FORM, devise: currency, categorieId: categories.find((category) => category.isActive)?._id || "" });
     setFormError("");
     setFormOpen(true);
   };
@@ -285,6 +289,7 @@ export default function ProduitsPage() {
     if (!form.nom.trim()) requiredErrors.push("nom du produit");
     if (!form.sku.trim()) requiredErrors.push("SKU");
     if (!form.categorieId) requiredErrors.push("catégorie");
+    if (!DEVISES.includes(form.devise)) requiredErrors.push("devise du produit");
     if (!form.prixVente.trim() || Number(form.prixVente) <= 0) requiredErrors.push("prix de vente supérieur à zéro");
     if (canViewPurchasePrice && (!form.prixAchat.trim() || Number(form.prixAchat) <= 0)) requiredErrors.push("prix d’achat supérieur à zéro");
     if (modalMode === "create" && (!form.stockInitial.trim() || Number(form.stockInitial) < 0)) requiredErrors.push("stock initial valide");
@@ -303,6 +308,7 @@ export default function ProduitsPage() {
         description: form.description,
         categorieId: form.categorieId,
         prixVente: Number(form.prixVente),
+        devise: form.devise,
         seuilAlerte: Number(form.seuilAlerte),
         unite: form.unite,
         codeBarres: form.codeBarres,
@@ -375,7 +381,7 @@ export default function ProduitsPage() {
       if (rows.length > 500) throw new Error("Un import est limité à 500 produits.");
       const categoryNames = new Set(categories.filter((category) => category.isActive).map((category) => category.nom.toLocaleLowerCase("fr")));
       const invalid = rows.find((row) =>
-        !row.nom || !row.sku || !row.categorie || !row.prixVente ||
+        !row.nom || !row.sku || !row.categorie || !row.prixVente || !DEVISES.includes(row.devise || currency) ||
         !categoryNames.has(row.categorie.toLocaleLowerCase("fr")) ||
         [row.prixAchat, row.prixVente, row.stockInitial, row.seuilAlerte].some((value) => !Number.isFinite(Number(value)) || Number(value) < 0)
       );
@@ -445,8 +451,9 @@ export default function ProduitsPage() {
           <label className="space-y-1.5 sm:col-span-2"><span className="text-[10px] font-bold uppercase text-slate-400">Nom du produit <b className="text-rose-500">*</b></span><input required disabled={readOnly} value={form.nom} onChange={(event) => setForm({ ...form, nom: event.target.value })} className={fieldClass} placeholder="Ex: Clavier mécanique" /></label>
           <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">SKU <b className="text-rose-500">*</b></span><input required disabled={readOnly} value={form.sku} onChange={(event) => setForm({ ...form, sku: event.target.value.toUpperCase() })} className={fieldClass} placeholder="CLA-MEC-001" /></label>
           <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Catégorie <b className="text-rose-500">*</b></span><select required disabled={readOnly} value={form.categorieId} onChange={(event) => setForm({ ...form, categorieId: event.target.value })} className={fieldClass}><option value="">Sélectionner...</option>{categories.filter((category) => category.isActive || category._id === form.categorieId).map((category) => <option key={category._id} value={category._id}>{category.nom}</option>)}</select></label>
-          {canViewPurchasePrice && <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Prix d’achat ({selected?.devise || currency}) <b className="text-rose-500">*</b></span><input required disabled={readOnly} type="number" min="0.01" step="0.01" value={form.prixAchat} onChange={(event) => setForm({ ...form, prixAchat: event.target.value })} className={fieldClass} /></label>}
-          <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Prix de vente ({selected?.devise || currency}) <b className="text-rose-500">*</b></span><input required disabled={readOnly} type="number" min="0.01" step="0.01" value={form.prixVente} onChange={(event) => setForm({ ...form, prixVente: event.target.value })} className={fieldClass} /></label>
+          <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Devise du produit <b className="text-rose-500">*</b></span><select required disabled={readOnly} value={form.devise} onChange={(event) => setForm({ ...form, devise: event.target.value })} className={fieldClass}>{DEVISES.map((devise) => <option key={devise} value={devise}>{devise}</option>)}</select></label>
+          {canViewPurchasePrice && <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Prix d’achat ({form.devise}) <b className="text-rose-500">*</b></span><input required disabled={readOnly} type="number" min="0.01" step="0.01" value={form.prixAchat} onChange={(event) => setForm({ ...form, prixAchat: event.target.value })} className={fieldClass} /></label>}
+          <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Prix de vente ({form.devise}) <b className="text-rose-500">*</b></span><input required disabled={readOnly} type="number" min="0.01" step="0.01" value={form.prixVente} onChange={(event) => setForm({ ...form, prixVente: event.target.value })} className={fieldClass} /></label>
           {modalMode === "create" ? <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Stock initial <b className="text-rose-500">*</b></span><input required type="number" min="0" value={form.stockInitial} onChange={(event) => setForm({ ...form, stockInitial: event.target.value })} className={fieldClass} /></label> : <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Stock actuel</span><input disabled value={`${selected?.stock || 0} ${selected?.unite || ""}`} className={`${fieldClass} bg-slate-100`} /></label>}
           <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Seuil d’alerte <b className="text-rose-500">*</b></span><input required disabled={readOnly} type="number" min="0" value={form.seuilAlerte} onChange={(event) => setForm({ ...form, seuilAlerte: event.target.value })} className={fieldClass} /></label>
           <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Unité <b className="text-rose-500">*</b></span><select required disabled={readOnly} value={form.unite} onChange={(event) => setForm({ ...form, unite: event.target.value })} className={fieldClass}>{UNITS.map((unit) => <option key={unit}>{unit}</option>)}</select></label>

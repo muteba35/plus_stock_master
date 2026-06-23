@@ -4,7 +4,7 @@ import { Download, FileSpreadsheet, Loader2, Upload, XCircle } from "lucide-reac
 import { InventoryModal, primaryButton, secondaryButton } from "../../components/inventory-ui";
 import { formatMoney } from "../../components/currency";
 
-type ImportRow = { line: number; nom: string; sku: string; categorie: string; prixVente: string };
+type ImportRow = { line: number; nom: string; sku: string; categorie: string; prixVente: string; devise?: string };
 type Props = {
   open: boolean; saving: boolean; rows: ImportRow[]; fileName: string; error: string; currency: string;
   onClose: () => void; onDownloadTemplate: () => void; onFile: (file?: File) => void; onImport: () => void;
@@ -25,7 +25,7 @@ export default function ProductImportModal({ open, saving, rows, fileName, error
           <input type="file" accept=".csv,text/csv" className="hidden" onChange={(event) => onFile(event.target.files?.[0])} />
         </label>
         {fileName && <div className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-slate-50 border border-slate-100"><span className="text-xs font-medium text-slate-600 truncate">{fileName}</span><span className="text-[10px] font-bold text-slate-400 whitespace-nowrap">{rows.length} ligne(s)</span></div>}
-        {rows.length > 0 && <div className="border border-slate-200 rounded-xl overflow-hidden"><div className="px-3 py-2 bg-slate-50 text-[10px] font-bold uppercase text-slate-400">Aperçu des premières lignes</div><div className="divide-y divide-slate-100">{rows.slice(0, 4).map((row) => <div key={row.line} className="px-3 py-2 flex items-center justify-between gap-3"><div className="min-w-0"><p className="text-xs font-bold text-slate-700 truncate">{row.nom}</p><p className="text-[10px] text-slate-400 truncate">{row.sku} · {row.categorie}</p></div><span className="text-xs font-bold text-slate-600 whitespace-nowrap">{formatMoney(row.prixVente, currency)}</span></div>)}</div></div>}
+        {rows.length > 0 && <div className="border border-slate-200 rounded-xl overflow-hidden"><div className="px-3 py-2 bg-slate-50 text-[10px] font-bold uppercase text-slate-400">Aperçu des premières lignes</div><div className="divide-y divide-slate-100">{rows.slice(0, 4).map((row) => <div key={row.line} className="px-3 py-2 flex items-center justify-between gap-3"><div className="min-w-0"><p className="text-xs font-bold text-slate-700 truncate">{row.nom}</p><p className="text-[10px] text-slate-400 truncate">{row.sku} · {row.categorie}</p></div><span className="text-xs font-bold text-slate-600 whitespace-nowrap">{formatMoney(row.prixVente, row.devise || currency)}</span></div>)}</div></div>}
       </div>
     </InventoryModal>
   );

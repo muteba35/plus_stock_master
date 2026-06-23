@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { CalendarDays, Eye, Loader2, ReceiptText, TrendingUp, WalletCards, XCircle } from "lucide-react";
-import { formatMoney } from "../../inventaire/components/currency";
+import { formatMoney, getActiveBoutiqueCurrency } from "../../inventaire/components/currency";
 import { CashBadge, CashHeader, CashMetric, CashModal, CashPagination, CashSearch, fieldClass, secondaryButton } from "../components/cashier-ui";
 
 type ApiUser = { nom?: string; prenom?: string };
@@ -23,6 +23,7 @@ type ApiSale = {
   factureReference?: string;
   clientNom: string;
   devise: string;
+  deviseReference?: string;
   paiement: string;
   statut: "PAYEE" | "ANNULEE" | "REMBOURSEE";
   sousTotalHT: number;
@@ -61,16 +62,6 @@ const formatDate = (value: string) => {
 };
 
 const formatDateInput = (value: string) => value ? new Date(value).toISOString().slice(0, 10) : "";
-
-const formatGroupedMoney = (sales: ApiSale[]) => {
-  const totals = new Map<string, number>();
-  sales.forEach((sale) => {
-    if (sale.statut !== "PAYEE") return;
-    totals.set(sale.devise, (totals.get(sale.devise) || 0) + Number(sale.totalTTC || 0));
-  });
-  const values = [...totals.entries()].map(([devise, amount]) => formatMoney(amount, devise));
-  return values.length ? values.join(" · ") : formatMoney(0, "USD ($)");
-};
 
 export default function SalesHistoryPage() {
   const [sales, setSales] = useState<ApiSale[]>([]);
@@ -120,6 +111,7 @@ export default function SalesHistoryPage() {
 
   const visibleSales = filtered.slice((page - 1) * pageSize, page * pageSize);
   const paidSales = filtered.filter((sale) => sale.statut === "PAYEE");
+  const reportCurrency = paidSales[0]?.deviseReference || paidSales[0]?.devise || getActiveBoutiqueCurrency();
   const totalPaid = paidSales.reduce((sum, sale) => sum + Number(sale.totalTTC || 0), 0);
   const averageSale = paidSales.length ? totalPaid / paidSales.length : 0;
 
@@ -134,8 +126,8 @@ export default function SalesHistoryPage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <CashMetric label="Ventes affichées" value={`${filtered.length}`} detail={scope === "all" ? "Toutes opérations" : "Mes opérations"} icon={ReceiptText} />
-        <CashMetric label="Total encaissé" value={formatGroupedMoney(filtered)} detail="Ventes payées uniquement" icon={WalletCards} tone="emerald" />
-        <CashMetric label="Panier moyen" value={formatMoney(averageSale, paidSales[0]?.devise || "USD ($)")} detail="Moyenne sur les ventes payées" icon={TrendingUp} tone="amber" />
+        <CashMetric label="Total encaissé" value={formatMoney(totalPaid, reportCurrency)} detail={`Ventes payées en ${reportCurrency}`} icon={WalletCards} tone="emerald" />
+        <CashMetric label="Panier moyen" value={formatMoney(averageSale, reportCurrency)} detail="Moyenne sur les ventes payées" icon={TrendingUp} tone="amber" />
         <CashMetric label="Ventes annulées" value={`${filtered.filter((sale) => sale.statut === "ANNULEE").length}`} detail="Opérations non retenues" icon={XCircle} tone="rose" />
       </div>
 

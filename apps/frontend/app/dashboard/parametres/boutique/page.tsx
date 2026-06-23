@@ -46,6 +46,12 @@ interface BoutiqueForm {
   tailleBusiness: string;
 }
 
+interface ExchangeRate {
+  source: string;
+  cible: string;
+  taux: number;
+}
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://plus-stock-master.onrender.com/api";
 
 const SECTEURS = [
@@ -117,6 +123,14 @@ export default function BoutiquePage() {
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [userPermissions, setUserPermissions] = useState<string[]>([]);
   const [isOwner, setIsOwner] = useState(false);
+  const [referenceCurrency, setReferenceCurrency] = useState("USD ($)");
+  const [exchangeRates, setExchangeRates] = useState<ExchangeRate[]>([
+    { source: "USD ($)", cible: "CDF (FC)", taux: 2300 },
+    { source: "EUR (€)", cible: "CDF (FC)", taux: 2500 },
+    { source: "EUR (€)", cible: "USD ($)", taux: 1.08 },
+  ]);
+  const [ratesLoading, setRatesLoading] = useState(false);
+  const [ratesSaving, setRatesSaving] = useState(false);
 
   const showToast = useCallback((type: "success" | "error", message: string) => {
     setToast({ type, message });
@@ -177,6 +191,50 @@ export default function BoutiquePage() {
     window.dispatchEvent(new Event("userProfileUpdated"));
   }, []);
 
+  const fetchCurrencySettings = useCallback(async () => {
+    try {
+      setRatesLoading(true);
+      const response = await fetch(`${API_URL}/boutiques/settings/exchange-rates`, {
+        method: "GET",
+        headers: getAuthHeaders(),
+      });
+      const { data, message } = await readApiMessage(response, "Impossible de charger les taux de change.");
+      if (!response.ok || !data?.success) throw new Error(message);
+      setReferenceCurrency(data.deviseReference || "USD ($)");
+      setExchangeRates((data.rates || []).filter((rate: ExchangeRate) => rate.source !== rate.cible));
+    } catch (error) {
+      showToast("error", error instanceof Error ? error.message : "Erreur lors du chargement des taux.");
+    } finally {
+      setRatesLoading(false);
+    }
+  }, [getAuthHeaders, showToast]);
+
+  const saveCurrencySettings = async () => {
+    try {
+      setRatesSaving(true);
+      const response = await fetch(`${API_URL}/boutiques/settings/exchange-rates`, {
+        method: "PUT",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ deviseReference: referenceCurrency, rates: exchangeRates }),
+      });
+      const { data, message } = await readApiMessage(response, "Impossible d'enregistrer les taux de change.");
+      if (!response.ok || !data?.success) throw new Error(message);
+      setReferenceCurrency(data.deviseReference || referenceCurrency);
+      setExchangeRates((data.rates || exchangeRates).filter((rate: ExchangeRate) => rate.source !== rate.cible));
+      showToast("success", data.message || "Devise et taux mis à jour.");
+      await fetchBoutiques();
+    } catch (error) {
+      showToast("error", error instanceof Error ? error.message : "Erreur lors de l'enregistrement des taux.");
+    } finally {
+      setRatesSaving(false);
+    }
+  };
+
+  const updateRate = (index: number, value: string) => {
+    const taux = Number(value);
+    setExchangeRates((current) => current.map((rate, rateIndex) => rateIndex === index ? { ...rate, taux } : rate));
+  };
+
   const fetchBoutiques = useCallback(async () => {
     try {
       setLoading(true);
@@ -201,6 +259,7 @@ export default function BoutiquePage() {
 
   useEffect(() => {
     fetchBoutiques();
+    fetchCurrencySettings();
 
     try {
       setUserPermissions(JSON.parse(localStorage.getItem("user_permissions") || "[]"));
@@ -210,11 +269,12 @@ export default function BoutiquePage() {
       setUserPermissions([]);
       setIsOwner(false);
     }
-  }, [fetchBoutiques]);
+  }, [fetchBoutiques, fetchCurrencySettings]);
 
   const canView = isOwner || userPermissions.includes("VOIR_BOUTIQUES");
   const canCreate = isOwner || userPermissions.includes("CREER_BOUTIQUE");
   const canEdit = isOwner || userPermissions.includes("MODIFIER_BOUTIQUE");
+  const canChangeCurrency = isOwner || userPermissions.includes("CHANGER_DEVISE");
   const canDelete = isOwner || userPermissions.includes("SUPPRIMER_BOUTIQUE");
   const canActivate = isOwner || userPermissions.includes("ACTIVER_BOUTIQUE");
 
@@ -250,7 +310,7 @@ export default function BoutiquePage() {
   const handleOpenCreate = () => {
     setSelectedBoutique(null);
     setModalMode("create");
-    setFormData(DEFAULT_FORM);
+    setFormData({ ...DEFAULT_FORM, deviseParDefaut: referenceCurrency });
     setFormError("");
     setIsModalOpen(true);
   };
@@ -301,6 +361,7 @@ export default function BoutiquePage() {
         body: JSON.stringify({
           ...formData,
           nom: formData.nom.trim(),
+          deviseParDefaut: isEdit ? selectedBoutique.deviseParDefaut : formData.deviseParDefaut,
         }),
       });
 
@@ -462,6 +523,54 @@ export default function BoutiquePage() {
           </div>
         )}
       </div>
+
+      {canChangeCurrency && (
+        <section className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+          <div className="p-5 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-sm font-bold text-slate-900">Devise & taux de change</h2>
+              <p className="text-[11px] text-slate-400 mt-1">
+                La devise de référence consolide la caisse, les factures, les historiques et les futurs rapports.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={saveCurrencySettings}
+              disabled={ratesSaving || ratesLoading}
+              className="inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl disabled:opacity-50"
+            >
+              {ratesSaving && <Loader2 size={14} className="animate-spin" />}
+              Enregistrer les taux
+            </button>
+          </div>
+          <div className="p-5 grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)] gap-5">
+            <label className="space-y-1.5">
+              <span className="text-[10px] font-bold uppercase text-slate-400">Devise de référence</span>
+              <select value={referenceCurrency} onChange={(event) => setReferenceCurrency(event.target.value)} className="w-full text-xs font-bold px-3 py-2.5 border border-slate-200 rounded-xl bg-white focus:outline-none focus:border-indigo-500">
+                {DEVISES.map((devise) => <option key={devise} value={devise}>{devise}</option>)}
+              </select>
+              <p className="text-[10px] text-slate-400 leading-relaxed">
+                Les ventes multi-devises seront converties vers cette devise au moment de l'encaissement.
+              </p>
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {exchangeRates.map((rate, index) => (
+                <label key={`${rate.source}-${rate.cible}`} className="space-y-1.5 p-3 rounded-xl border border-slate-100 bg-slate-50/60">
+                  <span className="text-[10px] font-bold uppercase text-slate-400">{rate.source} vers {rate.cible}</span>
+                  <input
+                    type="number"
+                    min="0.000001"
+                    step="0.000001"
+                    value={rate.taux}
+                    onChange={(event) => updateRate(index, event.target.value)}
+                    className="w-full text-xs font-bold px-3 py-2.5 border border-slate-200 rounded-xl bg-white focus:outline-none focus:border-indigo-500"
+                  />
+                </label>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-visible">
         <div ref={filterMenuRef} className="p-4 border-b border-slate-100 flex items-center gap-3 relative">
@@ -896,15 +1005,17 @@ function BoutiqueModal({
                   options={SECTEURS}
                 />
 
-                <SelectInput
-                  label="Devise par defaut"
-                  name="deviseParDefaut"
-                  icon={Coins}
-                  value={formData.deviseParDefaut}
-                  onChange={onChange}
-                  disabled={isSubmitting || isView}
-                  options={DEVISES}
-                />
+                {mode === "create" && (
+                  <SelectInput
+                    label="Devise par défaut"
+                    name="deviseParDefaut"
+                    icon={Coins}
+                    value={formData.deviseParDefaut}
+                    onChange={onChange}
+                    disabled={isSubmitting}
+                    options={DEVISES}
+                  />
+                )}
 
                 <SelectInput
                   label="Taille business"
@@ -1006,3 +1117,4 @@ function SelectInput({
     </div>
   );
 }
+

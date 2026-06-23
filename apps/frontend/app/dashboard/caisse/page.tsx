@@ -37,6 +37,7 @@ type Product = {
 };
 
 type CartLine = { product: Product; quantity: number };
+type ExchangeRate = { source: string; cible: string; taux: number };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://plus-stock-master.onrender.com/api";
 const TVA_RATE = 0.16;
@@ -62,6 +63,7 @@ export default function CashRegisterPage() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [currency, setCurrency] = useState("USD ($)");
+  const [exchangeRates, setExchangeRates] = useState<ExchangeRate[]>([]);
   const [discount, setDiscount] = useState(0);
   const [customer, setCustomer] = useState("");
   const [paymentOpen, setPaymentOpen] = useState(false);
@@ -78,10 +80,38 @@ export default function CashRegisterPage() {
 
   const canDiscount = isOwner || permissions.includes("APPLIQUER_REMISE");
 
+  const getRate = useCallback((source?: string, cible?: string) => {
+    const from = source || currency;
+    const to = cible || currency;
+    if (from === to) return 1;
+    const direct = exchangeRates.find((rate) => rate.source === from && rate.cible === to);
+    if (direct) return Number(direct.taux);
+    const inverse = exchangeRates.find((rate) => rate.source === to && rate.cible === from);
+    if (inverse) return 1 / Number(inverse.taux);
+    return 0;
+  }, [currency, exchangeRates]);
+
   const stopCameraScanner = useCallback(() => {
     scannerControlsRef.current?.stop();
     scannerControlsRef.current = null;
     setCameraActive(false);
+  }, []);
+
+  const fetchCurrencySettings = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${API_URL}/boutiques/settings/exchange-rates`, {
+        headers: { Authorization: token ? `Bearer ${token}` : "" },
+      });
+      const data = await response.json();
+      if (response.ok && data.success) {
+        const nextCurrency = data.deviseReference || getActiveBoutiqueCurrency();
+        setCurrency(nextCurrency);
+        setExchangeRates(data.rates || []);
+      }
+    } catch {
+      setCurrency(getActiveBoutiqueCurrency());
+    }
   }, []);
 
   const fetchProducts = useCallback(async () => {
@@ -108,7 +138,8 @@ export default function CashRegisterPage() {
 
   useEffect(() => {
     void fetchProducts();
-  }, [fetchProducts]);
+    void fetchCurrencySettings();
+  }, [fetchProducts, fetchCurrencySettings]);
 
   useEffect(() => {
     const syncCurrency = () => setCurrency(getActiveBoutiqueCurrency());
@@ -142,13 +173,17 @@ export default function CashRegisterPage() {
     [products, category, search]
   );
 
-  const cartCurrency = cart[0]?.product.devise || currency;
-  const subtotalHT = cart.reduce((sum, line) => sum + line.product.prixVente * line.quantity, 0);
+  const cartCurrency = currency;
+  const subtotalHT = cart.reduce((sum, line) => sum + (line.product.prixVente * getRate(line.product.devise || currency, currency)) * line.quantity, 0);
   const discountAmount = canDiscount ? (subtotalHT * Math.min(Math.max(discount, 0), 100)) / 100 : 0;
   const taxableAmount = subtotalHT - discountAmount;
   const tvaAmount = taxableAmount * TVA_RATE;
   const totalTTC = taxableAmount + tvaAmount;
-  const change = Math.max(0, Number(received || 0) - totalTTC);
+  const receivedAmount = Number(received || 0);
+  const change = Math.max(0, receivedAmount - totalTTC);
+
+  const convertedProductPrice = (product: Product) => product.prixVente * getRate(product.devise || currency, currency);
+  const hasCurrencyConversion = (product: Product) => (product.devise || currency) !== currency;
 
   const addProduct = (product: Product, quantity = 1) => {
     const productCurrency = product.devise || "USD ($)";
@@ -158,8 +193,9 @@ export default function CashRegisterPage() {
       return;
     }
 
-    if (cart.length && productCurrency !== cartCurrency) {
-      setMessage(`Ce panier est en ${cartCurrency}. Terminez-le avant d'ajouter un produit en ${productCurrency}.`);
+    const rate = getRate(productCurrency, currency);
+    if (!rate) {
+      setMessage(`Taux de change manquant pour ${productCurrency} vers ${currency}.`);
       return;
     }
 
@@ -302,7 +338,8 @@ export default function CashRegisterPage() {
           clientNom: customer || "Client comptoir",
           paiement: paymentMethod,
           remisePourcentage: canDiscount ? discount : 0,
-          montantRecu: paymentMethod === "Espèces" ? Number(received || 0) : totalTTC,
+          devisePaiement: currency,
+          montantRecu: paymentMethod === "Espèces" ? receivedAmount : totalTTC,
           lignes: cart.map((line) => ({
             produitId: line.product._id,
             quantite: line.quantity,
@@ -396,6 +433,9 @@ export default function CashRegisterPage() {
                     </p>
                     <p className="text-sm font-black text-indigo-600 mt-2">
                       {formatMoney(product.prixVente, product.devise || "USD ($)")} HT
+                      {hasCurrencyConversion(product) && getRate(product.devise || currency, currency) > 0 && (
+                        <span className="block text-[11px] text-slate-500 font-bold mt-1">→ {formatMoney(convertedProductPrice(product), currency)} HT</span>
+                      )}
                     </p>
                   </div>
                 </button>
@@ -427,7 +467,7 @@ export default function CashRegisterPage() {
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-bold truncate">{line.product.nom}</p>
                     <p className="text-[10px] text-slate-400 mt-1">
-                      {formatMoney(line.product.prixVente, line.product.devise || "USD ($)")} HT / unité
+                      {formatMoney(line.product.prixVente, line.product.devise || "USD ($)")} HT / unité · {formatMoney(line.product.prixVente * getRate(line.product.devise || currency, currency), currency)}
                     </p>
                   </div>
                   <div className="flex items-center border border-slate-200 rounded-lg overflow-hidden">
@@ -536,7 +576,7 @@ export default function CashRegisterPage() {
         footer={
           <>
             <button disabled={saving} onClick={() => setPaymentOpen(false)} className={secondaryButton}>Annuler</button>
-            <button onClick={completePayment} disabled={saving || (paymentMethod === "Espèces" && Number(received) < totalTTC)} className={primaryButton}>
+            <button onClick={completePayment} disabled={saving || (paymentMethod === "Espèces" && receivedAmount < totalTTC)} className={primaryButton}>
               {saving ? <Loader2 size={14} className="animate-spin" /> : <ReceiptText size={14} />}
               Valider le paiement
             </button>
@@ -560,12 +600,14 @@ export default function CashRegisterPage() {
           {paymentMethod === "Espèces" && (
             <>
               <label className="block space-y-1.5">
-                <span className="text-[10px] font-bold uppercase text-slate-400">Montant reçu</span>
-                <input autoFocus type="number" min={totalTTC} value={received} onChange={(event) => setReceived(event.target.value)} className={fieldClass} />
+                <span className="text-[10px] font-bold uppercase text-slate-400">Montant reçu ({currency})</span>
+                <input autoFocus type="number" min={0} value={received} onChange={(event) => setReceived(event.target.value)} className={fieldClass} />
               </label>
-              <div className="p-4 bg-slate-50 rounded-xl flex justify-between">
-                <span className="text-xs font-bold text-slate-500">Monnaie à rendre</span>
-                <strong>{formatMoney(change, cartCurrency)}</strong>
+              <div className="p-4 bg-slate-50 rounded-xl space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-xs font-bold text-slate-500">Monnaie à rendre</span>
+                  <strong>{formatMoney(change, currency)}</strong>
+                </div>
               </div>
             </>
           )}
