@@ -22,6 +22,14 @@ const permissions = [
   { nom: "ANNULER_VENTE", module: "VENTE", description: "Permet de supprimer une vente déjà validée (Droit sensible)" },
   { nom: "IMPRIMER_FACTURE", module: "VENTE", description: "Permet de générer le ticket de caisse" },
   { nom: "VOIR_MES_VENTES", module: "VENTE", description: "Consulter uniquement les ventes que l\'utilisateur a lui-même encaissées" },
+  { nom: "EXPORTER_HISTORIQUE_VENTES", module: "VENTE", description: "Exporter l'historique des ventes en Excel, Word ou PDF" },
+  { nom: "VOIR_FACTURES", module: "VENTE", description: "Consulter toutes les factures de la boutique" },
+  { nom: "VOIR_MES_FACTURES", module: "VENTE", description: "Consulter uniquement ses propres factures" },
+  { nom: "EXPORTER_FACTURES", module: "VENTE", description: "Exporter les factures en Excel, Word ou PDF" },
+  { nom: "VOIR_RETOURS_CLIENTS", module: "VENTE", description: "Consulter tous les retours clients de la boutique" },
+  { nom: "VOIR_MES_RETOURS_CLIENTS", module: "VENTE", description: "Consulter uniquement ses propres retours clients" },
+  { nom: "CREER_RETOUR_CLIENT", module: "VENTE", description: "Enregistrer un remboursement, un echange ou un avoir client" },
+  { nom: "EXPORTER_RETOURS_CLIENTS", module: "VENTE", description: "Exporter les retours clients en Excel, Word ou PDF" },
 
   // --- MODULE : INVENTAIRE ---
   { nom: "VOIR_RESUME_INVENTAIRE", module: "INVENTAIRE", description: "Consulter la vue globale et les indicateurs de l'inventaire" },

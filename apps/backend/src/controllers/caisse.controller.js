@@ -307,7 +307,7 @@ export const getFactures = async (req, res) => {
       return res.status(403).json({ success: false, message: "Cette boutique n'appartient pas a votre compte." });
     }
 
-    const canViewAll = req.user?.isOwner || req.user?.permissions?.includes("VOIR_HISTORIQUE_VENTES");
+    const canViewAll = req.user?.isOwner || req.user?.permissions?.includes("VOIR_FACTURES") || req.user?.permissions?.includes("VOIR_HISTORIQUE_VENTES");
     const filter = canViewAll ? { boutiqueId } : { boutiqueId, utilisateurId: req.user.id };
     const factures = await Vente.find(filter)
       .populate("utilisateurId", "nom prenom")
@@ -351,12 +351,15 @@ export const getRetours = async (req, res) => {
       return res.status(403).json({ success: false, message: "Cette boutique n'appartient pas a votre compte." });
     }
 
-    const retours = await RetourClient.find({ boutiqueId })
+    const canViewAll = req.user?.isOwner || req.user?.permissions?.includes("VOIR_RETOURS_CLIENTS") || req.user?.permissions?.includes("ANNULER_VENTE");
+    const retourFilter = canViewAll ? { boutiqueId } : { boutiqueId, utilisateurId: req.user.id };
+    const retours = await RetourClient.find(retourFilter)
       .populate("utilisateurId", "nom prenom")
       .sort({ createdAt: -1 })
       .limit(500);
 
-    const ventes = await Vente.find({ boutiqueId, statut: { $in: ["PAYEE", "REMBOURSEE"] } })
+    const saleFilter = canViewAll ? { boutiqueId, statut: { $in: ["PAYEE", "REMBOURSEE"] } } : { boutiqueId, utilisateurId: req.user.id, statut: { $in: ["PAYEE", "REMBOURSEE"] } };
+    const ventes = await Vente.find(saleFilter)
       .populate("utilisateurId", "nom prenom")
       .sort({ createdAt: -1 })
       .limit(250);

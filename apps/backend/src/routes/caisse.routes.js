@@ -8,16 +8,16 @@ router.use(protect);
 
 router
   .route("/factures")
-  .get(checkAnyPermission("IMPRIMER_FACTURE", "VOIR_HISTORIQUE_VENTES", "VOIR_MES_VENTES"), getFactures);
+  .get(checkAnyPermission("VOIR_FACTURES", "VOIR_MES_FACTURES", "EXPORTER_FACTURES", "IMPRIMER_FACTURE", "VOIR_HISTORIQUE_VENTES", "VOIR_MES_VENTES"), getFactures);
 
 router
   .route("/retours")
-  .get(checkPermission("ANNULER_VENTE"), getRetours)
-  .post(checkPermission("ANNULER_VENTE"), createRetour);
+  .get(checkAnyPermission("VOIR_RETOURS_CLIENTS", "VOIR_MES_RETOURS_CLIENTS", "EXPORTER_RETOURS_CLIENTS", "ANNULER_VENTE"), getRetours)
+  .post(checkAnyPermission("CREER_RETOUR_CLIENT", "ANNULER_VENTE"), createRetour);
 
 router
   .route("/ventes")
-  .get(checkAnyPermission("VOIR_HISTORIQUE_VENTES", "VOIR_MES_VENTES"), getVentes)
+  .get(checkAnyPermission("VOIR_HISTORIQUE_VENTES", "VOIR_MES_VENTES", "EXPORTER_HISTORIQUE_VENTES"), getVentes)
   .post(checkPermission("EFFECTUER_VENTE"), createVente);
 
 export default router;
