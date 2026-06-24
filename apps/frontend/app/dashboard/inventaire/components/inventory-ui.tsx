@@ -17,7 +17,7 @@ export function PageHeader({ title, subtitle, action }: { title: string; subtitl
   );
 }
 
-export function MetricCard({ label, value, detail, icon: Icon, tone = "indigo" }: { label: string; value: string; detail: string; icon: LucideIcon; tone?: "indigo" | "emerald" | "amber" | "rose" }) {
+export function MetricCard({ label, value, detail, icon: Icon, tone = "indigo", onInspect }: { label: string; value: string; detail: string; icon: LucideIcon; tone?: "indigo" | "emerald" | "amber" | "rose"; onInspect?: () => void }) {
   const tones = {
     indigo: "bg-indigo-50 text-indigo-600 border-indigo-100",
     emerald: "bg-emerald-50 text-emerald-600 border-emerald-100",
@@ -29,10 +29,10 @@ export function MetricCard({ label, value, detail, icon: Icon, tone = "indigo" }
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{label}</p>
-          <p className="text-2xl font-black text-slate-900 mt-2 truncate">{value}</p>
+          <p className="text-xl sm:text-2xl font-black text-slate-900 mt-2 leading-tight whitespace-normal break-words">{value}</p>
           <p className="text-[11px] text-slate-400 font-medium mt-1">{detail}</p>
         </div>
-        <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 ${tones[tone]}`}><Icon size={18} /></div>
+        <div className="flex flex-col items-end gap-2 shrink-0"><div className={`w-10 h-10 rounded-xl border flex items-center justify-center ${tones[tone]}`}><Icon size={18} /></div>{onInspect && <button type="button" onClick={onInspect} className="w-7 h-7 rounded-lg border border-slate-200 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 text-[11px] font-black" title="Voir la valeur exacte">i</button>}</div>
       </div>
     </div>
   );

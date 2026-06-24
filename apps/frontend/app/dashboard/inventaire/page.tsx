@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, ArrowDownLeft, ArrowRight, ArrowUpRight, Boxes, CircleDollarSign, Loader2, PackageCheck, PackagePlus, Tags, XCircle } from "lucide-react";
-import { MetricCard, PageHeader, primaryButton } from "./components/inventory-ui";
+import { InventoryModal, MetricCard, PageHeader, primaryButton, secondaryButton } from "./components/inventory-ui";
 import { formatMoney, getActiveBoutiqueCurrency } from "./components/currency";
 
 type Movement = {
@@ -53,6 +53,7 @@ export default function InventairePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [currency, setCurrency] = useState("USD ($)");
+  const [metricDetail, setMetricDetail] = useState<{ title: string; value: string; detail: string } | null>(null);
   const [{ permissions, isOwner }] = useState(getStoredAccess);
 
   const hasPermission = (permission: string) => isOwner || permissions.includes(permission);
@@ -88,6 +89,14 @@ export default function InventairePage() {
   const healthRate = totalProducts > 0 ? Math.round((data.health.available / totalProducts) * 100) : 100;
   const formatDate = (value: string) => new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short" }).format(new Date(value));
   const movementLabel = (type: Movement["type"]) => type === "ENTREE" ? "Entrée" : type === "SORTIE" ? "Sortie" : "Ajustement";
+  const compactNumber = (value: number) => Math.abs(value) < 1000000 ? value.toLocaleString("fr-FR") : new Intl.NumberFormat("fr-FR", { notation: "compact", maximumFractionDigits: 2 }).format(value);
+  const compactMoney = (value: number, devise: string) => {
+    if (Math.abs(value) < 1000000) return formatMoney(value, devise);
+    const symbol = devise.includes("(") ? devise.replace(/^.*\((.*)\).*$/, "$1") : devise;
+    return `${new Intl.NumberFormat("fr-FR", { notation: "compact", maximumFractionDigits: 2 }).format(value)} ${symbol}`;
+  };
+  const stockValueFull = data.metrics.stockValues.length ? data.metrics.stockValues.map((amount) => formatMoney(amount.value, amount.devise)).join(" · ") : formatMoney(0, currency);
+  const stockValueCompact = data.metrics.stockValues.length ? data.metrics.stockValues.map((amount) => compactMoney(amount.value, amount.devise)).join(" · ") : formatMoney(0, currency);
 
   if (loading) {
     return <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3 text-slate-400"><Loader2 size={28} className="animate-spin text-indigo-500" /><p className="text-xs font-medium">Calcul de la vue globale...</p></div>;
@@ -99,10 +108,10 @@ export default function InventairePage() {
       {error && <div className="flex items-center gap-2 p-3 rounded-xl border border-rose-100 bg-rose-50 text-rose-700 text-xs font-semibold"><XCircle size={15} />{error}<button onClick={() => void fetchOverview()} className="ml-auto font-bold underline">Réessayer</button></div>}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <MetricCard label="Produits actifs" value={String(data.metrics.totalProducts)} detail={`${data.metrics.categoriesActive} catégorie(s) active(s)`} icon={Boxes} />
-        <MetricCard label="Valeur du stock" value={data.metrics.stockValues.length ? data.metrics.stockValues.map((amount) => formatMoney(amount.value, amount.devise)).join(" · ") : formatMoney(0, currency)} detail={`Valorisation au prix de ${data.metrics.valuationType}`} icon={CircleDollarSign} tone="emerald" />
-        <MetricCard label="Alertes actives" value={String(data.health.alertCount)} detail={`${data.health.outOfStock} rupture(s)`} icon={AlertTriangle} tone="amber" />
-        <MetricCard label="Mouvements du jour" value={String(data.metrics.movementsToday)} detail={`${data.metrics.totalUnits.toLocaleString("fr-FR")} unité(s) en stock`} icon={PackageCheck} tone="rose" />
+        <MetricCard label="Produits actifs" value={compactNumber(data.metrics.totalProducts)} detail={`${data.metrics.categoriesActive} catégorie(s) active(s)`} icon={Boxes} onInspect={() => setMetricDetail({ title: "Produits actifs", value: data.metrics.totalProducts.toLocaleString("fr-FR"), detail: "Nombre exact de produits actifs" })} />
+        <MetricCard label="Valeur du stock" value={stockValueCompact} detail={`Valorisation au prix de ${data.metrics.valuationType}`} icon={CircleDollarSign} tone="emerald" onInspect={() => setMetricDetail({ title: "Valeur du stock", value: stockValueFull, detail: `Valorisation exacte au prix de ${data.metrics.valuationType}` })} />
+        <MetricCard label="Alertes actives" value={compactNumber(data.health.alertCount)} detail={`${data.health.outOfStock} rupture(s)`} icon={AlertTriangle} tone="amber" onInspect={() => setMetricDetail({ title: "Alertes actives", value: data.health.alertCount.toLocaleString("fr-FR"), detail: `${data.health.outOfStock} rupture(s), ${data.health.lowStock} stock(s) faible(s)` })} />
+        <MetricCard label="Mouvements du jour" value={compactNumber(data.metrics.movementsToday)} detail={`${compactNumber(data.metrics.totalUnits)} unité(s) en stock`} icon={PackageCheck} tone="rose" onInspect={() => setMetricDetail({ title: "Mouvements du jour", value: data.metrics.movementsToday.toLocaleString("fr-FR"), detail: `${data.metrics.totalUnits.toLocaleString("fr-FR")} unité(s) en stock` })} />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-[1.45fr_0.75fr] gap-5">
@@ -123,6 +132,7 @@ export default function InventairePage() {
         {canViewCategories && <QuickLink href="/dashboard/inventaire/categories" icon={Tags} title="Organiser les catégories" text="Structurer les familles d’articles" />}
         {canViewMovements && <QuickLink href="/dashboard/inventaire/stock" icon={Boxes} title="Consulter les mouvements" text="Suivre les entrées et les sorties" />}
       </section>
+      <InventoryModal open={Boolean(metricDetail)} onClose={() => setMetricDetail(null)} title={metricDetail?.title || "Détail"} subtitle={metricDetail?.detail || "Valeur exacte"} footer={<button onClick={() => setMetricDetail(null)} className={secondaryButton}>Fermer</button>}><div className="p-4 rounded-xl bg-slate-50 border border-slate-100"><p className="text-[10px] uppercase font-bold text-slate-400">Valeur exacte</p><p className="text-2xl font-black text-slate-900 mt-2 break-words">{metricDetail?.value}</p><p className="text-xs text-slate-500 mt-2">{metricDetail?.detail}</p></div></InventoryModal>
     </div>
   );
 }

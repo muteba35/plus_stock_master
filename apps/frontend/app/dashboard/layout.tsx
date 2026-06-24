@@ -316,8 +316,8 @@ export default function DashboardLayout({
       subMenu: [
         { name: "Accueil Caisse", href: "/dashboard/caisse", permission: "EFFECTUER_VENTE" },
         { name: "Historique Ventes", href: "/dashboard/caisse/ventes", permissions: ["VOIR_HISTORIQUE_VENTES", "VOIR_MES_VENTES"] },
-        { name: "Factures", href: "/dashboard/caisse/factures", permission: "IMPRIMER_FACTURE" },
-        { name: "Retours clients", href: "/dashboard/caisse/retours", permission: "ANNULER_VENTE" },
+        { name: "Factures", href: "/dashboard/caisse/factures", permissions: ["VOIR_FACTURES", "VOIR_MES_FACTURES", "IMPRIMER_FACTURE"] },
+        { name: "Retours clients", href: "/dashboard/caisse/retours", permissions: ["VOIR_RETOURS_CLIENTS", "VOIR_MES_RETOURS_CLIENTS", "CREER_RETOUR_CLIENT", "ANNULER_VENTE"] },
       ],
     },
     {

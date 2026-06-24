@@ -1,11 +1,44 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { AlertCircle, ArrowDownLeft, CheckCircle2, Eye, Loader2, Plus, RotateCcw, WalletCards, XCircle } from "lucide-react";
-import { formatMoney } from "../../inventaire/components/currency";
+import { AlertCircle, ArrowDownLeft, CheckCircle2, Download, Eye, FileText, Loader2, Plus, Printer, RotateCcw, WalletCards, XCircle } from "lucide-react";
+import { formatMoney, getActiveBoutiqueCurrency } from "../../inventaire/components/currency";
 import { CashBadge, CashHeader, CashMetric, CashModal, CashPagination, CashSearch, fieldClass, primaryButton, secondaryButton } from "../components/cashier-ui";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://plus-stock-master.onrender.com/api";
+
+const stripHtml = (value: string) => value.replace(/[<>]/g, "");
+const compactMoney = (value: number, devise: string) => {
+  const amount = Number(value || 0);
+  if (Math.abs(amount) < 1000000) return formatMoney(amount, devise);
+  const label = new Intl.NumberFormat("fr-FR", { notation: "compact", maximumFractionDigits: 2 }).format(amount);
+  return `${label} ${devise.replace(/.*\\((.*)\\).*/, "$1")}`;
+};
+const downloadBlob = (content: string, filename: string, type: string) => {
+  const url = URL.createObjectURL(new Blob([content], { type }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+};
+const exportPdf = (title: string, html: string) => {
+  const printWindow = window.open("", "_blank", "width=1100,height=760");
+  if (!printWindow) return;
+  printWindow.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${stripHtml(title)}</title><style>@page{size:A4 landscape;margin:12mm}body{font-family:Arial,sans-serif;color:#172033;margin:0}h1{font-size:20px;margin:0 0 4px}p{font-size:11px;color:#64748b;margin:0 0 18px}table{width:100%;border-collapse:collapse;font-size:9px}th{background:#f1f5f9;text-align:left;text-transform:uppercase;color:#64748b}th,td{padding:7px;border:1px solid #e2e8f0;vertical-align:top}.total{font-weight:800}.footer{margin-top:12px;font-size:9px;color:#94a3b8}</style></head><body><h1>${stripHtml(title)}</h1><p>Export du ${new Date().toLocaleString("fr-FR")}</p>${html}<div class="footer">StockMaster Pro · Document généré automatiquement</div><script>window.onload=()=>{window.print();}</script></body></html>`);
+  printWindow.document.close();
+};
+
+const getStoredAccess = () => {
+  if (typeof window === "undefined") return { permissions: [] as string[], isOwner: false };
+  try {
+    const permissions = JSON.parse(localStorage.getItem("user_permissions") || "[]") as string[];
+    const profile = JSON.parse(localStorage.getItem("user_profile") || "{}") as { role?: string };
+    return { permissions, isOwner: profile.role === "Admin Général" || profile.role === "Admin GÃ©nÃ©ral" };
+  } catch {
+    return { permissions: [] as string[], isOwner: false };
+  }
+};
 
 type SaleLine = {
   produitId: string;
@@ -21,6 +54,7 @@ type Sale = {
   factureReference: string;
   clientNom: string;
   devise: string;
+  deviseReference?: string;
   totalTTC: number;
   statut: string;
   lignes: SaleLine[];
@@ -35,6 +69,7 @@ type ReturnItem = {
   factureReference: string;
   clientNom: string;
   devise: string;
+  deviseReference?: string;
   typeRetour: "REMBOURSEMENT" | "ECHANGE" | "AVOIR";
   motif: string;
   statut: string;
@@ -72,13 +107,6 @@ const statusLabel = (status: string) => {
   return status;
 };
 
-const groupedMoney = (items: ReturnItem[]) => {
-  const groups = new Map<string, number>();
-  items.forEach((item) => groups.set(item.devise, (groups.get(item.devise) || 0) + Number(item.montantTotalTTC || 0)));
-  if (groups.size === 0) return formatMoney(0, "USD ($)");
-  return [...groups.entries()].map(([devise, total]) => formatMoney(total, devise)).join(" · ");
-};
-
 export default function CustomerReturnsPage() {
   const [returnsData, setReturnsData] = useState<ReturnItem[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
@@ -93,6 +121,8 @@ export default function CustomerReturnsPage() {
   const [modalError, setModalError] = useState("");
   const [success, setSuccess] = useState("");
   const [page, setPage] = useState(1);
+  const [metricOpen, setMetricOpen] = useState(false);
+  const [{ permissions, isOwner }] = useState(getStoredAccess);
   const pageSize = 8;
 
   const fetchReturns = async () => {
@@ -132,8 +162,16 @@ export default function CustomerReturnsPage() {
   }, [returnsData, search, status]);
 
   const visibleReturns = filtered.slice((page - 1) * pageSize, page * pageSize);
+  const canExportReturns = isOwner || permissions.includes("EXPORTER_RETOURS_CLIENTS") || permissions.includes("EXPORTER_RAPPORTS");
+  const canCreateReturn = isOwner || permissions.includes("CREER_RETOUR_CLIENT") || permissions.includes("ANNULER_VENTE");
   const validReturns = filtered.filter((item) => item.statut === "VALIDE");
   const exchanges = filtered.filter((item) => item.typeRetour === "ECHANGE").length;
+  const returnCurrency = validReturns[0]?.deviseReference || validReturns[0]?.devise || getActiveBoutiqueCurrency();
+  const totalReturned = validReturns.reduce((sum, item) => sum + Number(item.montantTotalTTC || 0), 0);
+  const returnsRowsHtml = (items: ReturnItem[]) => `<table><thead><tr><th>Retour</th><th>Vente</th><th>Client</th><th>Type</th><th>Montant</th><th>Statut</th></tr></thead><tbody>${items.map((item) => `<tr><td>${item.reference}</td><td>${item.venteReference}</td><td>${item.clientNom}</td><td>${typeLabel(item.typeRetour)}</td><td class="total">${formatMoney(item.montantTotalTTC, item.deviseReference || item.devise || returnCurrency)}</td><td>${statusLabel(item.statut)}</td></tr>`).join("")}</tbody></table>`;
+  const exportCsv = () => downloadBlob("\uFEFF" + ["retour;vente;client;type;montant;statut", ...filtered.map((item) => [item.reference, item.venteReference, item.clientNom, typeLabel(item.typeRetour), item.montantTotalTTC, statusLabel(item.statut)].join(";"))].join("\n"), "retours-clients.csv", "text/csv;charset=utf-8");
+  const exportWord = () => downloadBlob(`<html><body><h1>Retours clients</h1>${returnsRowsHtml(filtered)}</body></html>`, "retours-clients.doc", "application/msword;charset=utf-8");
+  const exportCurrentPdf = () => exportPdf("Retours clients", returnsRowsHtml(filtered));
 
   const openCreateModal = () => {
     const firstSale = sales[0];
@@ -191,10 +229,10 @@ export default function CustomerReturnsPage() {
         title="Retours clients"
         subtitle="Traitez les remboursements, échanges et retours après vente."
         action={
-          <button onClick={openCreateModal} className={primaryButton}>
+          <div className="flex flex-wrap gap-2">{canExportReturns && <><button onClick={exportCsv} disabled={filtered.length === 0} className={secondaryButton}><Download size={14} /> Excel</button><button onClick={exportWord} disabled={filtered.length === 0} className={secondaryButton}><FileText size={14} /> Word</button><button onClick={exportCurrentPdf} disabled={filtered.length === 0} className={secondaryButton}><Printer size={14} /> PDF</button></>}{canCreateReturn && <button onClick={openCreateModal} className={primaryButton}>
             <Plus size={15} />
             Nouveau retour
-          </button>
+          </button>}</div>
         }
       />
 
@@ -207,7 +245,7 @@ export default function CustomerReturnsPage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <CashMetric label="Retours affichés" value={`${filtered.length}`} detail="Selon les filtres" icon={RotateCcw} />
-        <CashMetric label="Montant retourné" value={groupedMoney(validReturns)} detail="Retours validés" icon={WalletCards} tone="emerald" />
+        <CashMetric label="Montant retourné" value={compactMoney(totalReturned, returnCurrency)} detail={`Retours validés en ${returnCurrency}`} icon={WalletCards} tone="emerald" onInspect={() => setMetricOpen(true)} />
         <CashMetric label="Échanges" value={`${exchanges}`} detail="Compensations produit" icon={ArrowDownLeft} tone="amber" />
         <CashMetric label="Refusés" value={`${filtered.filter((item) => item.statut === "REFUSE").length}`} detail="Demandes rejetées" icon={XCircle} tone="rose" />
       </div>
@@ -269,7 +307,7 @@ export default function CustomerReturnsPage() {
                           <p className="text-[10px] text-slate-400">Qté {firstLine?.quantite || 0}</p>
                         </td>
                         <td className="px-6 py-4">{typeLabel(item.typeRetour)}</td>
-                        <td className="px-6 py-4 font-black">{formatMoney(item.montantTotalTTC, item.devise)}</td>
+                        <td className="px-6 py-4 font-black">{formatMoney(item.montantTotalTTC, item.deviseReference || item.devise || returnCurrency)}</td>
                         <td className="px-6 py-4">
                           <span className={`inline-flex whitespace-nowrap px-2 py-1 rounded-md text-[10px] font-bold ${firstLine?.remiseEnStock ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
                             {firstLine?.remiseEnStock ? "Remis en stock" : "Non remis"}
@@ -400,7 +438,7 @@ export default function CustomerReturnsPage() {
               <div className="p-3 bg-slate-50 rounded-xl"><span className="text-slate-400 block">Vente</span><strong>{selectedReturn.venteReference}</strong></div>
               <div className="p-3 bg-slate-50 rounded-xl"><span className="text-slate-400 block">Facture</span><strong>{selectedReturn.factureReference}</strong></div>
               <div className="p-3 bg-slate-50 rounded-xl"><span className="text-slate-400 block">Client</span><strong>{selectedReturn.clientNom}</strong></div>
-              <div className="p-3 bg-slate-50 rounded-xl"><span className="text-slate-400 block">Montant</span><strong>{formatMoney(selectedReturn.montantTotalTTC, selectedReturn.devise)}</strong></div>
+              <div className="p-3 bg-slate-50 rounded-xl"><span className="text-slate-400 block">Montant</span><strong>{formatMoney(selectedReturn.montantTotalTTC, selectedReturn.deviseReference || selectedReturn.devise || returnCurrency)}</strong></div>
             </div>
             <div className="p-3 bg-slate-50 rounded-xl">
               <span className="text-slate-400 block mb-2">Produits retournés</span>
@@ -415,6 +453,7 @@ export default function CustomerReturnsPage() {
           </div>
         )}
       </CashModal>
+      <CashModal open={metricOpen} title="Montant retourné" subtitle="Montant complet des retours validés" onClose={() => setMetricOpen(false)} footer={<button onClick={() => setMetricOpen(false)} className={secondaryButton}>Fermer</button>}><div className="p-4 rounded-xl bg-slate-50 border border-slate-100"><p className="text-[10px] uppercase font-bold text-slate-400">Montant retourné</p><p className="text-2xl font-black text-slate-900 mt-2">{formatMoney(totalReturned, returnCurrency)}</p><p className="text-xs text-slate-500 mt-2">{validReturns.length} retour(s) validé(s)</p></div></CashModal>
     </div>
   );
 }

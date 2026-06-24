@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { CalendarDays, Eye, Loader2, ReceiptText, TrendingUp, WalletCards, XCircle } from "lucide-react";
+import { CalendarDays, Download, Eye, FileText, Loader2, Printer, ReceiptText, TrendingUp, WalletCards, XCircle } from "lucide-react";
 import { formatMoney, getActiveBoutiqueCurrency } from "../../inventaire/components/currency";
 import { CashBadge, CashHeader, CashMetric, CashModal, CashPagination, CashSearch, fieldClass, secondaryButton } from "../components/cashier-ui";
 
@@ -63,6 +63,39 @@ const formatDate = (value: string) => {
 
 const formatDateInput = (value: string) => value ? new Date(value).toISOString().slice(0, 10) : "";
 
+const stripHtml = (value: string) => value.replace(/[<>]/g, "");
+const compactMoney = (value: number, devise: string) => {
+  const amount = Number(value || 0);
+  if (Math.abs(amount) < 1000000) return formatMoney(amount, devise);
+  const label = new Intl.NumberFormat("fr-FR", { notation: "compact", maximumFractionDigits: 2 }).format(amount);
+  return `${label} ${devise.replace(/.*\\((.*)\\).*/, "$1")}`;
+};
+const downloadBlob = (content: string, filename: string, type: string) => {
+  const url = URL.createObjectURL(new Blob([content], { type }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+};
+const exportPdf = (title: string, html: string) => {
+  const printWindow = window.open("", "_blank", "width=1100,height=760");
+  if (!printWindow) return;
+  printWindow.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${stripHtml(title)}</title><style>@page{size:A4 landscape;margin:12mm}body{font-family:Arial,sans-serif;color:#172033;margin:0}h1{font-size:20px;margin:0 0 4px}p{font-size:11px;color:#64748b;margin:0 0 18px}table{width:100%;border-collapse:collapse;font-size:9px}th{background:#f1f5f9;text-align:left;text-transform:uppercase;color:#64748b}th,td{padding:7px;border:1px solid #e2e8f0;vertical-align:top}.total{font-weight:800}.footer{margin-top:12px;font-size:9px;color:#94a3b8}</style></head><body><h1>${stripHtml(title)}</h1><p>Export du ${new Date().toLocaleString("fr-FR")}</p>${html}<div class="footer">StockMaster Pro · Document généré automatiquement</div><script>window.onload=()=>{window.print();}</script></body></html>`);
+  printWindow.document.close();
+};
+
+const getStoredAccess = () => {
+  if (typeof window === "undefined") return { permissions: [] as string[], isOwner: false };
+  try {
+    const permissions = JSON.parse(localStorage.getItem("user_permissions") || "[]") as string[];
+    const profile = JSON.parse(localStorage.getItem("user_profile") || "{}") as { role?: string };
+    return { permissions, isOwner: profile.role === "Admin Général" || profile.role === "Admin GÃ©nÃ©ral" };
+  } catch {
+    return { permissions: [] as string[], isOwner: false };
+  }
+};
+
 export default function SalesHistoryPage() {
   const [sales, setSales] = useState<ApiSale[]>([]);
   const [scope, setScope] = useState<"all" | "own">("own");
@@ -73,6 +106,9 @@ export default function SalesHistoryPage() {
   const [payment, setPayment] = useState("Tous");
   const [date, setDate] = useState("");
   const [selectedSale, setSelectedSale] = useState<ApiSale | null>(null);
+  const [metricOpen, setMetricOpen] = useState(false);
+  const [averageOpen, setAverageOpen] = useState(false);
+  const [{ permissions, isOwner }] = useState(getStoredAccess);
   const [page, setPage] = useState(1);
 
   const fetchSales = useCallback(async () => {
@@ -110,24 +146,30 @@ export default function SalesHistoryPage() {
   }, [sales, search, status, payment, date]);
 
   const visibleSales = filtered.slice((page - 1) * pageSize, page * pageSize);
+  const canExportSales = isOwner || permissions.includes("EXPORTER_HISTORIQUE_VENTES") || permissions.includes("EXPORTER_RAPPORTS");
   const paidSales = filtered.filter((sale) => sale.statut === "PAYEE");
   const reportCurrency = paidSales[0]?.deviseReference || paidSales[0]?.devise || getActiveBoutiqueCurrency();
   const totalPaid = paidSales.reduce((sum, sale) => sum + Number(sale.totalTTC || 0), 0);
   const averageSale = paidSales.length ? totalPaid / paidSales.length : 0;
+  const salesRowsHtml = (items: ApiSale[]) => `<table><thead><tr><th>Référence</th><th>Client</th><th>Total TTC</th><th>TVA</th><th>Paiement</th><th>Caissier</th><th>Date</th><th>Statut</th></tr></thead><tbody>${items.map((sale) => `<tr><td>${sale.reference}</td><td>${sale.clientNom}</td><td class="total">${formatMoney(sale.totalTTC, sale.devise)}</td><td>${formatMoney(sale.tvaMontant, sale.devise)}</td><td>${sale.paiement}</td><td>${getCashierName(sale)}</td><td>${formatDate(sale.createdAt)}</td><td>${getStatusLabel(sale.statut)}</td></tr>`).join("")}</tbody></table>`;
+  const exportCsv = () => downloadBlob("\uFEFF" + ["reference;client;total_ttc;tva;paiement;caissier;date;statut", ...filtered.map((sale) => [sale.reference, sale.clientNom, sale.totalTTC, sale.tvaMontant, sale.paiement, getCashierName(sale), formatDate(sale.createdAt), getStatusLabel(sale.statut)].join(";"))].join("\n"), "historique-ventes.csv", "text/csv;charset=utf-8");
+  const exportWord = () => downloadBlob(`<html><body><h1>Historique ventes</h1>${salesRowsHtml(filtered)}</body></html>`, "historique-ventes.doc", "application/msword;charset=utf-8");
+  const exportCurrentPdf = () => exportPdf("Historique ventes", salesRowsHtml(filtered));
 
   return (
     <div className="space-y-5 bg-[#f9fafd] p-3 sm:p-6 rounded-2xl sm:rounded-3xl min-h-screen text-slate-800">
       <CashHeader
         title="Historique Ventes"
         subtitle={scope === "all" ? "Vue globale des ventes de tous les caissiers." : "Vue limitée à vos propres ventes."}
+        action={canExportSales ? <div className="flex flex-wrap gap-2"><button onClick={exportCsv} disabled={filtered.length === 0} className={secondaryButton}><Download size={14} /> Excel</button><button onClick={exportWord} disabled={filtered.length === 0} className={secondaryButton}><FileText size={14} /> Word</button><button onClick={exportCurrentPdf} disabled={filtered.length === 0} className={secondaryButton}><Printer size={14} /> PDF</button></div> : undefined}
       />
 
       {error && <div className="p-3 rounded-xl border border-rose-100 bg-rose-50 text-xs font-semibold text-rose-700">{error}</div>}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <CashMetric label="Ventes affichées" value={`${filtered.length}`} detail={scope === "all" ? "Toutes opérations" : "Mes opérations"} icon={ReceiptText} />
-        <CashMetric label="Total encaissé" value={formatMoney(totalPaid, reportCurrency)} detail={`Ventes payées en ${reportCurrency}`} icon={WalletCards} tone="emerald" />
-        <CashMetric label="Panier moyen" value={formatMoney(averageSale, reportCurrency)} detail="Moyenne sur les ventes payées" icon={TrendingUp} tone="amber" />
+        <CashMetric label="Total encaissé" value={compactMoney(totalPaid, reportCurrency)} detail={`Ventes payées en ${reportCurrency}`} icon={WalletCards} tone="emerald" onInspect={() => setMetricOpen(true)} />
+        <CashMetric label="Panier moyen" value={compactMoney(averageSale, reportCurrency)} detail="Moyenne sur les ventes payées" icon={TrendingUp} tone="amber" onInspect={() => setAverageOpen(true)} />
         <CashMetric label="Ventes annulées" value={`${filtered.filter((sale) => sale.statut === "ANNULEE").length}`} detail="Opérations non retenues" icon={XCircle} tone="rose" />
       </div>
 
@@ -237,6 +279,8 @@ export default function SalesHistoryPage() {
           </div>
         )}
       </CashModal>
+      <CashModal open={metricOpen} title="Total encaissé" subtitle="Montant complet des ventes payées" onClose={() => setMetricOpen(false)} footer={<button onClick={() => setMetricOpen(false)} className={secondaryButton}>Fermer</button>}><div className="p-4 rounded-xl bg-slate-50 border border-slate-100"><p className="text-[10px] uppercase font-bold text-slate-400">Total encaissé</p><p className="text-2xl font-black text-slate-900 mt-2">{formatMoney(totalPaid, reportCurrency)}</p><p className="text-xs text-slate-500 mt-2">{paidSales.length} vente(s) payée(s)</p></div></CashModal>
+      <CashModal open={averageOpen} title="Panier moyen" subtitle="Valeur exacte de la moyenne" onClose={() => setAverageOpen(false)} footer={<button onClick={() => setAverageOpen(false)} className={secondaryButton}>Fermer</button>}><div className="p-4 rounded-xl bg-slate-50 border border-slate-100"><p className="text-[10px] uppercase font-bold text-slate-400">Panier moyen</p><p className="text-2xl font-black text-slate-900 mt-2">{formatMoney(averageSale, reportCurrency)}</p><p className="text-xs text-slate-500 mt-2">Calculé sur {paidSales.length} vente(s) payée(s)</p></div></CashModal>
     </div>
   );
 }

@@ -23,6 +23,7 @@ type InvoiceSale = {
   factureReference: string;
   clientNom: string;
   devise: string;
+  deviseReference?: string;
   paiement: string;
   statut: "PAYEE" | "ANNULEE" | "REMBOURSEE";
   sousTotalHT: number;
@@ -47,6 +48,40 @@ const getCashierName = (sale: InvoiceSale) => {
     return `${sale.utilisateurId.prenom || ""} ${sale.utilisateurId.nom || ""}`.trim() || "Caissier";
   }
   return "Caissier";
+};
+
+
+const stripHtml = (value: string) => value.replace(/[<>]/g, "");
+const compactMoney = (value: number, devise: string) => {
+  const amount = Number(value || 0);
+  if (Math.abs(amount) < 1000000) return formatMoney(amount, devise);
+  const label = new Intl.NumberFormat("fr-FR", { notation: "compact", maximumFractionDigits: 2 }).format(amount);
+  return `${label} ${devise.replace(/.*\\((.*)\\).*/, "$1")}`;
+};
+const downloadBlob = (content: string, filename: string, type: string) => {
+  const url = URL.createObjectURL(new Blob([content], { type }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+};
+const exportPdf = (title: string, html: string) => {
+  const printWindow = window.open("", "_blank", "width=1100,height=760");
+  if (!printWindow) return;
+  printWindow.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${stripHtml(title)}</title><style>@page{size:A4 landscape;margin:12mm}body{font-family:Arial,sans-serif;color:#172033;margin:0}h1{font-size:20px;margin:0 0 4px}p{font-size:11px;color:#64748b;margin:0 0 18px}table{width:100%;border-collapse:collapse;font-size:9px}th{background:#f1f5f9;text-align:left;text-transform:uppercase;color:#64748b}th,td{padding:7px;border:1px solid #e2e8f0;vertical-align:top}.total{font-weight:800}.footer{margin-top:12px;font-size:9px;color:#94a3b8}</style></head><body><h1>${stripHtml(title)}</h1><p>Export du ${new Date().toLocaleString("fr-FR")}</p>${html}<div class="footer">StockMaster Pro · Document généré automatiquement</div><script>window.onload=()=>{window.print();}</script></body></html>`);
+  printWindow.document.close();
+};
+
+const getStoredAccess = () => {
+  if (typeof window === "undefined") return { permissions: [] as string[], isOwner: false };
+  try {
+    const permissions = JSON.parse(localStorage.getItem("user_permissions") || "[]") as string[];
+    const profile = JSON.parse(localStorage.getItem("user_profile") || "{}") as { role?: string };
+    return { permissions, isOwner: profile.role === "Admin Général" || profile.role === "Admin GÃ©nÃ©ral" };
+  } catch {
+    return { permissions: [] as string[], isOwner: false };
+  }
 };
 
 const formatDate = (value: string) => {
@@ -153,6 +188,8 @@ export default function InvoicesPage() {
   const [selectedInvoice, setSelectedInvoice] = useState<InvoiceSale | null>(null);
   const [page, setPage] = useState(1);
   const [businessName, setBusinessName] = useState("StockMaster Pro");
+  const [metricOpen, setMetricOpen] = useState(false);
+  const [{ permissions, isOwner }] = useState(getStoredAccess);
 
   const fetchInvoices = useCallback(async () => {
     try {
@@ -185,7 +222,14 @@ export default function InvoicesPage() {
   }, [invoices, search]);
 
   const visibleInvoices = filtered.slice((page - 1) * pageSize, page * pageSize);
+  const canExportInvoices = isOwner || permissions.includes("EXPORTER_FACTURES") || permissions.includes("EXPORTER_RAPPORTS");
+  const canPrintInvoices = isOwner || permissions.includes("IMPRIMER_FACTURE");
+  const invoiceCurrency = filtered[0]?.deviseReference || filtered[0]?.devise || "USD ($)";
   const totalAmount = filtered.reduce((sum, invoice) => sum + Number(invoice.totalTTC || 0), 0);
+  const invoiceRowsHtml = (items: InvoiceSale[]) => `<table><thead><tr><th>Facture</th><th>Vente</th><th>Client</th><th>Total TTC</th><th>TVA</th><th>Date</th><th>Statut</th></tr></thead><tbody>${items.map((invoice) => `<tr><td>${invoice.factureReference}</td><td>${invoice.reference}</td><td>${invoice.clientNom}</td><td class="total">${formatMoney(invoice.totalTTC, invoice.devise)}</td><td>${formatMoney(invoice.tvaMontant, invoice.devise)}</td><td>${formatDate(invoice.createdAt)}</td><td>${getInvoiceStatus(invoice)}</td></tr>`).join("")}</tbody></table>`;
+  const exportCsv = () => downloadBlob("\uFEFF" + ["facture;vente;client;total_ttc;tva;date;statut", ...filtered.map((invoice) => [invoice.factureReference, invoice.reference, invoice.clientNom, invoice.totalTTC, invoice.tvaMontant, formatDate(invoice.createdAt), getInvoiceStatus(invoice)].join(";"))].join("\n"), "factures.csv", "text/csv;charset=utf-8");
+  const exportWord = () => downloadBlob(`<html><body><h1>Factures</h1>${invoiceRowsHtml(filtered)}</body></html>`, "factures.doc", "application/msword;charset=utf-8");
+  const exportCurrentPdf = () => exportPdf("Factures", invoiceRowsHtml(filtered));
 
   const openPrint = (invoice: InvoiceSale) => {
     const printWindow = window.open("", "_blank", "width=980,height=720");
@@ -208,13 +252,13 @@ export default function InvoicesPage() {
 
   return (
     <div className="space-y-5 bg-[#f9fafd] p-3 sm:p-6 rounded-2xl sm:rounded-3xl min-h-screen text-slate-800">
-      <CashHeader title="Factures" subtitle={scope === "all" ? "Documents de vente de tous les caissiers." : "Documents de vente liés à vos encaissements."} />
+      <CashHeader title="Factures" subtitle={scope === "all" ? "Documents de vente de tous les caissiers." : "Documents de vente liés à vos encaissements."} action={canExportInvoices ? <div className="flex flex-wrap gap-2"><button onClick={exportCsv} disabled={filtered.length === 0} className={secondaryButton}><Download size={14} /> Excel</button><button onClick={exportWord} disabled={filtered.length === 0} className={secondaryButton}><FileText size={14} /> Word</button><button onClick={exportCurrentPdf} disabled={filtered.length === 0} className={secondaryButton}><Printer size={14} /> PDF</button></div> : undefined} />
 
       {error && <div className="p-3 rounded-xl bg-rose-50 border border-rose-100 text-xs font-semibold text-rose-700">{error}</div>}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <CashMetric label="Factures" value={`${filtered.length}`} detail="Documents affichés" icon={FileText} />
-        <CashMetric label="Total facturé" value={formatMoney(totalAmount, filtered[0]?.devise || "USD ($)")} detail="Selon la recherche" icon={WalletCards} tone="emerald" />
+        <CashMetric label="Total facturé" value={compactMoney(totalAmount, invoiceCurrency)} detail="Selon la recherche" icon={WalletCards} tone="emerald" onInspect={() => setMetricOpen(true)} />
         <CashMetric label="Émises" value={`${filtered.filter((item) => item.statut === "PAYEE").length}`} detail="Factures validées" icon={ReceiptText} tone="amber" />
         <CashMetric label="À imprimer" value={`${filtered.length}`} detail="Disponibles en aperçu" icon={Printer} tone="indigo" />
       </div>
@@ -257,7 +301,7 @@ export default function InvoicesPage() {
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-1">
                         <button onClick={() => setSelectedInvoice(invoice)} className="p-1.5 text-slate-400 hover:text-indigo-600" title="Prévisualiser"><Eye size={15} /></button>
-                        <button onClick={() => openPrint(invoice)} className="p-1.5 text-slate-400 hover:text-slate-700" title="Imprimer"><Printer size={15} /></button>
+                        {canPrintInvoices && <button onClick={() => openPrint(invoice)} className="p-1.5 text-slate-400 hover:text-slate-700" title="Imprimer"><Printer size={15} /></button>}
                         <button onClick={() => downloadInvoice(invoice)} className="p-1.5 text-slate-400 hover:text-emerald-600" title="Télécharger"><Download size={15} /></button>
                       </div>
                     </td>
@@ -281,7 +325,7 @@ export default function InvoicesPage() {
         footer={
           <>
             {selectedInvoice && <button onClick={() => downloadInvoice(selectedInvoice)} className={secondaryButton}><Download size={14} /> Télécharger</button>}
-            {selectedInvoice && <button onClick={() => openPrint(selectedInvoice)} className={secondaryButton}><Printer size={14} /> Imprimer</button>}
+            {selectedInvoice && canPrintInvoices && <button onClick={() => openPrint(selectedInvoice)} className={secondaryButton}><Printer size={14} /> Imprimer</button>}
             <button onClick={() => setSelectedInvoice(null)} className={secondaryButton}>Fermer</button>
           </>
         }
@@ -335,6 +379,7 @@ export default function InvoicesPage() {
           </div>
         )}
       </CashModal>
+      <CashModal open={metricOpen} title="Total facturé" subtitle="Montant complet des factures filtrées" onClose={() => setMetricOpen(false)} footer={<button onClick={() => setMetricOpen(false)} className={secondaryButton}>Fermer</button>}><div className="p-4 rounded-xl bg-slate-50 border border-slate-100"><p className="text-[10px] uppercase font-bold text-slate-400">Total facturé</p><p className="text-2xl font-black text-slate-900 mt-2">{formatMoney(totalAmount, invoiceCurrency)}</p><p className="text-xs text-slate-500 mt-2">{filtered.length} facture(s)</p></div></CashModal>
     </div>
   );
 }
