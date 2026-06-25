@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertCircle, BarChart3, Download, FileText, Layers3, Loader2, PackageSearch, RefreshCw, TrendingUp } from "lucide-react";
 import { formatMoney } from "../components/currency";
 import { InventoryPagination, MetricCard, PageHeader, SearchInput, secondaryButton } from "../components/inventory-ui";
+import { exportXlsxWorkbook } from "../../components/export-xlsx";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://plus-stock-master.onrender.com/api";
 const PAGE_SIZE = 10;
@@ -100,15 +101,18 @@ export default function InventoryProjectionPage() {
   const paginatedRows = filteredRows.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   const exportExcel = () => {
-    const headers = ["type", "nom", "sku", "categorie", "quantite_actuelle", "prix_achat_unitaire", "prix_vente_unitaire", "marge_unitaire", "marge_totale", "taux_marge"];
-    const rows = filteredRows.map((row) => [tab === "products" ? "Produit" : "Categorie", row.produit, row.sku || "", row.categorie, row.quantiteActuelle, row.prixAchatUnitaire, row.prixVenteUnitaire, row.margeUnitaire, row.margeTotale, row.tauxMarge]);
-    const content = "\uFEFF" + [headers, ...rows].map((row) => row.map((cell) => csvValue(cell as string | number)).join(";")).join("\r\n");
-    const url = URL.createObjectURL(new Blob([content], { type: "text/csv;charset=utf-8" }));
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "projection-produits.csv";
-    link.click();
-    URL.revokeObjectURL(url);
+    exportXlsxWorkbook("projection-produits.xlsx", [
+      {
+        name: "Produits",
+        columns: ["Produit", "SKU", "Categorie", "Stock actuel", "Prix achat", "Prix vente", "Marge unitaire", "Marge totale", "Taux marge"],
+        rows: data.products.map((row) => [row.produit, row.sku || "", row.categorie, row.quantiteActuelle, row.prixAchatUnitaire, row.prixVenteUnitaire, row.margeUnitaire, row.margeTotale, row.tauxMarge]),
+      },
+      {
+        name: "Categories",
+        columns: ["Categorie", "Stock actuel", "Marge totale", "Taux marge"],
+        rows: data.categories.map((row) => [row.categorie || row.produit, row.quantiteActuelle, row.margeTotale, row.tauxMarge]),
+      },
+    ]);
   };
 
   const exportPdf = () => {

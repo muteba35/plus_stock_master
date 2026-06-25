@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { CalendarDays, Download, Eye, FileText, Loader2, Printer, ReceiptText, TrendingUp, WalletCards, XCircle } from "lucide-react";
 import { formatMoney, getActiveBoutiqueCurrency } from "../../inventaire/components/currency";
 import { CashBadge, CashHeader, CashMetric, CashModal, CashPagination, CashSearch, fieldClass, secondaryButton } from "../components/cashier-ui";
+import { exportXlsxWorkbook } from "../../components/export-xlsx";
 
 type ApiUser = { nom?: string; prenom?: string };
 type SaleLine = {
@@ -152,7 +153,7 @@ export default function SalesHistoryPage() {
   const totalPaid = paidSales.reduce((sum, sale) => sum + Number(sale.totalTTC || 0), 0);
   const averageSale = paidSales.length ? totalPaid / paidSales.length : 0;
   const salesRowsHtml = (items: ApiSale[]) => `<table><thead><tr><th>Référence</th><th>Client</th><th>Total TTC</th><th>TVA</th><th>Paiement</th><th>Caissier</th><th>Date</th><th>Statut</th></tr></thead><tbody>${items.map((sale) => `<tr><td>${sale.reference}</td><td>${sale.clientNom}</td><td class="total">${formatMoney(sale.totalTTC, sale.devise)}</td><td>${formatMoney(sale.tvaMontant, sale.devise)}</td><td>${sale.paiement}</td><td>${getCashierName(sale)}</td><td>${formatDate(sale.createdAt)}</td><td>${getStatusLabel(sale.statut)}</td></tr>`).join("")}</tbody></table>`;
-  const exportCsv = () => downloadBlob("\uFEFF" + ["reference;client;total_ttc;tva;paiement;caissier;date;statut", ...filtered.map((sale) => [sale.reference, sale.clientNom, sale.totalTTC, sale.tvaMontant, sale.paiement, getCashierName(sale), formatDate(sale.createdAt), getStatusLabel(sale.statut)].join(";"))].join("\n"), "historique-ventes.csv", "text/csv;charset=utf-8");
+  const exportCsv = () => exportXlsxWorkbook("historique-ventes.xlsx", [{ name: "Historique ventes", columns: ["Reference", "Client", "Total TTC", "TVA", "Paiement", "Caissier", "Date", "Statut"], rows: filtered.map((sale) => [sale.reference, sale.clientNom, sale.totalTTC, sale.tvaMontant, sale.paiement, getCashierName(sale), formatDate(sale.createdAt), getStatusLabel(sale.statut)]) }]);
   const exportWord = () => downloadBlob(`<html><body><h1>Historique ventes</h1>${salesRowsHtml(filtered)}</body></html>`, "historique-ventes.doc", "application/msword;charset=utf-8");
   const exportCurrentPdf = () => exportPdf("Historique ventes", salesRowsHtml(filtered));
 

@@ -12,7 +12,6 @@ type Category = {
   couleur: string;
   productCount: number;
   stockValues?: Array<{ devise: string; value: number }>;
-  saleValues?: Array<{ devise: string; value: number }>;
   isActive: boolean;
   createdAt: string;
 };
@@ -338,17 +337,15 @@ export default function CategoriesInventairePage() {
           {loading ? (
             <div className="py-16 flex flex-col items-center gap-3 text-slate-400"><Loader2 size={24} className="animate-spin text-indigo-500" /><p className="text-xs font-medium">Chargement des catégories...</p></div>
           ) : (
-            <table className="w-full min-w-[920px] text-left text-xs">
-              <thead className="bg-slate-50 text-[10px] uppercase tracking-wider text-slate-400"><tr><th className="px-5 py-4">Catégorie</th><th className="px-5 py-4">Description</th><th className="px-5 py-4">Produits</th><th className="px-5 py-4">Valeur du stock</th><th className="px-5 py-4">Valeur de vente potentielle</th><th className="px-5 py-4">Statut</th><th className="px-5 py-4 text-right">Actions</th></tr></thead>
+            <table className="w-full min-w-[820px] text-left text-xs">
+              <thead className="bg-slate-50 text-[10px] uppercase tracking-wider text-slate-400"><tr><th className="px-5 py-4">Catégorie</th><th className="px-5 py-4">Description</th><th className="px-5 py-4">Produits</th><th className="px-5 py-4">Valeur du stock</th><th className="px-5 py-4">Statut</th><th className="px-5 py-4 text-right">Actions</th></tr></thead>
               <tbody className="divide-y divide-slate-100">
                 {paginatedCategories.map((category) => (
                   <tr key={category._id} className="hover:bg-slate-50/60">
                     <td className="px-5 py-4"><div className="flex items-center gap-3"><span className="w-2.5 h-9 rounded-full" style={{ backgroundColor: category.couleur }} /><span className="font-bold text-slate-900">{category.nom}</span></div></td>
                     <td className="px-5 py-4 text-slate-500 max-w-xs">{category.description || "Aucune description"}</td>
                     <td className="px-5 py-4"><span className="inline-flex items-center gap-1.5 bg-slate-100 px-2 py-1 rounded-md font-bold"><FolderTree size={12} /> {category.productCount || 0}</span></td>
-                    <td className="px-5 py-4 font-bold">{category.stockValues?.length ? category.stockValues.map((amount) => formatMoney(amount.value, amount.devise)).join(" · ") : formatMoney(0, currency)}</td>
-                    <td className="px-5 py-4 font-bold text-emerald-700">{category.saleValues?.length ? category.saleValues.map((amount) => formatMoney(amount.value, amount.devise)).join(" · ") : formatMoney(0, currency)}</td>
-                    <td className="px-5 py-4"><span className={`px-2 py-1 rounded-md text-[10px] font-bold ${category.isActive ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-500"}`}>{category.isActive ? "Active" : "Inactive"}</span></td>
+                    <td className="px-5 py-4 font-bold">{category.stockValues?.length ? category.stockValues.map((amount) => formatMoney(amount.value, amount.devise)).join(" · ") : formatMoney(0, currency)}</td>                    <td className="px-5 py-4"><span className={`px-2 py-1 rounded-md text-[10px] font-bold ${category.isActive ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-500"}`}>{category.isActive ? "Active" : "Inactive"}</span></td>
                     <td className="px-5 py-4"><div className="flex justify-end gap-1"><button disabled={!canEdit} onClick={() => openEdit(category)} className={`p-2 transition-colors ${canEdit ? "text-slate-400 hover:text-amber-600" : "text-slate-200 cursor-not-allowed"}`} title={canEdit ? "Modifier" : "Permission MODIFIER_CATEGORIE requise"}><Edit2 size={15} /></button>{canDelete && <button onClick={() => { setSelected(category); setDeleteOpen(true); }} className="p-2 text-slate-400 hover:text-rose-600" title="Supprimer"><Trash2 size={15} /></button>}</div></td>
                   </tr>
                 ))}

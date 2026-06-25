@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { AlertCircle, ArrowDownLeft, CheckCircle2, Download, Eye, FileText, Loader2, Plus, Printer, RotateCcw, WalletCards, XCircle } from "lucide-react";
 import { formatMoney, getActiveBoutiqueCurrency } from "../../inventaire/components/currency";
 import { CashBadge, CashHeader, CashMetric, CashModal, CashPagination, CashSearch, fieldClass, primaryButton, secondaryButton } from "../components/cashier-ui";
+import { exportXlsxWorkbook } from "../../components/export-xlsx";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://plus-stock-master.onrender.com/api";
 
@@ -169,7 +170,7 @@ export default function CustomerReturnsPage() {
   const returnCurrency = validReturns[0]?.deviseReference || validReturns[0]?.devise || getActiveBoutiqueCurrency();
   const totalReturned = validReturns.reduce((sum, item) => sum + Number(item.montantTotalTTC || 0), 0);
   const returnsRowsHtml = (items: ReturnItem[]) => `<table><thead><tr><th>Retour</th><th>Vente</th><th>Client</th><th>Type</th><th>Montant</th><th>Statut</th></tr></thead><tbody>${items.map((item) => `<tr><td>${item.reference}</td><td>${item.venteReference}</td><td>${item.clientNom}</td><td>${typeLabel(item.typeRetour)}</td><td class="total">${formatMoney(item.montantTotalTTC, item.deviseReference || item.devise || returnCurrency)}</td><td>${statusLabel(item.statut)}</td></tr>`).join("")}</tbody></table>`;
-  const exportCsv = () => downloadBlob("\uFEFF" + ["retour;vente;client;type;montant;statut", ...filtered.map((item) => [item.reference, item.venteReference, item.clientNom, typeLabel(item.typeRetour), item.montantTotalTTC, statusLabel(item.statut)].join(";"))].join("\n"), "retours-clients.csv", "text/csv;charset=utf-8");
+  const exportCsv = () => exportXlsxWorkbook("retours-clients.xlsx", [{ name: "Retours clients", columns: ["Retour", "Vente", "Client", "Type", "Montant", "Statut"], rows: filtered.map((item) => [item.reference, item.venteReference, item.clientNom, typeLabel(item.typeRetour), item.montantTotalTTC, statusLabel(item.statut)]) }]);
   const exportWord = () => downloadBlob(`<html><body><h1>Retours clients</h1>${returnsRowsHtml(filtered)}</body></html>`, "retours-clients.doc", "application/msword;charset=utf-8");
   const exportCurrentPdf = () => exportPdf("Retours clients", returnsRowsHtml(filtered));
 

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, CheckCircle2, Eye, FileSpreadsheet, FileText, History, Loader2, Plus, RotateCcw, Search, SlidersHorizontal, XCircle } from "lucide-react";
 import { InventoryModal, InventoryPagination, MetricCard, PageHeader, SearchInput, fieldClass, primaryButton, secondaryButton } from "../components/inventory-ui";
 import InventoryAuditTable, { type AuditEntry } from "./components/InventoryAuditTable";
+import { exportXlsxWorkbook } from "../../components/export-xlsx";
 
 type ProductOption = { _id: string; nom: string; sku: string; stock: number; unite: string };
 type Movement = {
@@ -165,19 +166,14 @@ export default function MouvementsStockPage() {
   const formatDate = (value: string) => new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
   const typeLabel = (type: Movement["type"]) => type === "ENTREE" ? "Entrée" : type === "SORTIE" ? "Sortie" : "Ajustement";
   const compactNumber = (value: number) => Math.abs(value) < 1000000 ? value.toLocaleString("fr-FR") : new Intl.NumberFormat("fr-FR", { notation: "compact", maximumFractionDigits: 2 }).format(value);
-  const csvValue = (value: string | number) => `"${String(value).replace(/"/g, '""')}"`;
   const escapeHtml = (value: string | number) => String(value).replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[character] || character));
 
   const exportExcel = () => {
-    const headers = ["Reference", "Produit", "SKU", "Type", "Variation", "Stock avant", "Stock apres", "Motif", "Date", "Auteur"];
-    const rows = filtered.map((movement) => [movement.reference, movement.produitId?.nom || "Produit archive", movement.produitId?.sku || "", typeLabel(movement.type), movement.variation, movement.stockAvant, movement.stockApres, movement.motif, formatDate(movement.createdAt), movement.utilisateurId ? `${movement.utilisateurId.prenom} ${movement.utilisateurId.nom}` : "Systeme"]);
-    const content = `\uFEFF${[headers, ...rows].map((row) => row.map(csvValue).join(";")).join("\r\n")}`;
-    const url = URL.createObjectURL(new Blob([content], { type: "text/csv;charset=utf-8" }));
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `mouvements-stock-${new Date().toISOString().slice(0, 10)}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
+    exportXlsxWorkbook("mouvements-stock-" + new Date().toISOString().slice(0, 10) + ".xlsx", [{
+      name: "Mouvements stock",
+      columns: ["Reference", "Produit", "SKU", "Type", "Variation", "Stock avant", "Stock apres", "Motif", "Date", "Auteur"],
+      rows: filtered.map((movement) => [movement.reference, movement.produitId?.nom || "Produit archive", movement.produitId?.sku || "", typeLabel(movement.type), movement.variation, movement.stockAvant, movement.stockApres, movement.motif, formatDate(movement.createdAt), movement.utilisateurId ? `${movement.utilisateurId.prenom} ${movement.utilisateurId.nom}` : "Systeme"]),
+    }]);
   };
 
   const exportPdf = () => {

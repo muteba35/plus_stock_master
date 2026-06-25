@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertCircle, Download, FileText, Filter, Loader2, ReceiptText, RefreshCw, RotateCcw, Search, TrendingDown, TrendingUp, WalletCards } from "lucide-react";
 import { formatMoney } from "../../inventaire/components/currency";
 import { CashHeader, CashMetric, CashModal, CashPagination, CashSearch, secondaryButton } from "../components/cashier-ui";
+import { exportXlsxWorkbook } from "../../components/export-xlsx";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://plus-stock-master.onrender.com/api";
 const PAGE_SIZE = 10;
@@ -208,15 +209,41 @@ export default function CashReportsPage() {
   };
 
   const exportExcel = () => {
-    const headers = ["reference", "facture", "client", "produit", "sku", "categorie", "caissier", "quantite", "prix_achat", "prix_ht", "prix_total_ttc", "date", "paiement"];
-    const rows = filteredSales.map((row) => [row.reference, row.factureReference || "", row.clientNom || "", row.produit, row.sku || "", row.categorie || "", row.caissier, row.quantite, row.coutAchat, row.prixVente, row.totalTTC, formatDate(row.date), row.paiement]);
-    const content = "\uFEFF" + [headers, ...rows].map((row) => row.map((cell) => csvValue(cell as string | number)).join(";")).join("\r\n");
-    const url = URL.createObjectURL(new Blob([content], { type: "text/csv;charset=utf-8" }));
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "rapport-caisse-" + exportFileSegment + ".csv";
-    link.click();
-    URL.revokeObjectURL(url);
+    exportXlsxWorkbook("rapport-caisse-" + exportFileSegment + ".xlsx", [
+      {
+        name: "Resume",
+        columns: ["Indicateur", "Valeur"],
+        rows: [
+          ["CA TTC", data.metrics.caTTC],
+          ["TVA collectee", data.metrics.tva],
+          ["Cout sorti", data.metrics.cout],
+          [profitLabel, data.metrics.marge],
+          ["Retours", data.metrics.montantRetours],
+          ["Net apres retours", data.metrics.netApresRetours],
+          ["Ventes payees", data.metrics.ventes],
+        ],
+      },
+      {
+        name: "Ventes detaillees",
+        columns: ["Reference", "Facture", "Client", "Produit", "SKU", "Categorie", "Caissier", "Quantite", "Prix achat", "Prix HT", "Total TTC", "Date", "Paiement"],
+        rows: filteredSales.map((row) => [row.reference, row.factureReference || "", row.clientNom || "", row.produit, row.sku || "", row.categorie || "", row.caissier, row.quantite, row.coutAchat, row.prixVente, row.totalTTC, formatDate(row.date), row.paiement]),
+      },
+      {
+        name: "Paiements",
+        columns: ["Paiement", "Ventes", "Quantite", "Total TTC", "TVA", "Marge"],
+        rows: data.payments.map((row) => [row.paiement || "-", row.ventes, row.quantite, row.totalTTC, row.tva, row.marge]),
+      },
+      {
+        name: "Caissiers",
+        columns: ["Caissier", "Ventes", "Quantite", "Total TTC", "TVA", "Marge"],
+        rows: data.cashiers.map((row) => [row.caissier || "-", row.ventes, row.quantite, row.totalTTC, row.tva, row.marge]),
+      },
+      {
+        name: "Retours",
+        columns: ["Reference", "Vente", "Client", "Type", "Montant TTC", "Date"],
+        rows: data.returns.map((row) => [row.reference, row.venteReference, row.clientNom, row.typeRetour, row.montantTotalTTC, formatDate(row.createdAt)]),
+      },
+    ]);
   };
 
   const exportPdf = () => {

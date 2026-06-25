@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Download, Eye, FileText, Loader2, Printer, ReceiptText, Send, WalletCards } from "lucide-react";
 import { formatMoney } from "../../inventaire/components/currency";
 import { CashBadge, CashHeader, CashMetric, CashModal, CashPagination, CashSearch, secondaryButton } from "../components/cashier-ui";
+import { exportXlsxWorkbook } from "../../components/export-xlsx";
 
 type ApiUser = { nom?: string; prenom?: string };
 type InvoiceLine = {
@@ -227,7 +228,7 @@ export default function InvoicesPage() {
   const invoiceCurrency = filtered[0]?.deviseReference || filtered[0]?.devise || "USD ($)";
   const totalAmount = filtered.reduce((sum, invoice) => sum + Number(invoice.totalTTC || 0), 0);
   const invoiceRowsHtml = (items: InvoiceSale[]) => `<table><thead><tr><th>Facture</th><th>Vente</th><th>Client</th><th>Total TTC</th><th>TVA</th><th>Date</th><th>Statut</th></tr></thead><tbody>${items.map((invoice) => `<tr><td>${invoice.factureReference}</td><td>${invoice.reference}</td><td>${invoice.clientNom}</td><td class="total">${formatMoney(invoice.totalTTC, invoice.devise)}</td><td>${formatMoney(invoice.tvaMontant, invoice.devise)}</td><td>${formatDate(invoice.createdAt)}</td><td>${getInvoiceStatus(invoice)}</td></tr>`).join("")}</tbody></table>`;
-  const exportCsv = () => downloadBlob("\uFEFF" + ["facture;vente;client;total_ttc;tva;date;statut", ...filtered.map((invoice) => [invoice.factureReference, invoice.reference, invoice.clientNom, invoice.totalTTC, invoice.tvaMontant, formatDate(invoice.createdAt), getInvoiceStatus(invoice)].join(";"))].join("\n"), "factures.csv", "text/csv;charset=utf-8");
+  const exportCsv = () => exportXlsxWorkbook("factures.xlsx", [{ name: "Factures", columns: ["Facture", "Vente", "Client", "Total TTC", "TVA", "Date", "Statut"], rows: filtered.map((invoice) => [invoice.factureReference, invoice.reference, invoice.clientNom, invoice.totalTTC, invoice.tvaMontant, formatDate(invoice.createdAt), getInvoiceStatus(invoice)]) }]);
   const exportWord = () => downloadBlob(`<html><body><h1>Factures</h1>${invoiceRowsHtml(filtered)}</body></html>`, "factures.doc", "application/msword;charset=utf-8");
   const exportCurrentPdf = () => exportPdf("Factures", invoiceRowsHtml(filtered));
 
