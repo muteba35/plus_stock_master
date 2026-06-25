@@ -298,14 +298,20 @@ export const login = async (req, res) => {
     if (user.lockUntil && user.lockUntil > Date.now()) {
       const minutesRestantes = Math.ceil((user.lockUntil - Date.now()) / 60000);
       return res.status(403).json({ 
-        message: `Compte bloqué temporairement. Réessayez dans ${minutesRestantes} min.` 
+        message: `Compte bloque temporairement. Reessayez dans ${minutesRestantes} min.` 
       });
+    }
+
+    if (user.lockUntil && user.lockUntil <= Date.now()) {
+      user.lockUntil = undefined;
+      user.loginAttempts = 0;
+      await user.save();
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
-      user.loginAttempts += 1;
+      user.loginAttempts = (user.loginAttempts || 0) + 1;
       let responseMessage = "Identifiants incorrects";
       let status = 401;
 
