@@ -21,6 +21,50 @@ const invoiceReference = () => `FAC-${new Date().getFullYear()}-${Date.now().toS
 
 const roundMoney = (value) => Math.round((Number(value) + Number.EPSILON) * 100) / 100;
 
+const startOfLocalDay = (date) => {
+  const value = new Date(date);
+  value.setHours(0, 0, 0, 0);
+  return value;
+};
+
+const endOfLocalDay = (date) => {
+  const value = new Date(date);
+  value.setHours(23, 59, 59, 999);
+  return value;
+};
+
+const getReportDateRange = (query = {}) => {
+  const period = String(query.period || "all").toLowerCase();
+  const now = new Date();
+
+  if (period === "today") {
+    return { start: startOfLocalDay(now), end: endOfLocalDay(now), period };
+  }
+
+  if (period === "week") {
+    const start = startOfLocalDay(now);
+    const day = start.getDay();
+    const mondayOffset = day === 0 ? -6 : 1 - day;
+    start.setDate(start.getDate() + mondayOffset);
+    return { start, end: endOfLocalDay(now), period };
+  }
+
+  if (period === "month") {
+    const start = startOfLocalDay(new Date(now.getFullYear(), now.getMonth(), 1));
+    return { start, end: endOfLocalDay(now), period };
+  }
+
+  if (period === "custom") {
+    const start = query.startDate ? startOfLocalDay(query.startDate) : null;
+    const end = query.endDate ? endOfLocalDay(query.endDate) : null;
+    if (start && Number.isNaN(start.getTime())) return { period: "all" };
+    if (end && Number.isNaN(end.getTime())) return { period: "all" };
+    return { start, end, period };
+  }
+
+  return { period: "all" };
+};
+
 const getRateForSale = (source, cible, rates) => {
   if (!source || !cible || source === cible) return 1;
   const direct = rates.find((rate) => rate.source === source && rate.cible === cible);
@@ -563,12 +607,20 @@ export const getRapportsCaisse = async (req, res) => {
 
     const canViewAll = req.user?.isOwner || req.user?.permissions?.includes("VOIR_RAPPORTS_CAISSE");
     const baseFilter = canViewAll ? { boutiqueId } : { boutiqueId, utilisateurId: req.user.id };
-    const ventes = await Vente.find(baseFilter)
+    const dateRange = getReportDateRange(req.query);
+    const dateFilter = {};
+    if (dateRange.start || dateRange.end) {
+      dateFilter.createdAt = {};
+      if (dateRange.start) dateFilter.createdAt.$gte = dateRange.start;
+      if (dateRange.end) dateFilter.createdAt.$lte = dateRange.end;
+    }
+    const reportFilter = { ...baseFilter, ...dateFilter };
+    const ventes = await Vente.find(reportFilter)
       .select("+coutTotal +margeEstimee")
       .populate("utilisateurId", "nom prenom")
       .sort({ createdAt: -1 })
       .limit(1000);
-    const retours = await RetourClient.find(baseFilter)
+    const retours = await RetourClient.find(reportFilter)
       .populate("utilisateurId", "nom prenom")
       .sort({ createdAt: -1 })
       .limit(1000);
@@ -677,6 +729,11 @@ export const getRapportsCaisse = async (req, res) => {
       success: true,
       scope: canViewAll ? "all" : "own",
       devise,
+      filters: {
+        period: dateRange.period,
+        startDate: dateRange.start || null,
+        endDate: dateRange.end || null,
+      },
       metrics: {
         ventes: totalSales,
         caHT: roundMoney(totalHT),
