@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertCircle, BarChart3, Download, FileText, Layers3, Loader2, PackageSearch, TrendingUp } from "lucide-react";
+import { AlertCircle, BarChart3, Download, FileText, Layers3, Loader2, PackageSearch, RefreshCw, TrendingUp } from "lucide-react";
 import { formatMoney } from "../components/currency";
 import { InventoryPagination, MetricCard, PageHeader, SearchInput, secondaryButton } from "../components/inventory-ui";
 
@@ -121,7 +121,7 @@ export default function InventoryProjectionPage() {
 
   return (
     <div className="space-y-5 bg-[#f9fafd] p-3 sm:p-6 rounded-2xl sm:rounded-3xl min-h-screen text-slate-800">
-      <PageHeader title="Projection Produits" subtitle="Projection de marge basee sur le stock actuel : marge unitaire x quantite actuelle." action={canExport ? <div className="flex flex-wrap gap-2"><button onClick={exportExcel} disabled={loading} className={secondaryButton}><Download size={14} /> Excel</button><button onClick={exportPdf} disabled={loading} className={secondaryButton}><FileText size={14} /> PDF</button></div> : undefined} />
+      <PageHeader title="Projection Produits" subtitle="Projection de marge basee sur le stock actuel : marge unitaire x quantite actuelle." action={<div className="flex flex-wrap gap-2"><button onClick={() => void fetchProjection()} disabled={loading} className={secondaryButton}><RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Actualiser</button>{canExport && <><button onClick={exportExcel} disabled={loading} className={secondaryButton}><Download size={14} /> Excel</button><button onClick={exportPdf} disabled={loading} className={secondaryButton}><FileText size={14} /> PDF</button></>}</div>} />
 
       {error && <div className="p-3 rounded-xl border border-rose-100 bg-rose-50 text-xs font-semibold text-rose-700 flex items-center gap-2"><AlertCircle size={15} />{error}</div>}
 
