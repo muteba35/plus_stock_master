@@ -112,9 +112,9 @@ export default function DashboardLayout({
   const [openSubMenus, setOpenSubMenus] = useState<Record<string, boolean>>({
     Caisse: false,
     Inventaire: false,
-    "Mon Équipe": false,
+    "Mon Equipe": false,
     Finances: false,
-    Paramètres: false,
+    Parametres: false,
   });
 
   // ==========================================
@@ -318,6 +318,7 @@ export default function DashboardLayout({
         { name: "Historique Ventes", href: "/dashboard/caisse/ventes", permissions: ["VOIR_HISTORIQUE_VENTES", "VOIR_MES_VENTES"] },
         { name: "Factures", href: "/dashboard/caisse/factures", permissions: ["VOIR_FACTURES", "VOIR_MES_FACTURES", "IMPRIMER_FACTURE"] },
         { name: "Retours clients", href: "/dashboard/caisse/retours", permissions: ["VOIR_RETOURS_CLIENTS", "VOIR_MES_RETOURS_CLIENTS", "CREER_RETOUR_CLIENT", "ANNULER_VENTE"] },
+        { name: "Rapports Caisse", href: "/dashboard/caisse/rapports", permissions: ["VOIR_RAPPORTS_CAISSE", "VOIR_MES_RAPPORTS_CAISSE", "EXPORTER_RAPPORTS_CAISSE"] },
       ],
     },
     {
@@ -329,11 +330,12 @@ export default function DashboardLayout({
         { name: "Gestion Produits", href: "/dashboard/inventaire/produits", permission: "VOIR_LISTE_PRODUITS" },
         { name: "Catégories", href: "/dashboard/inventaire/categories", permission: "VOIR_CATEGORIES" },
         { name: "Mouvements Stock", href: "/dashboard/inventaire/stock", permissions: ["VOIR_MOUVEMENTS_STOCK", "VOIR_MES_OPERATIONS_INVENTAIRE"] },
+        { name: "Projection Produits", href: "/dashboard/inventaire/projection", permissions: ["VOIR_PROJECTION_PRODUITS", "EXPORTER_PROJECTION_PRODUITS"] },
         { name: "Alertes Rupture", href: "/dashboard/inventaire/alertes", permission: "VOIR_ALERTES_STOCK" },
       ],
     },
    {
-  name: "Mon Équipe",
+  name: "Mon Equipe",
   icon: Users2,
   module: "EQUIPE",
   subMenu: [
@@ -752,3 +754,5 @@ export default function DashboardLayout({
     </div>
   );
 }
+
+
