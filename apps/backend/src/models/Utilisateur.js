@@ -450,6 +450,10 @@ const venteLineSchema = new mongoose.Schema(
 
     sku: { type: String, trim: true, default: "" },
 
+    categorieId: { type: mongoose.Schema.Types.ObjectId, ref: "Categorie", default: null },
+
+    categorieNom: { type: String, trim: true, default: "Non classe" },
+
     quantite: { type: Number, required: true, min: 0 },
 
     deviseOriginale: { type: String, enum: ["USD ($)", "CDF (FC)", "EUR (€)"], default: "USD ($)" },
@@ -464,6 +468,12 @@ const venteLineSchema = new mongoose.Schema(
     totalHT: { type: Number, required: true, min: 0 },
 
     totalTTC: { type: Number, required: true, min: 0 },
+
+    coutUnitaire: { type: Number, default: 0, min: 0 },
+
+    totalCout: { type: Number, default: 0, min: 0 },
+
+    margeBrute: { type: Number, default: 0 },
 
     stockAvant: { type: Number, required: true, min: 0 },
 

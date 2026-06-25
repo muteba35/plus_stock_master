@@ -1,5 +1,5 @@
-import express from "express";
-import { getVueGlobaleInventaire } from "../controllers/inventaire.controller.js";
+﻿import express from "express";
+import { getProjectionProduits, getVueGlobaleInventaire } from "../controllers/inventaire.controller.js";
 import { checkPermission, protect } from "../middlewares/authMiddleware.js";
 import categorieRoutes from "./categorie.routes.js";
 import produitRoutes from "./produit.routes.js";
@@ -12,6 +12,8 @@ router.use("/categories", categorieRoutes);
 router.use("/produits", produitRoutes);
 router.use("/mouvements", mouvementStockRoutes);
 router.use("/alertes", alerteStockRoutes);
+router.get("/projection", protect, checkPermission("VOIR_PROJECTION_PRODUITS"), getProjectionProduits);
 router.get("/", protect, checkPermission("VOIR_RESUME_INVENTAIRE"), getVueGlobaleInventaire);
 
 export default router;
+

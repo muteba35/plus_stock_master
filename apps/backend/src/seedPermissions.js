@@ -30,6 +30,9 @@ const permissions = [
   { nom: "VOIR_MES_RETOURS_CLIENTS", module: "VENTE", description: "Consulter uniquement ses propres retours clients" },
   { nom: "CREER_RETOUR_CLIENT", module: "VENTE", description: "Enregistrer un remboursement, un echange ou un avoir client" },
   { nom: "EXPORTER_RETOURS_CLIENTS", module: "VENTE", description: "Exporter les retours clients en Excel, Word ou PDF" },
+  { nom: "VOIR_RAPPORTS_CAISSE", module: "VENTE", description: "Consulter tous les rapports operationnels de caisse" },
+  { nom: "VOIR_MES_RAPPORTS_CAISSE", module: "VENTE", description: "Consulter uniquement ses propres rapports de caisse" },
+  { nom: "EXPORTER_RAPPORTS_CAISSE", module: "VENTE", description: "Exporter les rapports de caisse en Excel ou PDF" },
 
   // --- MODULE : INVENTAIRE ---
   { nom: "VOIR_RESUME_INVENTAIRE", module: "INVENTAIRE", description: "Consulter la vue globale et les indicateurs de l'inventaire" },
@@ -48,6 +51,8 @@ const permissions = [
   { nom: "CREER_CATEGORIE", module: "INVENTAIRE", description: "Créer une nouvelle catégorie de produits" },
   { nom: "MODIFIER_CATEGORIE", module: "INVENTAIRE", description: "Modifier le nom, la description ou la couleur d'une catégorie" },
   { nom: "SUPPRIMER_CATEGORIE", module: "INVENTAIRE", description: "Supprimer une catégorie qui ne contient aucun produit" },
+  { nom: "VOIR_PROJECTION_PRODUITS", module: "INVENTAIRE", description: "Consulter les projections de marge par produit et categorie" },
+  { nom: "EXPORTER_PROJECTION_PRODUITS", module: "INVENTAIRE", description: "Exporter les projections de marge en Excel ou PDF" },
 
   // --- MODULE : EQUIPE (Mis à jour) ---
   { nom: "VOIR_EQUIPE", module: "EQUIPE", description: "Consulter la vue d'ensemble et les indicateurs du module equipe" },
@@ -126,3 +131,4 @@ const seedDB = async () => {
 };
 
 seedDB();
+

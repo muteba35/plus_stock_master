@@ -1,10 +1,14 @@
 import express from "express";
-import { createRetour, createVente, getFactures, getRetours, getVentes } from "../controllers/caisse.controller.js";
+import { createRetour, createVente, getFactures, getRapportsCaisse, getRetours, getVentes } from "../controllers/caisse.controller.js";
 import { checkAnyPermission, checkPermission, protect } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
 router.use(protect);
+
+router
+  .route("/rapports")
+  .get(checkAnyPermission("VOIR_RAPPORTS_CAISSE", "VOIR_MES_RAPPORTS_CAISSE", "EXPORTER_RAPPORTS_CAISSE"), getRapportsCaisse);
 
 router
   .route("/factures")

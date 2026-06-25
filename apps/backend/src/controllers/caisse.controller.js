@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { Boutique, ExchangeRate, MouvementStock, Produit, RetourClient, Vente } from "../models/Utilisateur.js";
+import { Boutique, Categorie, ExchangeRate, MouvementStock, Produit, RetourClient, Vente } from "../models/Utilisateur.js";
 import { logInventoryAction } from "../utils/inventoryAudit.js";
 
 const TVA_RATE = 0.16;
@@ -67,6 +67,8 @@ const serializeSale = (sale) => ({
   montantRecu: sale.montantRecu,
   monnaieRendue: sale.monnaieRendue,
   lignes: sale.lignes,
+  coutTotal: sale.coutTotal,
+  margeEstimee: sale.margeEstimee,
   createdAt: sale.createdAt,
 });
 
@@ -148,15 +150,18 @@ export const createVente = async (req, res) => {
       const prixUnitaireHTOriginal = Number(product.prixVente || 0);
       const prixUnitaireHT = roundMoney(prixUnitaireHTOriginal * tauxConversion);
       const coutUnitaire = roundMoney(Number(product.prixAchat || 0) * tauxConversion);
+      const totalCout = roundMoney(coutUnitaire * quantite);
       const ligneTotalHTOriginal = roundMoney(prixUnitaireHTOriginal * quantite);
       const ligneTotalHT = roundMoney(prixUnitaireHT * quantite);
       sousTotalHT += ligneTotalHT;
-      coutTotal += coutUnitaire * quantite;
+      coutTotal += totalCout;
 
       saleLines.push({
         produitId: product._id,
         nomProduit: product.nom,
         sku: product.sku,
+        categorieId: product.categorieId || null,
+        categorieNom: "Non classe",
         quantite,
         deviseOriginale: productCurrency,
         tauxConversion,
@@ -167,8 +172,18 @@ export const createVente = async (req, res) => {
         prixUnitaireTTC: roundMoney(prixUnitaireHT * (1 + TVA_RATE)),
         totalHT: ligneTotalHT,
         totalTTC: roundMoney(ligneTotalHT * (1 + TVA_RATE)),
+        coutUnitaire,
+        totalCout,
+        margeBrute: roundMoney(ligneTotalHT - totalCout),
       });
     }
+
+    const categoryIdsForSale = [...new Set(saleLines.map((line) => line.categorieId?.toString()).filter(Boolean))];
+    const categoriesForSale = await Categorie.find({ _id: { $in: categoryIdsForSale }, boutiqueId }).select("nom");
+    const categoryNamesById = new Map(categoriesForSale.map((category) => [category._id.toString(), category.nom]));
+    saleLines.forEach((line) => {
+      if (line.categorieId) line.categorieNom = categoryNamesById.get(line.categorieId.toString()) || "Non classe";
+    });
 
     sousTotalHT = roundMoney(sousTotalHT);
     const remiseMontant = roundMoney((sousTotalHT * remisePourcentage) / 100);
@@ -536,3 +551,164 @@ export const createRetour = async (req, res) => {
     return res.status(500).json({ success: false, message: "Impossible d'enregistrer le retour client." });
   }
 };
+
+
+export const getRapportsCaisse = async (req, res) => {
+  try {
+    const boutiqueId = getBoutiqueId(req);
+    if (!boutiqueId) return res.status(400).json({ success: false, message: "Boutique active introuvable." });
+    if (!(await ensureBoutiqueAccess(req, boutiqueId))) {
+      return res.status(403).json({ success: false, message: "Cette boutique n'appartient pas a votre compte." });
+    }
+
+    const canViewAll = req.user?.isOwner || req.user?.permissions?.includes("VOIR_RAPPORTS_CAISSE");
+    const baseFilter = canViewAll ? { boutiqueId } : { boutiqueId, utilisateurId: req.user.id };
+    const ventes = await Vente.find(baseFilter)
+      .select("+coutTotal +margeEstimee")
+      .populate("utilisateurId", "nom prenom")
+      .sort({ createdAt: -1 })
+      .limit(1000);
+    const retours = await RetourClient.find(baseFilter)
+      .populate("utilisateurId", "nom prenom")
+      .sort({ createdAt: -1 })
+      .limit(1000);
+
+    const productIds = [...new Set(ventes.flatMap((sale) => sale.lignes.map((line) => line.produitId?.toString()).filter(Boolean)))];
+    const products = await Produit.find({ _id: { $in: productIds }, boutiqueId }).select("nom sku categorieId +prixAchat").populate("categorieId", "nom");
+    const productsById = new Map(products.map((product) => [product._id.toString(), product]));
+
+    const addToMap = (map, key, value) => {
+      const current = map.get(key) || { ...value, caHT: 0, totalTTC: 0, cout: 0, marge: 0, quantite: 0, ventes: 0, tva: 0 };
+      current.caHT += value.caHT || 0;
+      current.totalTTC += value.totalTTC || 0;
+      current.cout += value.cout || 0;
+      current.marge += value.marge || 0;
+      current.quantite += value.quantite || 0;
+      current.ventes += value.ventes || 0;
+      current.tva += value.tva || 0;
+      map.set(key, current);
+    };
+
+    const daily = new Map();
+    const cashiers = new Map();
+    const payments = new Map();
+    const productsReport = new Map();
+    const categoriesReport = new Map();
+    const salesDetails = [];
+
+    let totalSales = 0;
+    let totalHT = 0;
+    let totalTTC = 0;
+    let totalTVA = 0;
+    let totalCost = 0;
+    let totalMargin = 0;
+
+    ventes.forEach((sale) => {
+      if (sale.statut !== "PAYEE") return;
+      const day = new Date(sale.createdAt).toISOString().slice(0, 10);
+      const cashierName = typeof sale.utilisateurId === "object" && sale.utilisateurId
+        ? ((sale.utilisateurId.prenom || "") + " " + (sale.utilisateurId.nom || "")).trim() || "Caissier"
+        : "Caissier";
+      const cost = Number(sale.coutTotal || 0);
+      const margin = Number(sale.margeEstimee ?? (Number(sale.taxableAmount || 0) - cost));
+      const taxable = Number(sale.taxableAmount || sale.sousTotalHT || 0);
+      totalSales += 1;
+      totalHT += taxable;
+      totalTTC += Number(sale.totalTTC || 0);
+      totalTVA += Number(sale.tvaMontant || 0);
+      totalCost += cost;
+      totalMargin += margin;
+
+      addToMap(daily, day, { date: day, caHT: taxable, totalTTC: Number(sale.totalTTC || 0), tva: Number(sale.tvaMontant || 0), cout: cost, marge: margin, ventes: 1 });
+      addToMap(cashiers, cashierName, { caissier: cashierName, caHT: taxable, totalTTC: Number(sale.totalTTC || 0), tva: Number(sale.tvaMontant || 0), cout: cost, marge: margin, ventes: 1 });
+      addToMap(payments, sale.paiement || "Non precise", { paiement: sale.paiement || "Non precise", caHT: taxable, totalTTC: Number(sale.totalTTC || 0), tva: Number(sale.tvaMontant || 0), cout: cost, marge: margin, ventes: 1 });
+
+      const saleHT = Number(sale.sousTotalHT || sale.taxableAmount || 0);
+      sale.lignes.forEach((line) => {
+        const product = productsById.get(line.produitId?.toString());
+        const lineCost = Number(line.totalCout ?? 0) || (saleHT > 0 ? roundMoney(cost * (Number(line.totalHT || 0) / saleHT)) : 0);
+        const lineMargin = Number(line.margeBrute ?? roundMoney(Number(line.totalHT || 0) - lineCost));
+        const productName = line.nomProduit || product?.nom || "Produit archive";
+        const sku = line.sku || product?.sku || "";
+        const categoryName = line.categorieNom || product?.categorieId?.nom || "Non classe";
+        const quantity = Number(line.quantite || 0);
+        const unitSale = quantity > 0 ? roundMoney(Number(line.totalHT || 0) / quantity) : Number(line.prixUnitaireHT || 0);
+        const unitCost = quantity > 0 ? roundMoney(lineCost / quantity) : Number(line.coutUnitaire || product?.prixAchat || 0);
+        const unitMargin = roundMoney(unitSale - unitCost);
+        addToMap(productsReport, String(line.produitId || productName), { produit: productName, sku, categorie: categoryName, caHT: Number(line.totalHT || 0), totalTTC: Number(line.totalTTC || 0), cout: lineCost, marge: lineMargin, quantite: quantity, ventes: 1 });
+        addToMap(categoriesReport, categoryName, { categorie: categoryName, caHT: Number(line.totalHT || 0), totalTTC: Number(line.totalTTC || 0), cout: lineCost, marge: lineMargin, quantite: quantity, ventes: 1 });
+        salesDetails.push({
+          reference: sale.reference,
+          factureReference: sale.factureReference,
+          clientNom: sale.clientNom,
+          date: sale.createdAt,
+          caissier: cashierName,
+          paiement: sale.paiement || "Non precise",
+          produit: productName,
+          sku,
+          categorie: categoryName,
+          quantite: quantity,
+          prixVente: unitSale,
+          coutAchat: unitCost,
+          margeUnitaire: unitMargin,
+          marge: lineMargin,
+          totalTTC: Number(line.totalTTC || 0),
+          devise: sale.deviseReference || sale.devise,
+        });
+      });
+    });
+
+    const validReturns = retours.filter((item) => item.statut === "VALIDE");
+    const totalReturns = validReturns.reduce((sum, item) => sum + Number(item.montantTotalTTC || 0), 0);
+    const devise = ventes.find((sale) => sale.deviseReference || sale.devise)?.deviseReference || ventes.find((sale) => sale.devise)?.devise || "USD ($)";
+
+    const serializeRows = (items) => items.map((item) => ({
+      ...item,
+      caHT: roundMoney(item.caHT),
+      totalTTC: roundMoney(item.totalTTC),
+      tva: roundMoney(item.tva || 0),
+      cout: roundMoney(item.cout),
+      marge: roundMoney(item.marge),
+      tauxMarge: item.caHT > 0 ? roundMoney((item.marge / item.caHT) * 100) : 0,
+      quantite: roundMoney(item.quantite),
+    }));
+
+    return res.status(200).json({
+      success: true,
+      scope: canViewAll ? "all" : "own",
+      devise,
+      metrics: {
+        ventes: totalSales,
+        caHT: roundMoney(totalHT),
+        caTTC: roundMoney(totalTTC),
+        tva: roundMoney(totalTVA),
+        cout: roundMoney(totalCost),
+        marge: roundMoney(totalMargin),
+        tauxMarge: totalHT > 0 ? roundMoney((totalMargin / totalHT) * 100) : 0,
+        retours: validReturns.length,
+        montantRetours: roundMoney(totalReturns),
+        netApresRetours: roundMoney(totalTTC - totalReturns),
+      },
+      daily: serializeRows([...daily.values()]).sort((a, b) => a.date.localeCompare(b.date)),
+      cashiers: serializeRows([...cashiers.values()]).sort((a, b) => b.totalTTC - a.totalTTC),
+      payments: serializeRows([...payments.values()]).sort((a, b) => b.totalTTC - a.totalTTC),
+      products: serializeRows([...productsReport.values()]).sort((a, b) => b.marge - a.marge),
+      categories: serializeRows([...categoriesReport.values()]).sort((a, b) => b.marge - a.marge),
+      salesDetails: salesDetails.map((item) => ({
+        ...item,
+        quantite: roundMoney(item.quantite),
+        prixVente: roundMoney(item.prixVente),
+        coutAchat: roundMoney(item.coutAchat),
+        margeUnitaire: roundMoney(item.margeUnitaire),
+        marge: roundMoney(item.marge),
+        totalTTC: roundMoney(item.totalTTC),
+      })),
+      returns: validReturns.map((item) => ({ reference: item.reference, venteReference: item.venteReference, clientNom: item.clientNom, typeRetour: item.typeRetour, montantTotalTTC: item.montantTotalTTC, createdAt: item.createdAt })),
+    });
+  } catch (error) {
+    console.error("getRapportsCaisse:", error);
+    return res.status(500).json({ success: false, message: "Impossible de charger les rapports caisse." });
+  }
+};
+
+
