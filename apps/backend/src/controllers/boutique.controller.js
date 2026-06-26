@@ -19,8 +19,8 @@ const getOwnerPermissions = async () => {
   return permissions.map((permission) => permission.nom);
 };
 
-const createSessionPayload = async (userId, boutiqueId) => {
-  const permissions = await getOwnerPermissions();
+const createSessionPayload = async (userId, boutiqueId, permissionsOverride = null) => {
+  const permissions = Array.isArray(permissionsOverride) ? permissionsOverride : await getOwnerPermissions();
   const token = jwt.sign(
     {
       id: userId,
@@ -34,9 +34,9 @@ const createSessionPayload = async (userId, boutiqueId) => {
   return { token, permissions };
 };
 
-const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const escapeRegex = (value) => String(value).replace(/[.*+?^\${}()|[\]\\]/g, "\\$&");
 
-const assertOwnerAccount = async (req, res) => {
+const resolveBoutiqueContext = async (req, res) => {
   const user = await Utilisateur.findById(req.user.id).populate("boutiqueActive");
 
   if (!user) {
@@ -44,30 +44,39 @@ const assertOwnerAccount = async (req, res) => {
     return null;
   }
 
-  const isOwner = !user.roleId && (
-    !user.boutiqueActive || user.boutiqueActive.userId?.toString() === user._id.toString()
-  );
-  if (!isOwner) {
-    res.status(403).json({ message: "Seul le proprietaire du compte peut gerer les boutiques." });
-    return null;
+  let ownerId = user._id;
+  let activeBoutiqueId = user.boutiqueActive?._id || user.boutiqueActive || req.user?.boutiqueActive || req.user?.boutiqueId;
+
+  if (user.boutiqueActive?.userId) {
+    ownerId = user.boutiqueActive.userId;
+  } else if (activeBoutiqueId) {
+    const activeBoutique = await Boutique.findOne({ _id: activeBoutiqueId, isDeleted: false }).select("userId");
+    if (activeBoutique?.userId) {
+      ownerId = activeBoutique.userId;
+      activeBoutiqueId = activeBoutique._id;
+    }
   }
 
-  return user;
+  return {
+    user,
+    ownerId,
+    activeBoutiqueId,
+  };
 };
 
 export const getBoutiques = async (req, res) => {
   try {
-    const user = await assertOwnerAccount(req, res);
-    if (!user) return;
+    const context = await resolveBoutiqueContext(req, res);
+    if (!context) return;
 
     const boutiques = await Boutique.find({
-      userId: user._id,
+      userId: context.ownerId,
       isDeleted: false,
     }).sort({ createdAt: 1 });
 
     return res.status(200).json({
       success: true,
-      boutiques: boutiques.map((boutique) => normalizeBoutique(boutique, user.boutiqueActive?._id)),
+      boutiques: boutiques.map((boutique) => normalizeBoutique(boutique, context.activeBoutiqueId)),
     });
   } catch (error) {
     console.error("Erreur getBoutiques:", error);
@@ -77,8 +86,8 @@ export const getBoutiques = async (req, res) => {
 
 export const createBoutique = async (req, res) => {
   try {
-    const user = await assertOwnerAccount(req, res);
-    if (!user) return;
+    const context = await resolveBoutiqueContext(req, res);
+    if (!context) return;
 
     const { nom, secteurActivite, deviseParDefaut, tailleBusiness } = req.body;
 
@@ -88,7 +97,7 @@ export const createBoutique = async (req, res) => {
     }
 
     const existingBoutique = await Boutique.findOne({
-      userId: user._id,
+      userId: context.ownerId,
       nom: { $regex: `^${escapeRegex(cleanNom)}$`, $options: "i" },
       isDeleted: false,
     });
@@ -99,16 +108,16 @@ export const createBoutique = async (req, res) => {
 
     const boutique = await Boutique.create({
       nom: cleanNom,
-      userId: user._id,
+      userId: context.ownerId,
       secteurActivite,
       deviseParDefaut,
       tailleBusiness,
     });
 
-    user.boutiqueActive = boutique._id;
-    await user.save();
+    context.user.boutiqueActive = boutique._id;
+    await context.user.save();
 
-    const { token, permissions } = await createSessionPayload(user._id, boutique._id);
+    const { token, permissions } = await createSessionPayload(context.user._id, boutique._id, req.user?.permissions);
 
     return res.status(201).json({
       success: true,
@@ -125,8 +134,8 @@ export const createBoutique = async (req, res) => {
 
 export const updateBoutique = async (req, res) => {
   try {
-    const user = await assertOwnerAccount(req, res);
-    if (!user) return;
+    const context = await resolveBoutiqueContext(req, res);
+    if (!context) return;
 
     const { id } = req.params;
     const { nom, secteurActivite, tailleBusiness } = req.body;
@@ -138,7 +147,7 @@ export const updateBoutique = async (req, res) => {
 
     const boutique = await Boutique.findOne({
       _id: id,
-      userId: user._id,
+      userId: context.ownerId,
       isDeleted: false,
     });
 
@@ -148,7 +157,7 @@ export const updateBoutique = async (req, res) => {
 
     const duplicate = await Boutique.findOne({
       _id: { $ne: boutique._id },
-      userId: user._id,
+      userId: context.ownerId,
       nom: { $regex: `^${escapeRegex(cleanNom)}$`, $options: "i" },
       isDeleted: false,
     });
@@ -166,7 +175,7 @@ export const updateBoutique = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "Boutique mise a jour avec succes.",
-      boutique: normalizeBoutique(boutique, user.boutiqueActive?._id),
+      boutique: normalizeBoutique(boutique, context.activeBoutiqueId),
     });
   } catch (error) {
     console.error("Erreur updateBoutique:", error);
@@ -176,13 +185,13 @@ export const updateBoutique = async (req, res) => {
 
 export const deleteBoutique = async (req, res) => {
   try {
-    const user = await assertOwnerAccount(req, res);
-    if (!user) return;
+    const context = await resolveBoutiqueContext(req, res);
+    if (!context) return;
 
     const { id } = req.params;
     const boutique = await Boutique.findOne({
       _id: id,
-      userId: user._id,
+      userId: context.ownerId,
       isDeleted: false,
     });
 
@@ -190,13 +199,12 @@ export const deleteBoutique = async (req, res) => {
       return res.status(404).json({ message: "Boutique introuvable pour ce compte." });
     }
 
-    const activeId = user.boutiqueActive?._id || user.boutiqueActive;
-    if (String(activeId || "") === boutique._id.toString()) {
+    if (String(context.activeBoutiqueId || "") === boutique._id.toString()) {
       return res.status(400).json({ message: "Impossible de supprimer la boutique active. Activez une autre boutique d'abord." });
     }
 
     const boutiquesCount = await Boutique.countDocuments({
-      userId: user._id,
+      userId: context.ownerId,
       isDeleted: false,
     });
 
@@ -220,14 +228,14 @@ export const deleteBoutique = async (req, res) => {
 
 export const setActiveBoutique = async (req, res) => {
   try {
-    const user = await assertOwnerAccount(req, res);
-    if (!user) return;
+    const context = await resolveBoutiqueContext(req, res);
+    if (!context) return;
 
     const { id } = req.params;
 
     const boutique = await Boutique.findOne({
       _id: id,
-      userId: user._id,
+      userId: context.ownerId,
       isDeleted: false,
     });
 
@@ -235,10 +243,10 @@ export const setActiveBoutique = async (req, res) => {
       return res.status(404).json({ message: "Boutique introuvable pour ce compte." });
     }
 
-    user.boutiqueActive = boutique._id;
-    await user.save();
+    context.user.boutiqueActive = boutique._id;
+    await context.user.save();
 
-    const { token, permissions } = await createSessionPayload(user._id, boutique._id);
+    const { token, permissions } = await createSessionPayload(context.user._id, boutique._id, req.user?.permissions);
 
     return res.status(200).json({
       success: true,
@@ -252,7 +260,6 @@ export const setActiveBoutique = async (req, res) => {
     return res.status(500).json({ message: "Erreur lors du changement de boutique active." });
   }
 };
-
 
 const SUPPORTED_CURRENCIES = ["USD ($)", "CDF (FC)", "EUR (€)"];
 const DEFAULT_EXCHANGE_RATES = [
@@ -326,7 +333,7 @@ export const updateCurrencySettings = async (req, res) => {
     const rates = Array.isArray(req.body.rates) ? req.body.rates : [];
 
     if (!SUPPORTED_CURRENCIES.includes(deviseReference)) {
-      return res.status(400).json({ success: false, message: "Devise de référence invalide." });
+      return res.status(400).json({ success: false, message: "Devise de reference invalide." });
     }
 
     const normalizedRates = buildRatePairs(rates);
@@ -349,7 +356,7 @@ export const updateCurrencySettings = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Devise et taux de change mis à jour.",
+      message: "Devise et taux de change mis a jour.",
       deviseReference: boutique.deviseParDefaut,
       rates: savedRates,
     });
@@ -358,5 +365,3 @@ export const updateCurrencySettings = async (req, res) => {
     return res.status(500).json({ success: false, message: "Impossible d'enregistrer les taux de change." });
   }
 };
-
-
