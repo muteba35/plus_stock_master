@@ -264,7 +264,13 @@ export default function BoutiquePage() {
     try {
       setUserPermissions(JSON.parse(localStorage.getItem("user_permissions") || "[]"));
       const profile = JSON.parse(localStorage.getItem("user_profile") || "{}");
-      setIsOwner(profile.roleId === null || profile.roleId === "");
+      const roleLabel = String(profile.role || "").toLowerCase();
+      const hasOwnerRole =
+        profile.roleId === null ||
+        profile.roleId === "" ||
+        profile.roleId === undefined ||
+        roleLabel.includes("admin");
+      setIsOwner(hasOwnerRole);
     } catch {
       setUserPermissions([]);
       setIsOwner(false);
