@@ -3,7 +3,7 @@
 import React from "react";
 import { ChevronLeft, ChevronRight, Search, X, type LucideIcon } from "lucide-react";
 
-export type ProductStatus = "Disponible" | "Stock faible" | "Rupture";
+export type ProductStatus = "Disponible" | "Stock faible" | "Rupture" | "Expire";
 
 export function PageHeader({ title, subtitle, action }: { title: string; subtitle: string; action?: React.ReactNode }) {
   return (
@@ -48,7 +48,7 @@ export function SearchInput({ value, onChange, placeholder }: { value: string; o
 }
 
 export function StatusBadge({ status }: { status: ProductStatus }) {
-  const style = status === "Disponible" ? "bg-emerald-50 text-emerald-600" : status === "Stock faible" ? "bg-amber-50 text-amber-700" : "bg-rose-50 text-rose-600";
+  const style = status === "Disponible" ? "bg-emerald-50 text-emerald-600" : status === "Stock faible" ? "bg-amber-50 text-amber-700" : status === "Expire" ? "bg-slate-100 text-slate-600" : "bg-rose-50 text-rose-600";
   return <span className={`inline-flex px-2 py-1 rounded-md text-[10px] font-bold whitespace-nowrap ${style}`}>{status}</span>;
 }
 

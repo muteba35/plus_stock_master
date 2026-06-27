@@ -7,7 +7,7 @@ import { formatMoney, getActiveBoutiqueCurrency } from "../components/currency";
 import ProductImportModal from "./components/ProductImportModal";
 
 type CategoryOption = { _id: string; nom: string; couleur: string; isActive: boolean };
-type ProductStatus = "Disponible" | "Stock faible" | "Rupture";
+type ProductStatus = "Disponible" | "Stock faible" | "Rupture" | "Expire";
 type Product = {
   _id: string;
   nom: string;
@@ -21,6 +21,14 @@ type Product = {
   seuilAlerte: number;
   unite: string;
   codeBarres: string;
+  modeApprovisionnement?: "DETAIL" | "GROS";
+  libelleConditionnement?: string;
+  quantiteParConditionnement?: number;
+  nombreConditionnements?: number;
+  codeBarresConditionnement?: string;
+  dateProduction?: string;
+  dateExpiration?: string;
+  isExpired?: boolean;
   image: string;
   isActive: boolean;
   status: ProductStatus;
@@ -36,6 +44,13 @@ type ProductForm = {
   seuilAlerte: string;
   unite: string;
   codeBarres: string;
+  modeApprovisionnement: "DETAIL" | "GROS";
+  libelleConditionnement: string;
+  quantiteParConditionnement: string;
+  nombreConditionnements: string;
+  codeBarresConditionnement: string;
+  dateProduction: string;
+  dateExpiration: string;
   image: string;
   isActive: boolean;
   devise: string;
@@ -57,7 +72,28 @@ type ImportProductRow = {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://plus-stock-master.onrender.com/api";
 const DEVISES = ["USD ($)", "CDF (FC)", "EUR (€)"];
-const EMPTY_FORM: ProductForm = { nom: "", sku: "", description: "", categorieId: "", prixAchat: "", prixVente: "", stockInitial: "", seuilAlerte: "5", unite: "Pièce", codeBarres: "", image: "", isActive: true, devise: "USD ($)" };
+const EMPTY_FORM: ProductForm = {
+  nom: "",
+  sku: "",
+  description: "",
+  categorieId: "",
+  prixAchat: "",
+  prixVente: "",
+  stockInitial: "",
+  seuilAlerte: "5",
+  unite: "Pièce",
+  codeBarres: "",
+  modeApprovisionnement: "DETAIL",
+  libelleConditionnement: "Carton",
+  quantiteParConditionnement: "",
+  nombreConditionnements: "",
+  codeBarresConditionnement: "",
+  dateProduction: "",
+  dateExpiration: "",
+  image: "",
+  isActive: true,
+  devise: "USD ($)",
+};
 const UNITS = ["Pièce", "Boîte", "Paquet", "Kg", "Gramme", "Litre", "Mètre"];
 
 const requestHeaders = () => {
@@ -251,6 +287,13 @@ export default function ProduitsPage() {
     unite: product.unite || "Pièce",
     codeBarres: product.codeBarres || "",
     image: product.image || "",
+    modeApprovisionnement: product.modeApprovisionnement || "DETAIL",
+    libelleConditionnement: product.libelleConditionnement || "Carton",
+    quantiteParConditionnement: String(product.quantiteParConditionnement || ""),
+    nombreConditionnements: String(product.nombreConditionnements || ""),
+    codeBarresConditionnement: product.codeBarresConditionnement || "",
+    dateProduction: product.dateProduction ? product.dateProduction.slice(0, 10) : "",
+    dateExpiration: product.dateExpiration ? product.dateExpiration.slice(0, 10) : "",
     isActive: product.isActive,
     devise: product.devise || currency,
   });
@@ -312,11 +355,22 @@ export default function ProduitsPage() {
         seuilAlerte: Number(form.seuilAlerte),
         unite: form.unite,
         codeBarres: form.codeBarres,
+        modeApprovisionnement: form.modeApprovisionnement,
+        libelleConditionnement: form.libelleConditionnement,
+        quantiteParConditionnement: Number(form.quantiteParConditionnement || 0),
+        nombreConditionnements: Number(form.nombreConditionnements || 0),
+        codeBarresConditionnement: form.codeBarresConditionnement,
+        dateProduction: form.dateProduction || null,
+        dateExpiration: form.dateExpiration || null,
         image: form.image,
         isActive: form.isActive,
       };
       if (canViewPurchasePrice) payload.prixAchat = Number(form.prixAchat);
-      if (modalMode === "create") payload.stockInitial = Number(form.stockInitial);
+      if (modalMode === "create") {
+        payload.stockInitial = form.modeApprovisionnement === "GROS"
+          ? Number(form.nombreConditionnements || 0) * Number(form.quantiteParConditionnement || 0)
+          : Number(form.stockInitial);
+      }
       const response = await fetch(modalMode === "edit" && selected ? `${API_URL}/inventaire/produits/${selected._id}` : `${API_URL}/inventaire/produits`, {
         method: modalMode === "edit" ? "PUT" : "POST",
         headers: requestHeaders(),
@@ -419,6 +473,7 @@ export default function ProduitsPage() {
   const resetFilters = () => { setStatusFilter("all"); setCategoryFilter("all"); setActivityFilter("active"); };
   const activeFilterCount = Number(statusFilter !== "all") + Number(categoryFilter !== "all") + Number(activityFilter !== "active");
   const readOnly = modalMode === "view";
+  const computedBulkStock = Number(form.nombreConditionnements || 0) * Number(form.quantiteParConditionnement || 0);
 
   return (
     <div className="space-y-6 bg-[#f9fafd] p-3 sm:p-6 rounded-2xl sm:rounded-3xl min-h-screen text-slate-800 overflow-x-hidden">
@@ -433,7 +488,7 @@ export default function ProduitsPage() {
           <SearchInput value={search} onChange={setSearch} placeholder="Rechercher par nom, SKU ou code-barres..." />
           <div className="relative" ref={filterRef}>
             <button onClick={() => setFilterOpen((current) => !current)} className={`h-10 w-10 rounded-xl border flex items-center justify-center relative ${filterOpen || activeFilterCount ? "border-indigo-300 bg-indigo-50 text-indigo-600" : "border-slate-200 text-slate-500"}`} title="Filtrer"><SlidersHorizontal size={16} />{activeFilterCount > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-indigo-600 text-white text-[9px] font-bold flex items-center justify-center">{activeFilterCount}</span>}</button>
-            {filterOpen && <div className="absolute right-0 top-12 z-[70] w-[min(20rem,calc(100vw-2rem))] bg-white border border-slate-200 rounded-xl shadow-[0_18px_45px_-12px_rgba(15,23,42,0.25)] p-4 space-y-4"><div className="flex items-center justify-between"><p className="text-xs font-bold">Filtres</p><button onClick={resetFilters} className="text-[10px] font-bold text-indigo-600 flex items-center gap-1"><RotateCcw size={11} /> Réinitialiser</button></div><label className="block space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Catégorie</span><select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)} className={fieldClass}><option value="all">Toutes les catégories</option>{categories.map((category) => <option key={category._id} value={category._id}>{category.nom}</option>)}</select></label><label className="block space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">État du stock</span><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className={fieldClass}><option value="all">Tous</option><option value="Disponible">Disponible</option><option value="Stock faible">Stock faible</option><option value="Rupture">Rupture</option></select></label><label className="block space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Activité</span><select value={activityFilter} onChange={(event) => setActivityFilter(event.target.value)} className={fieldClass}><option value="all">Tous</option><option value="active">Actifs</option><option value="inactive">Inactifs</option></select></label><button onClick={() => setFilterOpen(false)} className={`${primaryButton} w-full`}>Appliquer</button></div>}
+            {filterOpen && <div className="absolute right-0 top-12 z-[70] w-[min(20rem,calc(100vw-2rem))] bg-white border border-slate-200 rounded-xl shadow-[0_18px_45px_-12px_rgba(15,23,42,0.25)] p-4 space-y-4"><div className="flex items-center justify-between"><p className="text-xs font-bold">Filtres</p><button onClick={resetFilters} className="text-[10px] font-bold text-indigo-600 flex items-center gap-1"><RotateCcw size={11} /> Réinitialiser</button></div><label className="block space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Catégorie</span><select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)} className={fieldClass}><option value="all">Toutes les catégories</option>{categories.map((category) => <option key={category._id} value={category._id}>{category.nom}</option>)}</select></label><label className="block space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">État du stock</span><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className={fieldClass}><option value="all">Tous</option><option value="Disponible">Disponible</option><option value="Stock faible">Stock faible</option><option value="Rupture">Rupture</option><option value="Expire">Expire</option></select></label><label className="block space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Activité</span><select value={activityFilter} onChange={(event) => setActivityFilter(event.target.value)} className={fieldClass}><option value="all">Tous</option><option value="active">Actifs</option><option value="inactive">Inactifs</option></select></label><button onClick={() => setFilterOpen(false)} className={`${primaryButton} w-full`}>Appliquer</button></div>}
           </div>
         </div>
 
@@ -454,10 +509,30 @@ export default function ProduitsPage() {
           <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Devise du produit <b className="text-rose-500">*</b></span><select required disabled={readOnly} value={form.devise} onChange={(event) => setForm({ ...form, devise: event.target.value })} className={fieldClass}>{DEVISES.map((devise) => <option key={devise} value={devise}>{devise}</option>)}</select></label>
           {canViewPurchasePrice && <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Prix d’achat ({form.devise}) <b className="text-rose-500">*</b></span><input required disabled={readOnly} type="number" min="0.01" step="0.01" value={form.prixAchat} onChange={(event) => setForm({ ...form, prixAchat: event.target.value })} className={fieldClass} /></label>}
           <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Prix de vente ({form.devise}) <b className="text-rose-500">*</b></span><input required disabled={readOnly} type="number" min="0.01" step="0.01" value={form.prixVente} onChange={(event) => setForm({ ...form, prixVente: event.target.value })} className={fieldClass} /></label>
-          {modalMode === "create" ? <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Stock initial <b className="text-rose-500">*</b></span><input required type="number" min="0" value={form.stockInitial} onChange={(event) => setForm({ ...form, stockInitial: event.target.value })} className={fieldClass} /></label> : <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Stock actuel</span><input disabled value={`${selected?.stock || 0} ${selected?.unite || ""}`} className={`${fieldClass} bg-slate-100`} /></label>}
+          {modalMode === "create" && (
+            <div className="sm:col-span-2 grid grid-cols-2 gap-2 rounded-xl border border-slate-200 bg-slate-50 p-1">
+              <button type="button" disabled={readOnly} onClick={() => setForm({ ...form, modeApprovisionnement: "DETAIL" })} className={(form.modeApprovisionnement === "DETAIL" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500") + " h-9 rounded-lg text-[11px] font-bold"}>Insertion en detail</button>
+              <button type="button" disabled={readOnly} onClick={() => setForm({ ...form, modeApprovisionnement: "GROS" })} className={(form.modeApprovisionnement === "GROS" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500") + " h-9 rounded-lg text-[11px] font-bold"}>Insertion en gros</button>
+            </div>
+          )}
+          {modalMode === "create" && form.modeApprovisionnement === "DETAIL" ? (
+            <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Stock initial <b className="text-rose-500">*</b></span><input required type="number" min="0" value={form.stockInitial} onChange={(event) => setForm({ ...form, stockInitial: event.target.value })} className={fieldClass} /></label>
+          ) : modalMode === "create" ? (
+            <>
+              <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Conditionnement</span><input value={form.libelleConditionnement} onChange={(event) => setForm({ ...form, libelleConditionnement: event.target.value })} className={fieldClass} placeholder="Ex: Carton, pack, caisse" /></label>
+              <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Nombre de conditionnements <b className="text-rose-500">*</b></span><input required type="number" min="1" value={form.nombreConditionnements} onChange={(event) => setForm({ ...form, nombreConditionnements: event.target.value })} className={fieldClass} /></label>
+              <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Unites par conditionnement <b className="text-rose-500">*</b></span><input required type="number" min="1" value={form.quantiteParConditionnement} onChange={(event) => setForm({ ...form, quantiteParConditionnement: event.target.value })} className={fieldClass} /></label>
+              <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Stock calcule</span><input disabled value={`${computedBulkStock || 0} ${form.unite}`} className={`${fieldClass} bg-slate-100`} /></label>
+              <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Code-barres conditionnement</span><input value={form.codeBarresConditionnement} onChange={(event) => setForm({ ...form, codeBarresConditionnement: event.target.value })} className={fieldClass} placeholder="Facultatif" /></label>
+            </>
+          ) : (
+            <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Stock actuel</span><input disabled value={`${selected?.stock || 0} ${selected?.unite || ""}`} className={`${fieldClass} bg-slate-100`} /></label>
+          )}
           <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Seuil d’alerte <b className="text-rose-500">*</b></span><input required disabled={readOnly} type="number" min="0" value={form.seuilAlerte} onChange={(event) => setForm({ ...form, seuilAlerte: event.target.value })} className={fieldClass} /></label>
           <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Unité <b className="text-rose-500">*</b></span><select required disabled={readOnly} value={form.unite} onChange={(event) => setForm({ ...form, unite: event.target.value })} className={fieldClass}>{UNITS.map((unit) => <option key={unit}>{unit}</option>)}</select></label>
-          <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Code-barres</span><input disabled={readOnly} value={form.codeBarres} onChange={(event) => setForm({ ...form, codeBarres: event.target.value })} className={fieldClass} placeholder="Facultatif" /></label>
+          <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Code-barres detail</span><input disabled={readOnly} value={form.codeBarres} onChange={(event) => setForm({ ...form, codeBarres: event.target.value })} className={fieldClass} placeholder="Facultatif" /></label>
+          <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Date de production</span><input disabled={readOnly} type="date" value={form.dateProduction} onChange={(event) => setForm({ ...form, dateProduction: event.target.value })} className={fieldClass} /></label>
+          <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Date d'expiration</span><input disabled={readOnly} type="date" value={form.dateExpiration} onChange={(event) => setForm({ ...form, dateExpiration: event.target.value })} className={fieldClass} /></label>
           <label className="space-y-1.5 sm:col-span-2"><span className="text-[10px] font-bold uppercase text-slate-400">Description</span><textarea disabled={readOnly} rows={3} value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} className={`${fieldClass} h-auto py-3 resize-none`} /></label>
           {modalMode === "edit" && <label className="sm:col-span-2 flex items-center gap-3 p-3 rounded-xl border border-slate-200"><input type="checkbox" checked={form.isActive} onChange={(event) => setForm({ ...form, isActive: event.target.checked })} className="w-4 h-4 accent-indigo-600" /><span className="text-xs font-bold text-slate-700">Produit actif et disponible dans le catalogue</span></label>}
         </div>
