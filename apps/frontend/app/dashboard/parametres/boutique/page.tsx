@@ -101,6 +101,29 @@ const formatDate = (date?: string) => {
   }
 };
 
+const DEFAULT_EXCHANGE_RATES: ExchangeRate[] = [
+  { source: "USD ($)", cible: "CDF (FC)", taux: 2300 },
+  { source: "CDF (FC)", cible: "USD ($)", taux: 1 / 2300 },
+  { source: "EUR (€)", cible: "CDF (FC)", taux: 2500 },
+  { source: "CDF (FC)", cible: "EUR (€)", taux: 1 / 2500 },
+  { source: "EUR (€)", cible: "USD ($)", taux: 1.08 },
+  { source: "USD ($)", cible: "EUR (€)", taux: 1 / 1.08 },
+];
+
+const normalizeExchangeRates = (rates: ExchangeRate[] = []) => {
+  const availableRates = rates.length > 0 ? rates : DEFAULT_EXCHANGE_RATES;
+  const byPair = new Map<string, ExchangeRate>();
+
+  availableRates.forEach((rate) => {
+    if (!rate.source || !rate.cible || rate.source === rate.cible) return;
+    const taux = Number(rate.taux);
+    if (!Number.isFinite(taux) || taux <= 0) return;
+    byPair.set(`${rate.source}->${rate.cible}`, { source: rate.source, cible: rate.cible, taux });
+  });
+
+  return Array.from(byPair.values()).sort((a, b) => `${a.source}->${a.cible}`.localeCompare(`${b.source}->${b.cible}`));
+};
+
 export default function BoutiquePage() {
   const [boutiques, setBoutiques] = useState<Boutique[]>([]);
   const [loading, setLoading] = useState(true);
@@ -124,11 +147,7 @@ export default function BoutiquePage() {
   const [userPermissions, setUserPermissions] = useState<string[]>([]);
   const [isOwner, setIsOwner] = useState(false);
   const [referenceCurrency, setReferenceCurrency] = useState("USD ($)");
-  const [exchangeRates, setExchangeRates] = useState<ExchangeRate[]>([
-    { source: "USD ($)", cible: "CDF (FC)", taux: 2300 },
-    { source: "EUR (€)", cible: "CDF (FC)", taux: 2500 },
-    { source: "EUR (€)", cible: "USD ($)", taux: 1.08 },
-  ]);
+  const [exchangeRates, setExchangeRates] = useState<ExchangeRate[]>(DEFAULT_EXCHANGE_RATES);
   const [ratesLoading, setRatesLoading] = useState(false);
   const [ratesSaving, setRatesSaving] = useState(false);
 
@@ -201,7 +220,7 @@ export default function BoutiquePage() {
       const { data, message } = await readApiMessage(response, "Impossible de charger les taux de change.");
       if (!response.ok || !data?.success) throw new Error(message);
       setReferenceCurrency(data.deviseReference || "USD ($)");
-      setExchangeRates((data.rates || []).filter((rate: ExchangeRate) => rate.source !== rate.cible));
+      setExchangeRates(normalizeExchangeRates(data.rates || []));
     } catch (error) {
       showToast("error", error instanceof Error ? error.message : "Erreur lors du chargement des taux.");
     } finally {
@@ -220,7 +239,7 @@ export default function BoutiquePage() {
       const { data, message } = await readApiMessage(response, "Impossible d'enregistrer les taux de change.");
       if (!response.ok || !data?.success) throw new Error(message);
       setReferenceCurrency(data.deviseReference || referenceCurrency);
-      setExchangeRates((data.rates || exchangeRates).filter((rate: ExchangeRate) => rate.source !== rate.cible));
+      setExchangeRates(normalizeExchangeRates(data.rates || exchangeRates));
       showToast("success", data.message || "Devise et taux mis à jour.");
       await fetchBoutiques();
     } catch (error) {
@@ -268,7 +287,6 @@ export default function BoutiquePage() {
       const hasOwnerRole =
         profile.roleId === null ||
         profile.roleId === "" ||
-        profile.roleId === undefined ||
         roleLabel.includes("admin");
       setIsOwner(hasOwnerRole);
     } catch {
