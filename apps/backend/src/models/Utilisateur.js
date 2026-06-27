@@ -343,6 +343,26 @@ const produitSchema = new mongoose.Schema(
 
     unite: { type: String, trim: true, default: "Pièce", maxlength: 30 },
 
+
+
+    modeApprovisionnement: { type: String, enum: ["DETAIL", "GROS"], default: "DETAIL" },
+
+    libelleConditionnement: { type: String, trim: true, default: "", maxlength: 60 },
+
+    quantiteParConditionnement: { type: Number, min: 0, default: 0 },
+
+    nombreConditionnements: { type: Number, min: 0, default: 0 },
+
+    codeBarresConditionnement: { type: String, trim: true, default: "", maxlength: 100 },
+
+    dateProduction: { type: Date, default: null },
+
+    dateExpiration: { type: Date, default: null },
+
+    isExpired: { type: Boolean, default: false },
+
+    expiredAt: { type: Date, default: null },
+
     codeBarres: { type: String, trim: true, default: "", maxlength: 100 },
 
     image: { type: String, default: "" },
@@ -369,7 +389,17 @@ produitSchema.index(
 
 );
 
+produitSchema.index(
+
+  { boutiqueId: 1, codeBarresConditionnement: 1 },
+
+  { unique: true, partialFilterExpression: { codeBarresConditionnement: { $type: "string", $gt: "" } } }
+
+);
+
 produitSchema.index({ boutiqueId: 1, categorieId: 1, isDeleted: 1 });
+
+produitSchema.index({ boutiqueId: 1, dateExpiration: 1, isExpired: 1 });
 
 
 

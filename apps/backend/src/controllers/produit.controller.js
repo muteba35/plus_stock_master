@@ -25,10 +25,65 @@ const getBoutiqueCurrency = async (boutiqueId) => {
   return boutique?.deviseParDefaut || "USD ($)";
 };
 
-const productStatus = (stock, threshold) => {
+const productStatus = (stock, threshold, isExpired = false) => {
+  if (isExpired) return "Expire";
   if (stock <= 0) return "Rupture";
   if (stock <= threshold) return "Stock faible";
   return "Disponible";
+};
+
+const parseOptionalDate = (value) => {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return undefined;
+  date.setHours(0, 0, 0, 0);
+  return date;
+};
+
+const expireProductsIfNeeded = async (boutiqueId, utilisateurId = null) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const expiredProducts = await Produit.find({
+    boutiqueId,
+    isDeleted: false,
+    isExpired: { $ne: true },
+    dateExpiration: { $ne: null, $lt: today },
+  }).select("+isDeleted");
+
+  for (const product of expiredProducts) {
+    const stockAvant = Number(product.stock || 0);
+    product.stock = 0;
+    product.isActive = false;
+    product.isExpired = true;
+    product.expiredAt = new Date();
+    await product.save();
+
+    if (stockAvant > 0) {
+      await MouvementStock.create({
+        produitId: product._id,
+        boutiqueId,
+        utilisateurId,
+        type: "SORTIE",
+        quantite: stockAvant,
+        variation: -stockAvant,
+        stockAvant,
+        stockApres: 0,
+        motif: "Sortie automatique pour produit expire",
+        reference: `EXP-${product.sku}`,
+      });
+    }
+
+    await logInventoryAction({
+      boutiqueId,
+      utilisateurId,
+      action: "PRODUIT_EXPIRE",
+      entityType: "PRODUIT",
+      entityId: product._id,
+      label: `Produit expire : ${product.nom}`,
+      details: { sku: product.sku, stockRetire: stockAvant, dateExpiration: product.dateExpiration },
+    });
+  }
 };
 
 const serializeProduct = (product, showPurchasePrice) => {
@@ -36,7 +91,7 @@ const serializeProduct = (product, showPurchasePrice) => {
   if (!showPurchasePrice) delete data.prixAchat;
   return {
     ...data,
-    status: productStatus(data.stock, data.seuilAlerte),
+    status: productStatus(data.stock, data.seuilAlerte, data.isExpired),
   };
 };
 
@@ -52,6 +107,8 @@ export const getProduits = async (req, res) => {
     if (!(await ensureBoutiqueAccess(req, boutiqueId))) {
       return res.status(403).json({ success: false, message: "Cette boutique n'appartient pas a votre compte." });
     }
+
+    await expireProductsIfNeeded(boutiqueId, req.user?.id);
 
     const showPurchasePrice = canViewPurchasePrice(req);
     const query = Produit.find({ boutiqueId, isDeleted: false })
@@ -80,6 +137,8 @@ export const getProduitById = async (req, res) => {
     if (!(await ensureBoutiqueAccess(req, boutiqueId))) {
       return res.status(403).json({ success: false, message: "Cette boutique n'appartient pas a votre compte." });
     }
+    await expireProductsIfNeeded(boutiqueId, req.user?.id);
+
     const showPurchasePrice = canViewPurchasePrice(req);
     const query = Produit.findOne({ _id: req.params.id, boutiqueId, isDeleted: false })
       .populate("categorieId", "nom couleur");
@@ -108,12 +167,32 @@ export const createProduit = async (req, res) => {
     const sku = String(req.body.sku || "").trim().toUpperCase();
     const prixVente = Number(req.body.prixVente);
     const prixAchat = Number(req.body.prixAchat || 0);
-    const stockInitial = Number(req.body.stockInitial || 0);
+    const modeApprovisionnement = req.body.modeApprovisionnement === "GROS" ? "GROS" : "DETAIL";
+    const nombreConditionnements = Number(req.body.nombreConditionnements || 0);
+    const quantiteParConditionnement = Number(req.body.quantiteParConditionnement || 0);
+    const stockInitial = modeApprovisionnement === "GROS"
+      ? nombreConditionnements * quantiteParConditionnement
+      : Number(req.body.stockInitial || 0);
     const seuilAlerte = Number(req.body.seuilAlerte ?? 5);
+    const dateProduction = parseOptionalDate(req.body.dateProduction);
+    const dateExpiration = parseOptionalDate(req.body.dateExpiration);
 
     if (!nom || !sku) return res.status(400).json({ success: false, message: "Le nom et le SKU sont obligatoires." });
-    if (![prixVente, prixAchat, stockInitial, seuilAlerte].every(Number.isFinite) || prixVente <= 0 || stockInitial < 0 || seuilAlerte < 0 || (req.body.prixAchat !== undefined && prixAchat <= 0)) {
-      return res.status(400).json({ success: false, message: "Le prix de vente et le prix d'achat renseigne doivent etre superieurs a zero; le stock et le seuil ne peuvent pas etre negatifs." });
+    if (dateProduction === undefined || dateExpiration === undefined) {
+      return res.status(400).json({ success: false, message: "Date de production ou date d'expiration invalide." });
+    }
+    if (dateProduction && dateExpiration && dateExpiration <= dateProduction) {
+      return res.status(400).json({ success: false, message: "La date d'expiration doit etre posterieure a la date de production." });
+    }
+    if (
+      ![prixVente, prixAchat, stockInitial, seuilAlerte].every(Number.isFinite) ||
+      prixVente <= 0 ||
+      stockInitial < 0 ||
+      seuilAlerte < 0 ||
+      (req.body.prixAchat !== undefined && prixAchat <= 0) ||
+      (modeApprovisionnement === "GROS" && (!Number.isFinite(nombreConditionnements) || !Number.isFinite(quantiteParConditionnement) || nombreConditionnements <= 0 || quantiteParConditionnement <= 0))
+    ) {
+      return res.status(400).json({ success: false, message: "Les prix, le stock et le conditionnement doivent contenir des valeurs valides." });
     }
 
     const category = await validateCategory(req.body.categorieId, boutiqueId);
@@ -145,7 +224,7 @@ export const createProduit = async (req, res) => {
         variation: stockInitial,
         stockAvant: 0,
         stockApres: stockInitial,
-        motif: "Stock initial lors de la creation du produit",
+        motif: modeApprovisionnement === "GROS" ? "Stock initial en gros lors de la creation du produit" : "Stock initial lors de la creation du produit",
         reference: `INIT-${createdProduct.sku}`,
       });
     }
@@ -298,6 +377,29 @@ export const updateProduit = async (req, res) => {
     if (req.body.sku !== undefined) product.sku = String(req.body.sku).trim().toUpperCase();
     if (req.body.description !== undefined) product.description = String(req.body.description).trim();
     if (req.body.unite !== undefined) product.unite = String(req.body.unite).trim();
+    if (req.body.modeApprovisionnement !== undefined) product.modeApprovisionnement = req.body.modeApprovisionnement === "GROS" ? "GROS" : "DETAIL";
+    if (req.body.libelleConditionnement !== undefined) product.libelleConditionnement = String(req.body.libelleConditionnement || "").trim();
+    if (req.body.quantiteParConditionnement !== undefined) product.quantiteParConditionnement = Number(req.body.quantiteParConditionnement || 0);
+    if (req.body.nombreConditionnements !== undefined) product.nombreConditionnements = Number(req.body.nombreConditionnements || 0);
+    if (req.body.codeBarresConditionnement !== undefined) product.codeBarresConditionnement = String(req.body.codeBarresConditionnement || "").trim();
+    if (req.body.dateProduction !== undefined) {
+      const dateProduction = parseOptionalDate(req.body.dateProduction);
+      if (dateProduction === undefined) return res.status(400).json({ success: false, message: "Date de production invalide." });
+      product.dateProduction = dateProduction;
+    }
+    if (req.body.dateExpiration !== undefined) {
+      const dateExpiration = parseOptionalDate(req.body.dateExpiration);
+      if (dateExpiration === undefined) return res.status(400).json({ success: false, message: "Date d'expiration invalide." });
+      product.dateExpiration = dateExpiration;
+      product.isExpired = false;
+      product.expiredAt = null;
+      if (dateExpiration && dateExpiration < new Date()) {
+        product.isActive = false;
+      }
+    }
+    if (product.dateProduction && product.dateExpiration && product.dateExpiration <= product.dateProduction) {
+      return res.status(400).json({ success: false, message: "La date d'expiration doit etre posterieure a la date de production." });
+    }
     if (req.body.codeBarres !== undefined) product.codeBarres = String(req.body.codeBarres).trim();
     if (req.body.image !== undefined) product.image = String(req.body.image);
     if (req.body.isActive !== undefined) product.isActive = Boolean(req.body.isActive);
