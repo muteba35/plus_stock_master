@@ -269,15 +269,28 @@ const DEFAULT_EXCHANGE_RATES = [
 ];
 
 const buildRatePairs = (rates) => {
-  const direct = new Map();
+  const explicitRates = new Map();
+
   rates.forEach((rate) => {
     if (!SUPPORTED_CURRENCIES.includes(rate.source) || !SUPPORTED_CURRENCIES.includes(rate.cible)) return;
-    if (!Number.isFinite(Number(rate.taux)) || Number(rate.taux) <= 0) return;
-    direct.set(`${rate.source}->${rate.cible}`, Number(rate.taux));
-    direct.set(`${rate.cible}->${rate.source}`, 1 / Number(rate.taux));
+    if (rate.source === rate.cible) return;
+    const taux = Number(rate.taux);
+    if (!Number.isFinite(taux) || taux <= 0) return;
+    explicitRates.set(`${rate.source}->${rate.cible}`, taux);
   });
 
-  return [...direct.entries()].map(([key, taux]) => {
+  const normalizedRates = new Map(explicitRates);
+
+  explicitRates.forEach((taux, key) => {
+    const [source, cible] = key.split("->");
+    const reverseKey = `${cible}->${source}`;
+
+    if (!explicitRates.has(reverseKey)) {
+      normalizedRates.set(reverseKey, 1 / taux);
+    }
+  });
+
+  return [...normalizedRates.entries()].map(([key, taux]) => {
     const [source, cible] = key.split("->");
     return { source, cible, taux: Math.round((taux + Number.EPSILON) * 1000000) / 1000000 };
   });
