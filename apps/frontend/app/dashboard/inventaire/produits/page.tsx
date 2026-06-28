@@ -335,7 +335,17 @@ export default function ProduitsPage() {
     if (!DEVISES.includes(form.devise)) requiredErrors.push("devise du produit");
     if (!form.prixVente.trim() || Number(form.prixVente) <= 0) requiredErrors.push("prix de vente supérieur à zéro");
     if (canViewPurchasePrice && (!form.prixAchat.trim() || Number(form.prixAchat) <= 0)) requiredErrors.push("prix d’achat supérieur à zéro");
-    if (modalMode === "create" && (!form.stockInitial.trim() || Number(form.stockInitial) < 0)) requiredErrors.push("stock initial valide");
+    if (modalMode === "create" && form.modeApprovisionnement === "DETAIL" && (!form.stockInitial.trim() || Number(form.stockInitial) < 0)) {
+      requiredErrors.push("stock initial valide");
+    }
+
+    if (modalMode === "create" && form.modeApprovisionnement === "GROS") {
+      const packagesCount = Number(form.nombreConditionnements || 0);
+      const unitsPerPackage = Number(form.quantiteParConditionnement || 0);
+      if (!Number.isFinite(packagesCount) || !Number.isFinite(unitsPerPackage) || packagesCount <= 0 || unitsPerPackage <= 0) {
+        requiredErrors.push("conditionnement gros valide");
+      }
+    }
     if (!form.seuilAlerte.trim() || Number(form.seuilAlerte) < 0) requiredErrors.push("seuil d’alerte valide");
     if (!form.unite.trim()) requiredErrors.push("unité");
     if (requiredErrors.length > 0) {
