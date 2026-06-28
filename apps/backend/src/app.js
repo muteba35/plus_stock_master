@@ -7,6 +7,7 @@ import employeRoutes from "./routes/employe.routes.js";
 import boutiqueRoutes from "./routes/boutique.routes.js";
 import inventaireRoutes from "./routes/inventaire.routes.js";
 import caisseRoutes from "./routes/caisse.routes.js";
+import dashboardRoutes from "./routes/dashboard.routes.js";
 
 const app = express();
 
@@ -34,5 +35,6 @@ app.use("/api/employes", employeRoutes);
 app.use("/api/boutiques", boutiqueRoutes);
 app.use("/api/inventaire", inventaireRoutes);
 app.use("/api/caisse", caisseRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
 export default app;
