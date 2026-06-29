@@ -8,6 +8,8 @@ const sections = [
   { title: "Profil", text: "Identité, coordonnées, photo de profil et sécurité personnelle.", href: "/dashboard/profil", icon: UserRoundCog, tone: "emerald" },
   { title: "Abonnement", text: "Plan actuel, échéance et état du paiement.", href: "/dashboard/parametres/abonnement", icon: CreditCard, tone: "amber" },
   { title: "Notifications", text: "Alertes de stock, expiration, caisse et finance.", href: "/dashboard/parametres/notifications", icon: Bell, tone: "rose" },
+  { title: "Journal d\'audit", text: "Actions sensibles, IP, navigateur, utilisateur et resultat.", href: "/dashboard/parametres/audit", icon: ShieldCheck, tone: "amber" },
+  { title: "Aide & definitions", text: "Formules, definitions metier et explications rapides.", href: "/dashboard/parametres/aide", icon: Settings2, tone: "emerald" },
 ];
 
 const rules = [
@@ -36,7 +38,7 @@ export default function GeneralSettingsPage() {
       </div>
     </div>
 
-    <section className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+    <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
       {sections.map((section) => {
         const Icon = section.icon;
         return <Link key={section.href} href={section.href} className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 hover:-translate-y-0.5 hover:shadow-md transition-all group">
