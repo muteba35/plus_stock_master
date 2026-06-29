@@ -120,6 +120,7 @@ export default function DashboardLayout({
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [notificationsSeen, setNotificationsSeen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
 
   const [openSubMenus, setOpenSubMenus] = useState<Record<string, boolean>>({
@@ -693,10 +694,108 @@ export default function DashboardLayout({
               {darkMode ? <Sun size={20} className="text-amber-500 animate-pulse" /> : <Moon size={20} className="text-slate-600" />}
             </button>
 
-            <button className="w-10 h-10 flex items-center justify-center relative rounded-full bg-slate-100 hover:bg-slate-200/70 text-slate-600 transition-colors shrink-0">
-              <Bell size={20} />
-              <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white" />
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setShowNotifications((value) => !value);
+                  setNotificationsSeen(true);
+                  void fetchNotifications();
+                }}
+                className="w-10 h-10 flex items-center justify-center relative rounded-full bg-slate-100 hover:bg-slate-200/70 text-slate-600 transition-colors shrink-0"
+                title="Notifications"
+              >
+                <Bell size={20} />
+                {notifications.length > 0 && !notificationsSeen && (
+                  <span className="absolute top-1.5 right-1.5 min-w-4 h-4 px-1 bg-rose-500 rounded-full ring-2 ring-white text-[9px] font-black text-white flex items-center justify-center">
+                    {Math.min(notifications.length, 9)}
+                  </span>
+                )}
+              </button>
+
+              {showNotifications && (
+                <>
+                  <div className="fixed inset-0 z-[90]" onClick={() => setShowNotifications(false)} />
+                  <div className="absolute right-0 mt-3 w-[min(340px,calc(100vw-24px))] bg-white border border-slate-200 rounded-2xl shadow-xl shadow-slate-900/12 z-[100] overflow-hidden">
+                    <div className="p-3.5 border-b border-slate-100 bg-gradient-to-br from-slate-950 to-indigo-950 text-white">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center">
+                            <Bell size={16} />
+                          </div>
+                          <div>
+                            <p className="text-sm font-black uppercase tracking-wider">Centre d'alertes</p>
+                            <p className="text-[11px] text-white/65 mt-1">
+                              Alertes recentes
+                            </p>
+                          </div>
+                        </div>
+                        <span className="px-2.5 py-1 rounded-full bg-white/10 border border-white/15 text-[10px] font-black">
+                          {notifications.length}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="px-3 py-2 bg-slate-50 border-b border-slate-100 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-slate-500">
+                        <span className="w-2 h-2 rounded-full bg-rose-500" />
+                        Priorites recentes
+                      </div>
+                      <button onClick={() => void fetchNotifications()} className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-[10px] font-black text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 transition-colors">
+                        Actualiser
+                      </button>
+                    </div>
+
+                    <div className="max-h-[255px] overflow-y-auto p-2.5 space-y-2">
+                      {notificationsLoading && (
+                        <div className="p-6 text-xs text-slate-400 font-semibold text-center">Chargement...</div>
+                      )}
+                      {!notificationsLoading && notifications.slice(0, 3).length === 0 && (
+                        <div className="p-6 text-center">
+                          <p className="text-xs font-black text-slate-700">Aucune alerte importante</p>
+                          <p className="text-[11px] text-slate-400 mt-1">La boutique ne signale rien de critique pour le moment.</p>
+                        </div>
+                      )}
+                      {!notificationsLoading && notifications.slice(0, 3).map((item) => (
+                        <Link
+                          key={item.id}
+                          href={item.href}
+                          onClick={() => setShowNotifications(false)}
+                          className={`block rounded-xl border p-3 transition-all hover:-translate-y-0.5 hover:shadow-sm ${
+                            item.type === "danger"
+                              ? "bg-rose-50/80 border-rose-100 hover:bg-rose-50"
+                              : item.type === "warning"
+                                ? "bg-amber-50/80 border-amber-100 hover:bg-amber-50"
+                                : item.type === "success"
+                                  ? "bg-emerald-50/80 border-emerald-100 hover:bg-emerald-50"
+                                  : "bg-white border-slate-100 hover:bg-slate-50"
+                          }`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <span className={`mt-1 w-2.5 h-2.5 rounded-full shrink-0 ${item.type === "danger" ? "bg-rose-500" : item.type === "warning" ? "bg-amber-500" : item.type === "success" ? "bg-emerald-500" : "bg-indigo-500"}`} />
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-start justify-between gap-2">
+                                <p className="text-[11px] font-black text-slate-950 leading-snug">{item.title}</p>
+                                <span className="shrink-0 px-2 py-0.5 rounded-lg bg-white/70 border border-white text-[9px] font-black uppercase tracking-wide text-slate-500">
+                                  {item.category}
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-slate-600 mt-1 leading-relaxed line-clamp-2">{item.message}</p>
+                              <p className="text-[10px] text-slate-400 font-bold mt-2">
+                                {new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short" }).format(new Date(item.createdAt))}
+                              </p>
+                            </div>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+
+                    <Link href="/dashboard/notifications" onClick={() => setShowNotifications(false)} className="block p-3 text-center text-[10px] font-black uppercase tracking-wider text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border-t border-indigo-100">
+                      Afficher toutes les notifications
+                    </Link>
+                  </div>
+                </>
+              )}
+            </div>
 
             <div className="hidden sm:block w-px h-8 bg-slate-200" />
 

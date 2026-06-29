@@ -2,23 +2,72 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, BellRing, CheckCircle2, Loader2, RefreshCw, Search, ShieldAlert } from "lucide-react";
+import {
+  AlertTriangle,
+  BellRing,
+  CheckCircle2,
+  Clock3,
+  Filter,
+  Loader2,
+  RefreshCw,
+  Search,
+  ShieldAlert,
+  Table2,
+  type LucideIcon,
+} from "lucide-react";
 import { CashHeader, CashPagination, CashSearch, secondaryButton } from "../caisse/components/cashier-ui";
 import { FinanceShell } from "../finances/finance-shared";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://plus-stock-master.onrender.com/api";
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 9;
 
-type NotificationItem = { id: string; title: string; message: string; type: "info" | "warning" | "danger" | "success"; category: string; href: string; createdAt: string };
+type NotificationType = "info" | "warning" | "danger" | "success";
+type DateFilter = "all" | "today" | "month";
 
-const typeStyle = (type: string) => type === "danger" ? "bg-rose-50 text-rose-700 border-rose-100" : type === "warning" ? "bg-amber-50 text-amber-700 border-amber-100" : "bg-indigo-50 text-indigo-700 border-indigo-100";
+type NotificationItem = {
+  id: string;
+  title: string;
+  message: string;
+  type: NotificationType;
+  category: string;
+  href: string;
+  createdAt: string;
+};
+
+const typeStyle = (type: NotificationType) =>
+  type === "danger"
+    ? "bg-rose-50 text-rose-700 border-rose-100"
+    : type === "warning"
+      ? "bg-amber-50 text-amber-700 border-amber-100"
+      : type === "success"
+        ? "bg-emerald-50 text-emerald-700 border-emerald-100"
+        : "bg-indigo-50 text-indigo-700 border-indigo-100";
+
+const typeDot = (type: NotificationType) =>
+  type === "danger" ? "bg-rose-500" : type === "warning" ? "bg-amber-500" : type === "success" ? "bg-emerald-500" : "bg-indigo-500";
+
 const formatDate = (value: string) => new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
+
+const isSameDay = (value: string) => {
+  const target = new Date(value);
+  const today = new Date();
+  return target.getFullYear() === today.getFullYear() && target.getMonth() === today.getMonth() && target.getDate() === today.getDate();
+};
+
+const isSameMonth = (value: string) => {
+  const target = new Date(value);
+  const today = new Date();
+  return target.getFullYear() === today.getFullYear() && target.getMonth() === today.getMonth();
+};
 
 export default function NotificationsPage() {
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
+  const [dateFilter, setDateFilter] = useState<DateFilter>("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState<"all" | NotificationType>("all");
   const [page, setPage] = useState(1);
 
   const fetchNotifications = useCallback(async () => {
@@ -39,46 +88,163 @@ export default function NotificationsPage() {
 
   useEffect(() => { void fetchNotifications(); }, [fetchNotifications]);
 
+  const categories = useMemo(() => {
+    return Array.from(new Set(items.map((item) => item.category).filter(Boolean))).sort((a, b) => a.localeCompare(b));
+  }, [items]);
+
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
-    return items.filter((item) => !query || [item.title, item.message, item.category, item.type].join(" ").toLowerCase().includes(query));
-  }, [items, search]);
+    return items.filter((item) => {
+      const matchesSearch = !query || [item.title, item.message, item.category, item.type].join(" ").toLowerCase().includes(query);
+      const matchesDate =
+        dateFilter === "all" ||
+        (dateFilter === "today" && isSameDay(item.createdAt)) ||
+        (dateFilter === "month" && isSameMonth(item.createdAt));
+      const matchesCategory = categoryFilter === "all" || item.category === categoryFilter;
+      const matchesType = typeFilter === "all" || item.type === typeFilter;
+      return matchesSearch && matchesDate && matchesCategory && matchesType;
+    });
+  }, [categoryFilter, dateFilter, items, search, typeFilter]);
+
   const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  return <FinanceShell>
-    <CashHeader title="Notifications" subtitle="Alertes opérationnelles de stock, caisse, expiration et finance." action={<button onClick={() => void fetchNotifications()} disabled={loading} className={secondaryButton}><RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Actualiser</button>} />
+  const setFilterAndReset = (callback: () => void) => {
+    callback();
+    setPage(1);
+  };
 
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-      <Metric label="Total" value={items.length} icon={BellRing} tone="indigo" />
-      <Metric label="Critiques" value={items.filter((item) => item.type === "danger").length} icon={ShieldAlert} tone="rose" />
-      <Metric label="À surveiller" value={items.filter((item) => item.type === "warning").length} icon={AlertTriangle} tone="amber" />
-    </div>
+  return (
+    <FinanceShell>
+      <CashHeader
+        title="Notifications"
+        subtitle="Alertes operationnelles de stock, caisse, inventaire, expiration et finance."
+        action={
+          <button onClick={() => void fetchNotifications()} disabled={loading} className={secondaryButton}>
+            <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Actualiser
+          </button>
+        }
+      />
 
-    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-      <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-3 sm:items-center">
-        <CashSearch value={search} onChange={(value) => { setSearch(value); setPage(1); }} placeholder="Rechercher une notification..." />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Metric label="Total" value={items.length} icon={BellRing} tone="indigo" />
+        <Metric label="Critiques" value={items.filter((item) => item.type === "danger").length} icon={ShieldAlert} tone="rose" />
+        <Metric label="A surveiller" value={items.filter((item) => item.type === "warning").length} icon={AlertTriangle} tone="amber" />
       </div>
-      {loading ? <div className="py-16 flex flex-col items-center gap-3 text-slate-400"><Loader2 size={24} className="animate-spin text-indigo-500" /><p className="text-xs">Chargement des notifications...</p></div> : error ? <div className="p-4 text-xs font-semibold text-rose-600 bg-rose-50 border border-rose-100 m-4 rounded-xl">{error}</div> : <div className="divide-y divide-slate-100">
-        {pageItems.length === 0 && <div className="py-16 text-center text-slate-400"><CheckCircle2 className="mx-auto text-emerald-500" size={26} /><p className="text-xs font-semibold mt-3">Aucune notification à afficher.</p></div>}
-        {pageItems.map((item) => <Link key={item.id} href={item.href} className="block p-5 hover:bg-slate-50 transition-colors">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-start gap-3 min-w-0">
-              <span className={"mt-0.5 inline-flex px-2 py-1 rounded-lg border text-[10px] font-black uppercase " + typeStyle(item.type)}>{item.category}</span>
-              <div className="min-w-0">
-                <p className="text-sm font-black text-slate-900">{item.title}</p>
-                <p className="text-xs text-slate-500 mt-1 leading-relaxed">{item.message}</p>
-              </div>
+
+      <div className="bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden">
+        <div className="p-5 border-b border-slate-100 bg-slate-50/70 space-y-4">
+          <div className="flex flex-col lg:flex-row gap-3 lg:items-center">
+            <CashSearch
+              value={search}
+              onChange={(value) => setFilterAndReset(() => setSearch(value))}
+              placeholder="Rechercher par stock, vente, mouvement, produit..."
+            />
+
+            <div className="flex flex-wrap items-center gap-2">
+              {[
+                { value: "all", label: "Tout" },
+                { value: "today", label: "Aujourd'hui" },
+                { value: "month", label: "Ce mois" },
+              ].map((item) => (
+                <button
+                  key={item.value}
+                  type="button"
+                  onClick={() => setFilterAndReset(() => setDateFilter(item.value as DateFilter))}
+                  className={`h-10 px-3 rounded-xl border text-[11px] font-black transition-colors ${
+                    dateFilter === item.value ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-500 border-slate-200 hover:border-indigo-200"
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
             </div>
-            <p className="text-[10px] text-slate-400 font-bold whitespace-nowrap">{formatDate(item.createdAt)}</p>
           </div>
-        </Link>)}
-      </div>}
-      <CashPagination page={page} pageSize={PAGE_SIZE} totalItems={filtered.length} onPageChange={setPage} />
-    </div>
-  </FinanceShell>;
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <label className="relative">
+              <Table2 size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <select
+                value={categoryFilter}
+                onChange={(event) => setFilterAndReset(() => setCategoryFilter(event.target.value))}
+                className="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 outline-none focus:border-indigo-500"
+              >
+                <option value="all">Tous les tableaux / modules</option>
+                {categories.map((category) => <option key={category} value={category}>{category}</option>)}
+              </select>
+            </label>
+
+            <label className="relative">
+              <Filter size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <select
+                value={typeFilter}
+                onChange={(event) => setFilterAndReset(() => setTypeFilter(event.target.value as "all" | NotificationType))}
+                className="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 outline-none focus:border-indigo-500"
+              >
+                <option value="all">Tous les niveaux</option>
+                <option value="danger">Critique</option>
+                <option value="warning">A surveiller</option>
+                <option value="info">Information</option>
+                <option value="success">Succes</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="py-16 flex flex-col items-center gap-3 text-slate-400">
+            <Loader2 size={24} className="animate-spin text-indigo-500" />
+            <p className="text-xs">Chargement des notifications...</p>
+          </div>
+        ) : error ? (
+          <div className="p-4 text-xs font-semibold text-rose-600 bg-rose-50 border border-rose-100 m-4 rounded-xl">{error}</div>
+        ) : (
+          <div className="p-5 grid grid-cols-1 xl:grid-cols-2 gap-3">
+            {pageItems.length === 0 && (
+              <div className="xl:col-span-2 py-16 text-center text-slate-400">
+                <CheckCircle2 className="mx-auto text-emerald-500" size={26} />
+                <p className="text-xs font-semibold mt-3">Aucune notification a afficher.</p>
+              </div>
+            )}
+            {pageItems.map((item) => (
+              <Link
+                key={item.id}
+                href={item.href}
+                className={`block rounded-2xl border p-4 transition-all hover:-translate-y-0.5 hover:shadow-sm ${typeStyle(item.type)}`}
+              >
+                <div className="flex items-start gap-3">
+                  <span className={`mt-1.5 w-2.5 h-2.5 rounded-full shrink-0 ${typeDot(item.type)}`} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="px-2 py-0.5 rounded-lg bg-white/70 border border-white text-[10px] font-black uppercase tracking-wide">{item.category}</span>
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold opacity-70">
+                        <Clock3 size={12} />
+                        {formatDate(item.createdAt)}
+                      </span>
+                    </div>
+                    <p className="text-sm font-black mt-3">{item.title}</p>
+                    <p className="text-xs mt-1.5 leading-relaxed opacity-80">{item.message}</p>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+
+        <CashPagination page={page} pageSize={PAGE_SIZE} totalItems={filtered.length} onPageChange={setPage} />
+      </div>
+    </FinanceShell>
+  );
 }
 
-function Metric({ label, value, icon: Icon, tone }: { label: string; value: number; icon: typeof Search; tone: "indigo" | "rose" | "amber" }) {
+function Metric({ label, value, icon: Icon, tone }: { label: string; value: number; icon: LucideIcon; tone: "indigo" | "rose" | "amber" }) {
   const styles = tone === "rose" ? "bg-rose-50 text-rose-600 border-rose-100" : tone === "amber" ? "bg-amber-50 text-amber-600 border-amber-100" : "bg-indigo-50 text-indigo-600 border-indigo-100";
-  return <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 flex items-center justify-between"><div><p className="text-[10px] font-black uppercase tracking-wider text-slate-400">{label}</p><p className="mt-2 text-2xl font-black text-slate-900">{value}</p></div><div className={"w-10 h-10 rounded-xl border flex items-center justify-center " + styles}><Icon size={18} /></div></div>;
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 flex items-center justify-between">
+      <div>
+        <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">{label}</p>
+        <p className="mt-2 text-2xl font-black text-slate-900">{value}</p>
+      </div>
+      <div className={"w-10 h-10 rounded-xl border flex items-center justify-center " + styles}><Icon size={18} /></div>
+    </div>
+  );
 }

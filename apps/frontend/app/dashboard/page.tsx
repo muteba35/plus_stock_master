@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
   AlertTriangle,
   ArrowDownRight,
@@ -115,6 +116,7 @@ export default function OverviewPage() {
   const [customEnd, setCustomEnd] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showStockAlertsModal, setShowStockAlertsModal] = useState(false);
 
   const fetchOverview = useCallback(async () => {
     try {
@@ -192,6 +194,85 @@ export default function OverviewPage() {
         <div className="bg-rose-50 border border-rose-100 text-rose-600 rounded-2xl px-4 py-3 text-xs font-bold flex items-center gap-2">
           <AlertTriangle size={15} />
           {error}
+        </div>
+      )}
+
+      {!error && data.metrics.alertCount > 0 && (
+        <div
+          className={`rounded-2xl border p-4 shadow-sm ${
+            data.topProducts.some((product) => product.stock <= 0)
+              ? "bg-rose-50 border-rose-100"
+              : "bg-amber-50 border-amber-100"
+          }`}
+        >
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-start gap-3 min-w-0">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center border shrink-0 ${
+                data.topProducts.some((product) => product.stock <= 0)
+                  ? "bg-white text-rose-600 border-rose-100"
+                  : "bg-white text-amber-600 border-amber-100"
+              }`}>
+                <AlertTriangle size={19} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-black text-slate-950 uppercase tracking-wider">
+                  {data.metrics.alertCount} alerte{data.metrics.alertCount > 1 ? "s" : ""} de stock
+                </p>
+                <p className="text-xs text-slate-600 font-semibold mt-1 truncate">
+                  {data.topProducts[0]
+                    ? `${data.topProducts[0].name}: ${data.topProducts[0].stock} ${data.topProducts[0].unit} restant(s)`
+                    : "Des produits necessitent une verification."}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {data.metrics.alertCount > 1 && (
+                <button
+                  type="button"
+                  onClick={() => setShowStockAlertsModal(true)}
+                  className="px-3 py-2 rounded-xl bg-white/80 border border-white text-[11px] font-black text-slate-700 hover:bg-white transition-colors"
+                >
+                  +{data.metrics.alertCount - 1} autre{data.metrics.alertCount - 1 > 1 ? "s" : ""}
+                </button>
+              )}
+              <Link href="/dashboard/inventaire/alertes" className="px-3 py-2 rounded-xl bg-slate-950 text-white text-[11px] font-black">
+                Voir les alertes
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showStockAlertsModal && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+          <button className="absolute inset-0 bg-slate-950/40" onClick={() => setShowStockAlertsModal(false)} aria-label="Fermer les alertes" />
+          <div className="relative w-full max-w-lg bg-white rounded-3xl border border-slate-200 shadow-2xl overflow-hidden">
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-black text-slate-950 uppercase tracking-wider">Alertes de stock</p>
+                <p className="text-xs text-slate-400 font-semibold mt-1">{data.metrics.alertCount} produit(s) a verifier</p>
+              </div>
+              <button onClick={() => setShowStockAlertsModal(false)} className="w-9 h-9 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 font-black">x</button>
+            </div>
+            <div className="max-h-[360px] overflow-y-auto divide-y divide-slate-100">
+              {data.topProducts.map((product) => (
+                <div key={product.name} className="p-4 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-xs font-black text-slate-900 truncate">{product.name}</p>
+                    <p className="text-[11px] text-slate-400 font-semibold mt-1">Seuil minimum: {product.threshold} {product.unit}</p>
+                  </div>
+                  <span className={`px-3 py-1.5 rounded-xl text-[11px] font-black whitespace-nowrap ${
+                    product.stock <= 0 ? "bg-rose-50 text-rose-600" : "bg-amber-50 text-amber-600"
+                  }`}>
+                    {product.stock} {product.unit}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <Link href="/dashboard/inventaire/alertes" className="block p-4 text-center bg-indigo-50 text-indigo-600 text-[11px] font-black uppercase tracking-wider" onClick={() => setShowStockAlertsModal(false)}>
+              Ouvrir le module alertes
+            </Link>
+          </div>
         </div>
       )}
 

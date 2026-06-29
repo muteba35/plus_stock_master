@@ -4,12 +4,12 @@ import { useState } from "react";
 import { BarChart3, RefreshCw, TrendingDown, TrendingUp, WalletCards } from "lucide-react";
 import { CashHeader, CashMetric, CashModal, secondaryButton } from "../caisse/components/cashier-ui";
 import { formatMoney } from "../inventaire/components/currency";
-import { FinanceShell, StateBlock, compactMoney, useFinanceData } from "./finance-shared";
+import { FinanceDateFilters, FinanceShell, StateBlock, compactMoney, useFinanceData } from "./finance-shared";
 
 type MetricInfo = { title: string; value: string; detail: string; formula: string; note: string };
 
 export default function FinanceDashboardPage() {
-  const { data, loading, error, fetchData } = useFinanceData();
+  const { data, loading, error, fetchData, dateFilter, setDateFilter, customStart, setCustomStart, customEnd, setCustomEnd } = useFinanceData();
   const [metricInfo, setMetricInfo] = useState<MetricInfo | null>(null);
   const netMinusTax = data.metrics.netApresRetours - data.metrics.tva;
   const finalProfit = netMinusTax - data.metrics.cout;
@@ -20,6 +20,7 @@ export default function FinanceDashboardPage() {
 
   return <FinanceShell>
     <CashHeader title="Finances" subtitle="Synthèse financière consolidée sur le mois en cours." action={<button onClick={() => void fetchData()} disabled={loading} className={secondaryButton}><RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Actualiser</button>} />
+    <FinanceDateFilters dateFilter={dateFilter} onDateFilterChange={setDateFilter} customStart={customStart} customEnd={customEnd} onCustomStartChange={setCustomStart} onCustomEndChange={setCustomEnd} />
     <StateBlock loading={loading} error={error} />
     {!loading && !error && <>
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">

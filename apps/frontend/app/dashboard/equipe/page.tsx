@@ -83,41 +83,6 @@ const distributionColors = [
   "bg-rose-500",
 ];
 
-const activities: ActivityLog[] = [
-  {
-    id: "1",
-    user: "Jean-Marc Kabeya",
-    role: "Caissier",
-    action: "a cloture la caisse principale avec un ecart de 0 FC",
-    time: "Il y a 10 min",
-    type: "success",
-  },
-  {
-    id: "2",
-    user: "Sarah Mwamba",
-    role: "Gestionnaire",
-    action: "a ajuste le stock du produit 'Huile de table 5L' (+20 unites)",
-    time: "Il y a 45 min",
-    type: "info",
-  },
-  {
-    id: "3",
-    user: "Junior Muteba",
-    role: "Proprietaire",
-    action: "a modifie les permissions du role 'Gestionnaire de Stock'",
-    time: "Il y a 2 heures",
-    type: "warning",
-  },
-  {
-    id: "4",
-    user: "Alain Mpunga",
-    role: "Caissier",
-    action: "a imprime la facture globale pour la commande #24098",
-    time: "Il y a 3 heures",
-    type: "success",
-  },
-];
-
 const readApiMessage = async (response: Response, fallback: string) => {
   try {
     const data = await response.json();
@@ -330,6 +295,46 @@ export default function TeamOverviewPage() {
     [departements, employes]
   );
 
+  const activityLogs: ActivityLog[] = useMemo(() => {
+    const employeeLogs = employes.slice(0, 4).map((employe) => ({
+      id: `employee-${employe.id}`,
+      user: `${employe.firstName} ${employe.lastName}`.trim() || employe.email,
+      role: employe.role || "Employe",
+      action:
+        employe.status === "Actif"
+          ? `est rattache au departement ${employe.department || "Non attribue"} avec un compte actif`
+          : "necessite une verification car son compte est suspendu",
+      time: "Donnees actuelles",
+      type: employe.status === "Actif" ? "success" : "warning",
+    } satisfies ActivityLog));
+
+    const roleLogs = roleDistribution
+      .filter((role) => role.count > 0)
+      .slice(0, 2)
+      .map((role) => ({
+        id: `role-${role.id}`,
+        user: "Structure des roles",
+        role: "Role",
+        action: `${role.name} regroupe ${role.count} employe${role.count > 1 ? "s" : ""}`,
+        time: "Repartition equipe",
+        type: "info",
+      } satisfies ActivityLog));
+
+    const departementLogs = departementDistribution
+      .filter((departement) => departement.count > 0)
+      .slice(0, 2)
+      .map((departement) => ({
+        id: `departement-${departement.id}`,
+        user: "Departement",
+        role: "Equipe",
+        action: `${departement.name} compte ${departement.count} membre${departement.count > 1 ? "s" : ""}`,
+        time: "Repartition actuelle",
+        type: "info",
+      } satisfies ActivityLog));
+
+    return [...employeeLogs, ...roleLogs, ...departementLogs].slice(0, 8);
+  }, [departementDistribution, employes, roleDistribution]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#f9fafd]">
@@ -479,15 +484,16 @@ export default function TeamOverviewPage() {
               <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
                 <Activity size={15} className="text-indigo-600" /> Journal Operationnel
               </h3>
-              <p className="text-[11px] text-slate-400 font-medium">Historique en temps reel des actions de l&apos;equipe</p>
+              <p className="text-[11px] text-slate-400 font-medium">Synthese dynamique calculee depuis les donnees equipe</p>
             </div>
             <span className="text-[10px] bg-slate-100 font-bold text-slate-500 px-2 py-0.5 rounded-full uppercase tracking-wider">
-              Aujourd&apos;hui
+              Dynamique
             </span>
           </div>
 
           <div className="divide-y divide-slate-100 max-h-[310px] overflow-y-auto">
-            {activities.map((log) => (
+            {activityLogs.length === 0 && <div className="p-8 text-center text-xs font-semibold text-slate-400">Aucune donnee equipe disponible pour le journal.</div>}
+            {activityLogs.map((log) => (
               <div key={log.id} className="p-4 hover:bg-slate-50/50 transition-colors flex items-start justify-between gap-4">
                 <div className="flex items-start gap-3">
                   <div
