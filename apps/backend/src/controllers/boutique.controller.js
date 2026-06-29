@@ -1,5 +1,8 @@
+﻿import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import { Boutique, ExchangeRate, Permission, Utilisateur } from "../models/Utilisateur.js";
+import { sendEmail } from "../utils/sendEmail.js";
 
 const normalizeBoutique = (boutique, activeId) => ({
   id: boutique._id,
@@ -183,6 +186,55 @@ export const updateBoutique = async (req, res) => {
   }
 };
 
+export const requestBoutiqueDeletionCode = async (req, res) => {
+  try {
+    const context = await resolveBoutiqueContext(req, res);
+    if (!context) return;
+
+    const { id } = req.params;
+    const boutique = await Boutique.findOne({ _id: id, userId: context.ownerId, isDeleted: false }).select("+deletionCodeHash +deletionCodeExpires");
+
+    if (!boutique) {
+      return res.status(404).json({ message: "Boutique introuvable pour ce compte." });
+    }
+
+    const owner = await Utilisateur.findById(context.ownerId).select("email nom prenom");
+    if (!owner?.email) {
+      return res.status(400).json({ message: "Adresse email du proprietaire introuvable." });
+    }
+
+    const code = String(crypto.randomInt(100000, 999999));
+    boutique.deletionCodeHash = await bcrypt.hash(code, 10);
+    boutique.deletionCodeExpires = new Date(Date.now() + 15 * 60 * 1000);
+    await boutique.save();
+
+    await sendEmail({
+      email: owner.email,
+      subject: `Code de suppression boutique StockMaster : ${code}`,
+      html: `
+        <div style="font-family:Arial,sans-serif;background:#f8fafc;padding:24px;color:#172033">
+          <div style="max-width:560px;margin:auto;background:#ffffff;border:1px solid #e2e8f0;border-radius:18px;overflow:hidden">
+            <div style="padding:22px 24px;background:#111827;color:#fff">
+              <h1 style="margin:0;font-size:18px">Validation de suppression</h1>
+              <p style="margin:6px 0 0;color:#cbd5e1;font-size:13px">Boutique concernee : ${boutique.nom}</p>
+            </div>
+            <div style="padding:24px">
+              <p style="font-size:14px;line-height:1.6;margin:0 0 14px">Un utilisateur a demande la suppression de cette boutique. Pour confirmer l'action, saisissez le code ci-dessous dans StockMaster.</p>
+              <div style="font-size:28px;font-weight:800;letter-spacing:6px;text-align:center;background:#fff1f2;color:#be123c;border:1px solid #fecdd3;border-radius:14px;padding:16px;margin:18px 0">${code}</div>
+              <p style="font-size:12px;color:#64748b;line-height:1.6;margin:0">Ce code expire dans 15 minutes. Si vous n'etes pas a l'origine de cette demande, ignorez ce message et verifiez les acces de votre equipe.</p>
+            </div>
+          </div>
+        </div>
+      `,
+    });
+
+    return res.status(200).json({ success: true, message: "Code de confirmation envoye dans la messagerie du proprietaire." });
+  } catch (error) {
+    console.error("Erreur requestBoutiqueDeletionCode:", error);
+    return res.status(500).json({ message: "Erreur lors de l'envoi du code de suppression." });
+  }
+};
+
 export const deleteBoutique = async (req, res) => {
   try {
     const context = await resolveBoutiqueContext(req, res);
@@ -193,31 +245,50 @@ export const deleteBoutique = async (req, res) => {
       _id: id,
       userId: context.ownerId,
       isDeleted: false,
-    });
+    }).select("+deletionCodeHash +deletionCodeExpires");
 
     if (!boutique) {
       return res.status(404).json({ message: "Boutique introuvable pour ce compte." });
-    }
-
-    if (String(context.activeBoutiqueId || "") === boutique._id.toString()) {
-      return res.status(400).json({ message: "Impossible de supprimer la boutique active. Activez une autre boutique d'abord." });
     }
 
     const boutiquesCount = await Boutique.countDocuments({
       userId: context.ownerId,
       isDeleted: false,
     });
+    const isLastBoutique = boutiquesCount <= 1;
+    const isActiveBoutique = String(context.activeBoutiqueId || "") === boutique._id.toString();
 
-    if (boutiquesCount <= 1) {
-      return res.status(400).json({ message: "Impossible de supprimer votre derniere boutique." });
+    if (isActiveBoutique && !isLastBoutique) {
+      return res.status(400).json({ message: "Impossible de supprimer la boutique active. Activez une autre boutique d'abord." });
+    }
+
+    if (isLastBoutique) {
+      const code = String(req.body?.code || "").trim();
+      if (!code) {
+        return res.status(428).json({ requiresCode: true, message: "Un code envoye au proprietaire est requis pour supprimer la derniere boutique." });
+      }
+
+      const codeIsExpired = !boutique.deletionCodeExpires || boutique.deletionCodeExpires.getTime() < Date.now();
+      const codeIsValid = boutique.deletionCodeHash && await bcrypt.compare(code, boutique.deletionCodeHash);
+
+      if (codeIsExpired || !codeIsValid) {
+        return res.status(403).json({ requiresCode: true, message: "Code de suppression invalide ou expire." });
+      }
     }
 
     boutique.isDeleted = true;
+    boutique.deletionCodeHash = undefined;
+    boutique.deletionCodeExpires = undefined;
     await boutique.save();
+
+    if (isActiveBoutique) {
+      context.user.boutiqueActive = null;
+      await context.user.save();
+    }
 
     return res.status(200).json({
       success: true,
-      message: "Boutique supprimee avec succes.",
+      message: isLastBoutique ? "Derniere boutique supprimee apres confirmation du proprietaire." : "Boutique supprimee avec succes.",
       id: boutique._id,
     });
   } catch (error) {
@@ -225,7 +296,6 @@ export const deleteBoutique = async (req, res) => {
     return res.status(500).json({ message: "Erreur lors de la suppression de la boutique." });
   }
 };
-
 export const setActiveBoutique = async (req, res) => {
   try {
     const context = await resolveBoutiqueContext(req, res);
@@ -378,3 +448,5 @@ export const updateCurrencySettings = async (req, res) => {
     return res.status(500).json({ success: false, message: "Impossible d'enregistrer les taux de change." });
   }
 };
+
+

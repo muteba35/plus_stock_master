@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+﻿import mongoose from "mongoose";
 
 
 
@@ -996,6 +996,8 @@ const boutiqueSchema = new mongoose.Schema(
 
 
     isDeleted: { type: Boolean, default: false },
+    deletionCodeHash: { type: String, select: false },
+    deletionCodeExpires: { type: Date, select: false },
 
 
   },
@@ -1106,4 +1108,5 @@ const AuditLog = mongoose.model("AuditLog", auditLogSchema);
 
 
 export { Permission, Role, RolePermission, Departement, Categorie, Produit, MouvementStock, Vente, RetourClient, InventaireAudit, Utilisateur, Boutique, ExchangeRate, Notification, NotificationPreference, AuditLog };
+
 

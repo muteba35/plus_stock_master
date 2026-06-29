@@ -1,8 +1,9 @@
-import express from "express";
+﻿import express from "express";
 import {
   createBoutique,
   deleteBoutique,
   getBoutiques,
+  requestBoutiqueDeletionCode,
   setActiveBoutique,
   updateBoutique,
   getCurrencySettings,
@@ -22,6 +23,8 @@ router.route("/")
   .get(checkPermission("VOIR_BOUTIQUES"), getBoutiques)
   .post(checkPermission("CREER_BOUTIQUE"), createBoutique);
 
+router.post("/:id/delete-code", checkPermission("SUPPRIMER_BOUTIQUE"), requestBoutiqueDeletionCode);
+
 router.route("/:id")
   .put(checkPermission("MODIFIER_BOUTIQUE"), updateBoutique)
   .delete(checkPermission("SUPPRIMER_BOUTIQUE"), deleteBoutique);
@@ -29,3 +32,4 @@ router.route("/:id")
 router.patch("/:id/active", checkPermission("ACTIVER_BOUTIQUE"), setActiveBoutique);
 
 export default router;
+

@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+﻿import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 // Importation du modèle Permission
 import { Permission, RolePermission } from './models/Utilisateur.js';
@@ -82,6 +82,8 @@ const permissions = [
   { nom: "VOIR_BENEFICES", module: "FINANCE", description: "Donne accès au calcul des profits nets" },
   { nom: "EXPORTER_RAPPORTS", module: "FINANCE", description: "Télécharger les rapports en PDF/Excel" },
 
+  { nom: "VOIR_FORMULES_FINANCE", module: "FINANCE", description: "Consulter les formules et definitions financieres" },
+
   // --- MODULE : PARAMETRES ---
   { nom: "VOIR_BOUTIQUES", module: "PARAMETRES", description: "Consulter les boutiques du compte proprietaire" },
   { nom: "CREER_BOUTIQUE", module: "PARAMETRES", description: "Creer une nouvelle boutique rattachee au compte" },
@@ -139,4 +141,6 @@ const seedDB = async () => {
 };
 
 seedDB();
+
+
 
