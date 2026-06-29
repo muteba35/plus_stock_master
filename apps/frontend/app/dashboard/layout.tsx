@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -28,6 +28,16 @@ import {
 // ==========================================
 // TYPES & CONSTANTES STATIQUES (Hors composant)
 // ==========================================
+
+interface NotificationItem {
+  id: string;
+  title: string;
+  message: string;
+  type: "info" | "warning" | "danger" | "success";
+  category: string;
+  href: string;
+  createdAt: string;
+}
 
 interface UserProfile {
   id: string;
@@ -107,6 +117,9 @@ export default function DashboardLayout({
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
 
   const [openSubMenus, setOpenSubMenus] = useState<Record<string, boolean>>({
@@ -290,6 +303,31 @@ export default function DashboardLayout({
     }
   };
 
+  const fetchNotifications = useCallback(async () => {
+    try {
+      setNotificationsLoading(true);
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${API_URL}/notifications`, {
+        headers: { Authorization: token ? `Bearer ${token}` : "" },
+      });
+      const result = await response.json();
+      if (response.ok && result.success) {
+        setNotifications(result.notifications || []);
+      }
+    } catch (error) {
+      console.error("Erreur notifications:", error);
+    } finally {
+      setNotificationsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    void fetchNotifications();
+  }, [fetchNotifications]);
+
   const handleLogout = () => {
     document.cookie = "stockmaster_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     localStorage.removeItem("token");
@@ -371,6 +409,7 @@ export default function DashboardLayout({
         { name: "Bénéfices & Pertes", href: "/dashboard/finances/benefices", permission: "VOIR_BENEFICES" },
         { name: "Rapports d'activité", href: "/dashboard/finances/rapports", permission: "VOIR_CHIFFRE_AFFAIRE" },
         { name: "Exportations", href: "/dashboard/finances/exportations", permission: "EXPORTER_RAPPORTS" },
+        { name: "Formules", href: "/dashboard/finances/formules", permission: "VOIR_CHIFFRE_AFFAIRE" },
       ],
     },
     {
@@ -380,7 +419,7 @@ export default function DashboardLayout({
       subMenu: [
         { name: "Général", href: "/dashboard/parametres", permission: "MODIFIER_INFOS_BOUTIQUE" },
         { name: "Ma Boutique", href: "/dashboard/parametres/boutique", permission: "VOIR_BOUTIQUES" },
-        { name: "Devises & Taxes", href: "/dashboard/parametres/devise", permission: "CHANGER_DEVISE" },
+        { name: "Profil", href: "/dashboard/profil", permissions: ["MODIFIER_PROFIL_RESTREINT", "MODIFIER_PROFIL_TOTAL"] },
         { name: "Abonnement", href: "/dashboard/parametres/abonnement", permission: "VOIR_ABONNEMENT" },
       ],
     },

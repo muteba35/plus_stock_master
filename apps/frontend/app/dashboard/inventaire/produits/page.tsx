@@ -71,6 +71,7 @@ type ImportProductRow = {
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://plus-stock-master.onrender.com/api";
+const formatProductDate = (value?: string) => value ? new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" }).format(new Date(value)) : "Non renseignée";
 const DEVISES = ["USD ($)", "CDF (FC)", "EUR (€)"];
 const EMPTY_FORM: ProductForm = {
   nom: "",
@@ -544,6 +545,7 @@ export default function ProduitsPage() {
           <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Date de production</span><input disabled={readOnly} type="date" value={form.dateProduction} onChange={(event) => setForm({ ...form, dateProduction: event.target.value })} className={fieldClass} /></label>
           <label className="space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Date d'expiration</span><input disabled={readOnly} type="date" value={form.dateExpiration} onChange={(event) => setForm({ ...form, dateExpiration: event.target.value })} className={fieldClass} /></label>
           <label className="space-y-1.5 sm:col-span-2"><span className="text-[10px] font-bold uppercase text-slate-400">Description</span><textarea disabled={readOnly} rows={3} value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} className={`${fieldClass} h-auto py-3 resize-none`} /></label>
+{readOnly && <div className="sm:col-span-2 rounded-2xl border border-slate-100 bg-slate-50 p-4"><p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Informations de conservation</p><div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs"><div><p className="text-slate-400 font-bold">Production</p><p className="font-black text-slate-800">{formatProductDate(form.dateProduction)}</p></div><div><p className="text-slate-400 font-bold">Expiration</p><p className="font-black text-slate-800">{formatProductDate(form.dateExpiration)}</p></div></div>{selected?.isExpired && <p className="mt-3 text-[11px] font-bold text-rose-600 bg-rose-50 border border-rose-100 rounded-xl px-3 py-2">Ce produit est expiré : son stock est automatiquement passé à zéro.</p>}</div>}
           {modalMode === "edit" && <label className="sm:col-span-2 flex items-center gap-3 p-3 rounded-xl border border-slate-200"><input type="checkbox" checked={form.isActive} onChange={(event) => setForm({ ...form, isActive: event.target.checked })} className="w-4 h-4 accent-indigo-600" /><span className="text-xs font-bold text-slate-700">Produit actif et disponible dans le catalogue</span></label>}
         </div>
       </InventoryModal>

@@ -144,6 +144,11 @@ export default function OverviewPage() {
   }, [fetchOverview]);
 
   const onlineUsers = useMemo(() => data.activeUsers.filter((user) => user.status === "online").length, [data.activeUsers]);
+  const chartData = useMemo(() => data.salesData.map((item) => ({
+    ...item,
+    beneficePositif: item.benefices >= 0 ? item.benefices : null,
+    perteNegative: item.benefices < 0 ? item.benefices : null,
+  })), [data.salesData]);
 
   return (
     <div className="space-y-6 bg-[#f9fafd] p-6 rounded-3xl min-h-screen">
@@ -248,22 +253,22 @@ export default function OverviewPage() {
             </div>
             <div className="flex items-center gap-4 text-[10px] font-bold uppercase tracking-wide">
               <span className="flex items-center gap-1.5 text-slate-600"><span className="w-2.5 h-2.5 rounded-full bg-indigo-500" />Ventes</span>
-              <span className="flex items-center gap-1.5 text-slate-600"><span className="w-2.5 h-2.5 rounded-full bg-teal-400" />Marge</span>
+              <span className="flex items-center gap-1.5 text-slate-600"><span className="w-2.5 h-2.5 rounded-full bg-teal-400" />Bénéfice</span><span className="flex items-center gap-1.5 text-slate-600"><span className="w-2.5 h-2.5 rounded-full bg-rose-500" />Perte</span>
             </div>
           </div>
           <div className="h-72 w-full text-xs">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data.salesData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorVentes" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#4F46E5" stopOpacity={0.15}/><stop offset="95%" stopColor="#4F46E5" stopOpacity={0}/></linearGradient>
-                  <linearGradient id="colorBenefs" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#2DD4BF" stopOpacity={0.15}/><stop offset="95%" stopColor="#2DD4BF" stopOpacity={0}/></linearGradient>
+                  <linearGradient id="colorBenefs" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#2DD4BF" stopOpacity={0.15}/><stop offset="95%" stopColor="#2DD4BF" stopOpacity={0}/></linearGradient><linearGradient id="colorPertes" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#F43F5E" stopOpacity={0.16}/><stop offset="95%" stopColor="#F43F5E" stopOpacity={0}/></linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#edf2f9" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} stroke="#94A3B8" />
                 <YAxis axisLine={false} tickLine={false} stroke="#94A3B8" />
                 <Tooltip formatter={(value) => formatMoney(Number(value), data.devise)} />
                 <Area type="monotone" dataKey="ventes" stroke="#4F46E5" strokeWidth={2} fillOpacity={1} fill="url(#colorVentes)" />
-                <Area type="monotone" dataKey="benefices" stroke="#2DD4BF" strokeWidth={2} fillOpacity={1} fill="url(#colorBenefs)" />
+                <Area type="monotone" dataKey="beneficePositif" name="Bénéfice" stroke="#2DD4BF" strokeWidth={2} fillOpacity={1} fill="url(#colorBenefs)" connectNulls={false} /><Area type="monotone" dataKey="perteNegative" name="Perte" stroke="#F43F5E" strokeWidth={2} fillOpacity={1} fill="url(#colorPertes)" connectNulls={false} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
