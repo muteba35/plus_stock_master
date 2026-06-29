@@ -7,7 +7,7 @@ const sections = [
   { title: "Ma boutique", text: "Informations de la boutique, statut, devise de référence et taux de change.", href: "/dashboard/parametres/boutique", icon: Store, tone: "indigo" },
   { title: "Profil", text: "Identité, coordonnées, photo de profil et sécurité personnelle.", href: "/dashboard/profil", icon: UserRoundCog, tone: "emerald" },
   { title: "Abonnement", text: "Plan actuel, échéance et état du paiement.", href: "/dashboard/parametres/abonnement", icon: CreditCard, tone: "amber" },
-  { title: "Notifications", text: "Alertes de stock, expiration, caisse et finance.", href: "/dashboard/notifications", icon: Bell, tone: "rose" },
+  { title: "Notifications", text: "Alertes de stock, expiration, caisse et finance.", href: "/dashboard/parametres/notifications", icon: Bell, tone: "rose" },
 ];
 
 const rules = [

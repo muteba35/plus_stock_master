@@ -120,6 +120,7 @@ export default function DashboardLayout({
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
   const [notificationsSeen, setNotificationsSeen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
 
@@ -314,6 +315,7 @@ export default function DashboardLayout({
       const result = await response.json();
       if (response.ok && result.success) {
         setNotifications(result.notifications || []);
+        setUnreadNotificationsCount(Number(result.unreadCount || 0));
       }
     } catch (error) {
       console.error("Erreur notifications:", error);
@@ -328,6 +330,20 @@ export default function DashboardLayout({
     if (!token) return;
     void fetchNotifications();
   }, [fetchNotifications]);
+
+  const markAllNotificationsRead = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("token");
+      await fetch(`${API_URL}/notifications/read-all`, {
+        method: "PATCH",
+        headers: { Authorization: token ? `Bearer ${token}` : "" },
+      });
+      setUnreadNotificationsCount(0);
+      setNotifications((items) => items.map((item) => ({ ...item, read: true })));
+    } catch (error) {
+      console.error("Erreur lecture notifications:", error);
+    }
+  }, []);
 
   const handleLogout = () => {
     document.cookie = "stockmaster_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
@@ -699,15 +715,17 @@ export default function DashboardLayout({
                 onClick={() => {
                   setShowNotifications((value) => !value);
                   setNotificationsSeen(true);
+                  setUnreadNotificationsCount(0);
+                  void markAllNotificationsRead();
                   void fetchNotifications();
                 }}
                 className="w-10 h-10 flex items-center justify-center relative rounded-full bg-slate-100 hover:bg-slate-200/70 text-slate-600 transition-colors shrink-0"
                 title="Notifications"
               >
                 <Bell size={20} />
-                {notifications.length > 0 && !notificationsSeen && (
+                {unreadNotificationsCount > 0 && !notificationsSeen && (
                   <span className="absolute top-1.5 right-1.5 min-w-4 h-4 px-1 bg-rose-500 rounded-full ring-2 ring-white text-[9px] font-black text-white flex items-center justify-center">
-                    {Math.min(notifications.length, 9)}
+                    {Math.min(unreadNotificationsCount, 9)}
                   </span>
                 )}
               </button>
@@ -730,7 +748,7 @@ export default function DashboardLayout({
                           </div>
                         </div>
                         <span className="px-2.5 py-1 rounded-full bg-white/10 border border-white/15 text-[10px] font-black">
-                          {notifications.length}
+                          {unreadNotificationsCount}
                         </span>
                       </div>
                     </div>

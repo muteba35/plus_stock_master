@@ -31,6 +31,10 @@ type NotificationItem = {
   type: NotificationType;
   category: string;
   href: string;
+  actionLabel?: string;
+  actionHref?: string;
+  priority: "critique" | "important" | "information";
+  read: boolean;
   createdAt: string;
 };
 
@@ -69,6 +73,7 @@ export default function NotificationsPage() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState<"all" | NotificationType>("all");
   const [page, setPage] = useState(1);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -79,6 +84,7 @@ export default function NotificationsPage() {
       const result = await response.json();
       if (!response.ok || !result.success) throw new Error(result.message || "Impossible de charger les notifications.");
       setItems(result.notifications || []);
+      setUnreadCount(Number(result.unreadCount || 0));
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Erreur de connexion.");
     } finally {
@@ -108,6 +114,38 @@ export default function NotificationsPage() {
 
   const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
+  const markRead = async (id: string, read: boolean) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${API_URL}/notifications/${id}/${read ? "unread" : "read"}`, {
+        method: "PATCH",
+        headers: { Authorization: token ? `Bearer ${token}` : "" },
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.message || "Action impossible.");
+      setItems((current) => current.map((item) => item.id === id ? { ...item, read: !read } : item));
+      setUnreadCount((value) => Math.max(0, value + (read ? 1 : -1)));
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Action impossible.");
+    }
+  };
+
+  const markAllRead = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(API_URL + "/notifications/read-all", {
+        method: "PATCH",
+        headers: { Authorization: token ? "Bearer " + token : "" },
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.message || "Action impossible.");
+      setItems((current) => current.map((item) => ({ ...item, read: true })));
+      setUnreadCount(0);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Action impossible.");
+    }
+  };
+
   const setFilterAndReset = (callback: () => void) => {
     callback();
     setPage(1);
@@ -119,14 +157,17 @@ export default function NotificationsPage() {
         title="Notifications"
         subtitle="Alertes operationnelles de stock, caisse, inventaire, expiration et finance."
         action={
-          <button onClick={() => void fetchNotifications()} disabled={loading} className={secondaryButton}>
-            <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Actualiser
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button onClick={() => void markAllRead()} disabled={loading || unreadCount === 0} className={secondaryButton}>Tout marquer lu</button>
+            <button onClick={() => void fetchNotifications()} disabled={loading} className={secondaryButton}>
+              <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Actualiser
+            </button>
+          </div>
         }
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Metric label="Total" value={items.length} icon={BellRing} tone="indigo" />
+        <Metric label="Non lues" value={unreadCount} icon={BellRing} tone="indigo" />
         <Metric label="Critiques" value={items.filter((item) => item.type === "danger").length} icon={ShieldAlert} tone="rose" />
         <Metric label="A surveiller" value={items.filter((item) => item.type === "warning").length} icon={AlertTriangle} tone="amber" />
       </div>
@@ -206,15 +247,16 @@ export default function NotificationsPage() {
               </div>
             )}
             {pageItems.map((item) => (
-              <Link
+              <div
                 key={item.id}
-                href={item.href}
-                className={`block rounded-2xl border p-4 transition-all hover:-translate-y-0.5 hover:shadow-sm ${typeStyle(item.type)}`}
+                className={`rounded-2xl border p-4 transition-all hover:-translate-y-0.5 hover:shadow-sm ${typeStyle(item.type)} ${item.read ? "opacity-70" : "ring-2 ring-white"}`}
               >
                 <div className="flex items-start gap-3">
                   <span className={`mt-1.5 w-2.5 h-2.5 rounded-full shrink-0 ${typeDot(item.type)}`} />
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
+                      {!item.read && <span className="px-2 py-0.5 rounded-lg bg-slate-950 text-white text-[9px] font-black uppercase tracking-wide">Non lu</span>}
+                      <span className="px-2 py-0.5 rounded-lg bg-white/70 border border-white text-[10px] font-black uppercase tracking-wide">{item.priority}</span>
                       <span className="px-2 py-0.5 rounded-lg bg-white/70 border border-white text-[10px] font-black uppercase tracking-wide">{item.category}</span>
                       <span className="inline-flex items-center gap-1 text-[10px] font-bold opacity-70">
                         <Clock3 size={12} />
@@ -223,9 +265,17 @@ export default function NotificationsPage() {
                     </div>
                     <p className="text-sm font-black mt-3">{item.title}</p>
                     <p className="text-xs mt-1.5 leading-relaxed opacity-80">{item.message}</p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Link href={item.actionHref || item.href} className="px-3 py-1.5 rounded-xl bg-white/80 border border-white text-[10px] font-black uppercase tracking-wide hover:bg-white">
+                        {item.actionLabel || "Voir"}
+                      </Link>
+                      <button type="button" onClick={() => void markRead(item.id, item.read)} className="px-3 py-1.5 rounded-xl bg-white/60 border border-white text-[10px] font-black uppercase tracking-wide hover:bg-white">
+                        {item.read ? "Marquer non lu" : "Marquer lu"}
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
         )}
