@@ -1011,6 +1011,31 @@ const boutiqueSchema = new mongoose.Schema(
 
 
 
+const auditLogSchema = new mongoose.Schema(
+  {
+    boutiqueId: { type: mongoose.Schema.Types.ObjectId, ref: "Boutique", default: null, index: true },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "Utilisateur", default: null, index: true },
+    userName: { type: String, default: "Utilisateur inconnu", trim: true },
+    userEmail: { type: String, default: "", trim: true, lowercase: true },
+    action: { type: String, required: true, trim: true, index: true },
+    module: { type: String, default: "SYSTEME", trim: true, index: true },
+    method: { type: String, default: "GET", trim: true },
+    path: { type: String, default: "", trim: true },
+    statusCode: { type: Number, default: 200 },
+    ipAddress: { type: String, default: "", trim: true },
+    browser: { type: String, default: "", trim: true },
+    userAgent: { type: String, default: "", trim: true },
+    target: { type: String, default: "", trim: true },
+    description: { type: String, default: "", trim: true },
+    severity: { type: String, enum: ["info", "warning", "danger", "success"], default: "info", index: true },
+    metadata: { type: mongoose.Schema.Types.Mixed, default: {} },
+  },
+  { timestamps: true }
+);
+
+auditLogSchema.index({ boutiqueId: 1, createdAt: -1 });
+auditLogSchema.index({ module: 1, action: 1, createdAt: -1 });
+
 const notificationSchema = new mongoose.Schema(
   {
     boutiqueId: { type: mongoose.Schema.Types.ObjectId, ref: "Boutique", required: true, index: true },
@@ -1074,10 +1099,11 @@ const Boutique = mongoose.model("Boutique", boutiqueSchema);
 const ExchangeRate = mongoose.model("ExchangeRate", exchangeRateSchema);
 const Notification = mongoose.model("Notification", notificationSchema);
 const NotificationPreference = mongoose.model("NotificationPreference", notificationPreferenceSchema);
+const AuditLog = mongoose.model("AuditLog", auditLogSchema);
 
 
 
 
 
-export { Permission, Role, RolePermission, Departement, Categorie, Produit, MouvementStock, Vente, RetourClient, InventaireAudit, Utilisateur, Boutique, ExchangeRate, Notification, NotificationPreference };
+export { Permission, Role, RolePermission, Departement, Categorie, Produit, MouvementStock, Vente, RetourClient, InventaireAudit, Utilisateur, Boutique, ExchangeRate, Notification, NotificationPreference, AuditLog };
 

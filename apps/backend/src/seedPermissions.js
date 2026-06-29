@@ -95,6 +95,9 @@ const permissions = [
   { nom: "VOIR_NOTIFICATIONS_CAISSE", module: "PARAMETRES", description: "Recevoir les notifications de ventes, retours et caisse" },
   { nom: "VOIR_NOTIFICATIONS_FINANCE", module: "PARAMETRES", description: "Recevoir les notifications financieres sensibles" },
   { nom: "GERER_NOTIFICATIONS", module: "PARAMETRES", description: "Configurer les preferences et les destinataires des notifications" },
+  { nom: "VOIR_AUDIT_GLOBAL", module: "PARAMETRES", description: "Consulter le journal global des actions sensibles avec IP et navigateur" },
+  { nom: "EXPORTER_AUDIT_GLOBAL", module: "PARAMETRES", description: "Exporter le journal d'audit global en Excel ou PDF" },
+  { nom: "VOIR_AIDE_DEFINITIONS", module: "PARAMETRES", description: "Consulter les aides, formules et definitions metier" },
 
   // --- MODULE : ABONNEMENT ---
   { nom: "VOIR_ABONNEMENT", module: "ABONNEMENT", description: "Consulter le statut du plan actuel" },
