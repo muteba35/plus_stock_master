@@ -7,6 +7,8 @@ import {
   BellRing,
   CheckCircle2,
   Clock3,
+  Download,
+  FileText,
   Filter,
   Loader2,
   RefreshCw,
@@ -17,6 +19,7 @@ import {
 } from "lucide-react";
 import { CashHeader, CashPagination, CashSearch, secondaryButton } from "../caisse/components/cashier-ui";
 import { FinanceShell } from "../finances/finance-shared";
+import { exportXlsxWorkbook } from "../components/export-xlsx";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://plus-stock-master.onrender.com/api";
 const PAGE_SIZE = 9;
@@ -56,6 +59,19 @@ const isSameDay = (value: string) => {
   const target = new Date(value);
   const today = new Date();
   return target.getFullYear() === today.getFullYear() && target.getMonth() === today.getMonth() && target.getDate() === today.getDate();
+};
+
+const escapeHtml = (value: unknown) => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[char] || char));
+
+const printNotifications = (rows: Array<Array<string | number | boolean | null | undefined>>) => {
+  const title = "Notifications";
+  const columns = ["Titre", "Message", "Categorie", "Niveau", "Priorite", "Statut", "Date"];
+  const popup = window.open("", "_blank", "width=1200,height=800");
+  if (!popup) return;
+  const header = columns.map((column) => "<th>" + escapeHtml(column) + "</th>").join("");
+  const body = rows.map((row) => "<tr>" + row.map((cell) => "<td>" + escapeHtml(cell) + "</td>").join("") + "</tr>").join("");
+  popup.document.write("<!doctype html><html lang='fr'><head><meta charset='utf-8'><title>" + escapeHtml(title) + "</title><style>@page{size:A4 landscape;margin:12mm}body{font-family:Arial,sans-serif;color:#172033;margin:0}h1{font-size:20px;margin:0 0 4px}p{font-size:11px;color:#64748b;margin:0 0 18px}table{width:100%;border-collapse:collapse;font-size:9px}th{background:#f1f5f9;text-align:left;text-transform:uppercase;color:#64748b}th,td{padding:7px;border:1px solid #e2e8f0;vertical-align:top}.footer{margin-top:12px;font-size:9px;color:#94a3b8}</style></head><body><h1>" + escapeHtml(title) + "</h1><p>Export du " + escapeHtml(new Date().toLocaleString("fr-FR")) + "</p><table><thead><tr>" + header + "</tr></thead><tbody>" + body + "</tbody></table><div class='footer'>StockMaster Pro - Document genere automatiquement</div><script>window.onload=()=>window.print();</script></body></html>");
+  popup.document.close();
 };
 
 const isSameMonth = (value: string) => {
@@ -113,6 +129,9 @@ export default function NotificationsPage() {
   }, [categoryFilter, dateFilter, items, search, typeFilter]);
 
   const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const exportRows = filtered.map((item) => [item.title, item.message, item.category, item.type, item.priority, item.read ? "Lu" : "Non lu", formatDate(item.createdAt)]);
+  const exportXlsx = () => exportXlsxWorkbook("notifications.xlsx", [{ name: "Notifications", columns: ["Titre", "Message", "Categorie", "Niveau", "Priorite", "Statut", "Date"], rows: exportRows }]);
+  const exportPdf = () => printNotifications(exportRows);
 
   const markRead = async (id: string, read: boolean) => {
     try {
@@ -158,6 +177,8 @@ export default function NotificationsPage() {
         subtitle="Alertes operationnelles de stock, caisse, inventaire, expiration et finance."
         action={
           <div className="flex flex-wrap items-center gap-2">
+            <button onClick={exportPdf} disabled={loading} className={secondaryButton}><FileText size={14} /> PDF</button>
+            <button onClick={exportXlsx} disabled={loading} className={secondaryButton}><Download size={14} /> Excel</button>
             <button onClick={() => void markAllRead()} disabled={loading || unreadCount === 0} className={secondaryButton}>Tout marquer lu</button>
             <button onClick={() => void fetchNotifications()} disabled={loading} className={secondaryButton}>
               <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Actualiser

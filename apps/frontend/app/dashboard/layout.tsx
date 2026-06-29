@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useCallback, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
@@ -426,7 +426,7 @@ export default function DashboardLayout({
         { name: "Bénéfices & Pertes", href: "/dashboard/finances/benefices", permission: "VOIR_BENEFICES" },
         { name: "Rapports d'activité", href: "/dashboard/finances/rapports", permission: "VOIR_CHIFFRE_AFFAIRE" },
         { name: "Exportations", href: "/dashboard/finances/exportations", permission: "EXPORTER_RAPPORTS" },
-        { name: "Formules", href: "/dashboard/finances/formules", permission: "VOIR_CHIFFRE_AFFAIRE" },
+        { name: "Formules", href: "/dashboard/finances/formules", permission: "VOIR_FORMULES_FINANCE" },
       ],
     },
     {
@@ -913,5 +913,6 @@ export default function DashboardLayout({
     </div>
   );
 }
+
 
 

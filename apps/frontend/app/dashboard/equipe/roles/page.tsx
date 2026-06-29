@@ -1,12 +1,14 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { Plus, Search, Eye, Edit2, Trash2, Loader2, CheckCircle2, XCircle, AlertCircle, SlidersHorizontal, AlertTriangle, FileSpreadsheet } from "lucide-react";
+import { Plus, Search, Eye, Edit2, Trash2, Loader2, CheckCircle2, XCircle, AlertCircle, SlidersHorizontal, AlertTriangle, FileSpreadsheet, Download, FileText } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import RoleModal from "./components/RoleModal";
 import TeamPagination from "../TeamPagination";
 import TeamCsvImportModal, { type TeamCsvRow } from "../TeamCsvImportModal";
 import ModalPortal from "../../components/ModalPortal";
+import { exportXlsxWorkbook } from "../../components/export-xlsx";
+import { exportPdfTable } from "../../components/export-pdf";
 
 export interface PermissionObj {
   _id: string;
@@ -254,6 +256,11 @@ export default function RolesPage() {
 
     return matchesSearch && matchesStatus && matchesUsage;
   });
+  const exportColumns = ["Role", "Description", "Permissions", "Utilisateurs", "Statut"];
+  const exportRows = filteredRoles.map((role) => [role.name, role.description, role.permissions.map((p) => p.nom || p.code).join(" | "), role.employeesCount, role.status]);
+  const exportRolesXlsx = () => exportXlsxWorkbook("roles.xlsx", [{ name: "Roles", columns: exportColumns, rows: exportRows }]);
+  const exportRolesPdf = () => exportPdfTable("Roles", exportColumns, exportRows);
+
   const pageSize = 10;
   const currentPage = Math.min(page, Math.max(1, Math.ceil(filteredRoles.length / pageSize)));
   const paginatedRoles = filteredRoles.slice((currentPage - 1) * pageSize, currentPage * pageSize);
@@ -294,7 +301,7 @@ export default function RolesPage() {
         </div>
         
         {/* BOUTON DE CRÉATION PROTÉGÉ */}
-        {canCreate && <div className="flex flex-wrap justify-end gap-2"><button onClick={() => setIsImportOpen(true)} className="flex items-center gap-2 border border-slate-200 bg-white hover:border-indigo-300 text-slate-600 text-xs font-bold px-4 py-2.5 rounded-xl"><FileSpreadsheet size={14} /> Importer Excel</button><button onClick={handleOpenCreate} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-md shadow-indigo-600/10 active:scale-[0.98]"><Plus size={14} /> Créer un rôle</button></div>}
+        {canCreate && <div className="flex flex-wrap justify-end gap-2"><button onClick={exportRolesPdf} className="flex items-center gap-2 border border-slate-200 bg-white hover:border-indigo-300 text-slate-600 text-xs font-bold px-4 py-2.5 rounded-xl"><FileText size={14} /> PDF</button><button onClick={exportRolesXlsx} className="flex items-center gap-2 border border-slate-200 bg-white hover:border-indigo-300 text-slate-600 text-xs font-bold px-4 py-2.5 rounded-xl"><Download size={14} /> Excel</button><button onClick={() => setIsImportOpen(true)} className="flex items-center gap-2 border border-slate-200 bg-white hover:border-indigo-300 text-slate-600 text-xs font-bold px-4 py-2.5 rounded-xl"><FileSpreadsheet size={14} /> Importer Excel</button><button onClick={handleOpenCreate} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-md shadow-indigo-600/10 active:scale-[0.98]"><Plus size={14} /> Créer un rôle</button></div>}
       </div>
 
       {/* TABLEAU */}

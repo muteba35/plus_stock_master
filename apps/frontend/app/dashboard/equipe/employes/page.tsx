@@ -27,12 +27,16 @@ import {
   Store,
   SlidersHorizontal,
   FileSpreadsheet,
+  Download,
+  FileText,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import EmployeModal, { EmployeOption } from "./components/EmployeModal";
 import TeamPagination from "../TeamPagination";
 import TeamCsvImportModal, { type TeamCsvRow } from "../TeamCsvImportModal";
 import ModalPortal from "../../components/ModalPortal";
+import { exportXlsxWorkbook } from "../../components/export-xlsx";
+import { exportPdfTable } from "../../components/export-pdf";
 
 export interface Employe {
   id: string;
@@ -311,6 +315,11 @@ export default function EmployesPage() {
 
     return matchesSearch && matchesRole && matchesDepartment && matchesStatus;
   });
+  const exportColumns = ["Prenom", "Nom", "Email", "Telephone", "Role", "Departement", "Statut"];
+  const exportRows = filteredEmployes.map((emp) => [emp.firstName, emp.lastName, emp.email, emp.phone, emp.role, emp.department, emp.status]);
+  const exportEmployeesXlsx = () => exportXlsxWorkbook("employes.xlsx", [{ name: "Employes", columns: exportColumns, rows: exportRows }]);
+  const exportEmployeesPdf = () => exportPdfTable("Employes", exportColumns, exportRows);
+
   const pageSize = 10;
   const currentPage = Math.min(page, Math.max(1, Math.ceil(filteredEmployes.length / pageSize)));
   const paginatedEmployes = filteredEmployes.slice((currentPage - 1) * pageSize, currentPage * pageSize);
@@ -503,7 +512,7 @@ export default function EmployesPage() {
           <h1 className="text-xl font-bold text-slate-900">Annuaire du Personnel</h1>
           <p className="text-xs text-slate-400 font-medium">Gerez les acces et le statut de vos collaborateurs.</p>
         </div>
-        <div className="flex flex-wrap justify-end gap-2"><button onClick={() => setIsImportOpen(true)} className="flex items-center gap-2 border border-slate-200 bg-white hover:border-indigo-300 text-slate-600 text-xs font-bold px-4 py-2.5 rounded-xl"><FileSpreadsheet size={14} /> Importer Excel</button><button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-sm"><UserPlus size={14} /> Nouvel Employe</button></div>
+        <div className="flex flex-wrap justify-end gap-2"><button onClick={exportEmployeesPdf} className="flex items-center gap-2 border border-slate-200 bg-white hover:border-indigo-300 text-slate-600 text-xs font-bold px-4 py-2.5 rounded-xl"><FileText size={14} /> PDF</button><button onClick={exportEmployeesXlsx} className="flex items-center gap-2 border border-slate-200 bg-white hover:border-indigo-300 text-slate-600 text-xs font-bold px-4 py-2.5 rounded-xl"><Download size={14} /> Excel</button><button onClick={() => setIsImportOpen(true)} className="flex items-center gap-2 border border-slate-200 bg-white hover:border-indigo-300 text-slate-600 text-xs font-bold px-4 py-2.5 rounded-xl"><FileSpreadsheet size={14} /> Importer Excel</button><button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-sm"><UserPlus size={14} /> Nouvel Employe</button></div>
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-visible">

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -10,6 +10,8 @@ import {
   Coins,
   Edit2,
   Eye,
+  Download,
+  FileText,
   FileSpreadsheet,
   Loader2,
   Plus,
@@ -24,6 +26,8 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import TeamCsvImportModal, { type TeamCsvRow } from "../../equipe/TeamCsvImportModal";
+import TeamPagination from "../../equipe/TeamPagination";
+import { exportXlsxWorkbook } from "../../components/export-xlsx";
 import ModalPortal from "../../components/ModalPortal";
 
 interface Boutique {
@@ -53,6 +57,7 @@ interface ExchangeRate {
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://plus-stock-master.onrender.com/api";
+const PAGE_SIZE = 10;
 
 const SECTEURS = [
   "Commerce Général",
@@ -85,6 +90,17 @@ const readApiMessage = async (response: Response, fallback: string) => {
   } catch {
     return { data: null, message: fallback };
   }
+};
+
+const escapeHtml = (value: unknown) => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[char] || char));
+
+const printProfessionalTable = (title: string, columns: string[], rows: Array<Array<string | number | boolean | null | undefined>>) => {
+  const popup = window.open("", "_blank", "width=1200,height=800");
+  if (!popup) return;
+  const header = columns.map((column) => "<th>" + escapeHtml(column) + "</th>").join("");
+  const body = rows.map((row) => "<tr>" + row.map((cell) => "<td>" + escapeHtml(cell) + "</td>").join("") + "</tr>").join("");
+  popup.document.write("<!doctype html><html lang='fr'><head><meta charset='utf-8'><title>" + escapeHtml(title) + "</title><style>@page{size:A4 landscape;margin:12mm}body{font-family:Arial,sans-serif;color:#172033;margin:0}h1{font-size:20px;margin:0 0 4px}p{font-size:11px;color:#64748b;margin:0 0 18px}table{width:100%;border-collapse:collapse;font-size:9px}th{background:#f1f5f9;text-align:left;text-transform:uppercase;color:#64748b}th,td{padding:7px;border:1px solid #e2e8f0;vertical-align:top}.footer{margin-top:12px;font-size:9px;color:#94a3b8}</style></head><body><h1>" + escapeHtml(title) + "</h1><p>Export du " + escapeHtml(new Date().toLocaleString("fr-FR")) + "</p><table><thead><tr>" + header + "</tr></thead><tbody>" + body + "</tbody></table><div class='footer'>StockMaster Pro - Document genere automatiquement</div><script>window.onload=()=>window.print();</script></body></html>");
+  popup.document.close();
 };
 
 const formatDate = (date?: string) => {
@@ -150,6 +166,10 @@ export default function BoutiquePage() {
   const [exchangeRates, setExchangeRates] = useState<ExchangeRate[]>(DEFAULT_EXCHANGE_RATES);
   const [ratesLoading, setRatesLoading] = useState(false);
   const [ratesSaving, setRatesSaving] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [deletionCode, setDeletionCode] = useState("");
+  const [deletionError, setDeletionError] = useState("");
+  const [sendingDeleteCode, setSendingDeleteCode] = useState(false);
 
   const showToast = useCallback((type: "success" | "error", message: string) => {
     setToast({ type, message });
@@ -325,6 +345,15 @@ export default function BoutiquePage() {
     [boutiques, currencyFilter, searchTerm, sectorFilter, statusFilter]
   );
 
+  const exportColumns = ["Boutique", "Secteur", "Devise", "Taille", "Plan", "Statut", "Creation"];
+  const exportRows = filteredBoutiques.map((boutique) => [boutique.nom, boutique.secteurActivite, boutique.deviseParDefaut, boutique.tailleBusiness, boutique.plan || "Free", boutique.isActive ? "Active" : "Non active", formatDate(boutique.createdAt)]);
+  const paginatedBoutiques = filteredBoutiques.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  useEffect(() => { setCurrentPage(1); }, [searchTerm, sectorFilter, statusFilter, currencyFilter]);
+
+  const exportBoutiquesXlsx = () => exportXlsxWorkbook("boutiques.xlsx", [{ name: "Boutiques", columns: exportColumns, rows: exportRows }]);
+  const exportBoutiquesPdf = () => printProfessionalTable("Boutiques", exportColumns, exportRows);
+
   const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = event.target;
     setFormData((current) => ({ ...current, [name]: value }));
@@ -469,14 +498,38 @@ export default function BoutiquePage() {
     }
   };
 
+  const requestDeleteCode = async () => {
+    if (!boutiqueToDelete) return;
+
+    try {
+      setSendingDeleteCode(true);
+      setDeletionError("");
+      const response = await fetch(API_URL + "/boutiques/" + boutiqueToDelete.id + "/delete-code", {
+        method: "POST",
+        headers: getAuthHeaders(),
+      });
+      const { data, message } = await readApiMessage(response, "Impossible d'envoyer le code de suppression.");
+      if (!response.ok || !data?.success) throw new Error(message);
+      showToast("success", data.message || "Code envoye au proprietaire.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Impossible d'envoyer le code.";
+      setDeletionError(message);
+      showToast("error", message);
+    } finally {
+      setSendingDeleteCode(false);
+    }
+  };
+
   const handleDeleteBoutique = async () => {
     if (!boutiqueToDelete) return;
 
     try {
       setDeletingId(boutiqueToDelete.id);
-      const response = await fetch(`${API_URL}/boutiques/${boutiqueToDelete.id}`, {
+      const isLastBoutique = boutiques.length <= 1;
+      const response = await fetch(API_URL + "/boutiques/" + boutiqueToDelete.id, {
         method: "DELETE",
         headers: getAuthHeaders(),
+        body: isLastBoutique ? JSON.stringify({ code: deletionCode.trim() }) : undefined,
       });
 
       const { data, message } = await readApiMessage(response, "Erreur lors de la suppression de la boutique.");
@@ -485,10 +538,18 @@ export default function BoutiquePage() {
       }
 
       setBoutiques((current) => current.filter((item) => item.id !== boutiqueToDelete.id));
+      if (data?.clearedActive) {
+        const currentProfile = JSON.parse(localStorage.getItem("user_profile") || "{}");
+        localStorage.setItem("user_profile", JSON.stringify({ ...currentProfile, boutiqueActive: "", boutique: null }));
+        window.dispatchEvent(new Event("userProfileUpdated"));
+      }
       setBoutiqueToDelete(null);
+      setDeletionCode("");
+      setDeletionError("");
       showToast("success", data.message || "Boutique supprimee avec succes.");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Impossible de supprimer cette boutique.";
+      setDeletionError(message);
       showToast("error", message);
     } finally {
       setDeletingId(null);
@@ -530,6 +591,8 @@ export default function BoutiquePage() {
 
         {canCreate && (
           <div className="flex flex-col min-[420px]:flex-row gap-2">
+            <button type="button" onClick={exportBoutiquesPdf} className="flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold px-4 py-2.5 rounded-xl border border-slate-200 transition-all"><FileText size={14} /> PDF</button>
+            <button type="button" onClick={exportBoutiquesXlsx} className="flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold px-4 py-2.5 rounded-xl border border-slate-200 transition-all"><Download size={14} /> Excel</button>
             <button
               type="button"
               onClick={() => setIsImportOpen(true)}
@@ -690,7 +753,7 @@ export default function BoutiquePage() {
                     </td>
                   </tr>
                 ) : (
-                  filteredBoutiques.map((boutique) => (
+                  paginatedBoutiques.map((boutique) => (
                     <tr key={boutique.id} className="hover:bg-slate-50/50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-3">
@@ -773,14 +836,14 @@ export default function BoutiquePage() {
                           {canDelete && (
                             <button
                               type="button"
-                              onClick={() => setBoutiqueToDelete(boutique)}
-                              disabled={boutique.isActive || deletingId === boutique.id}
+                              onClick={() => { setBoutiqueToDelete(boutique); setDeletionCode(""); setDeletionError(""); }}
+                              disabled={(boutique.isActive && boutiques.length > 1) || deletingId === boutique.id}
                               className={`p-1.5 transition-colors ${
-                                boutique.isActive
+                                boutique.isActive && boutiques.length > 1
                                   ? "text-slate-200 cursor-not-allowed"
                                   : "text-slate-400 hover:text-rose-600"
                               }`}
-                              title={boutique.isActive ? "Activez une autre boutique avant suppression" : "Supprimer"}
+                              title={boutique.isActive && boutiques.length > 1 ? "Activez une autre boutique avant suppression" : "Supprimer"}
                             >
                               {deletingId === boutique.id ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
                             </button>
@@ -794,6 +857,7 @@ export default function BoutiquePage() {
             </table>
           )}
         </div>
+        {canView && <TeamPagination page={currentPage} pageSize={PAGE_SIZE} totalItems={filteredBoutiques.length} onPageChange={setCurrentPage} />}
       </div>
 
       <TeamCsvImportModal
@@ -824,8 +888,14 @@ export default function BoutiquePage() {
       <DeleteBoutiqueModal
         boutique={boutiqueToDelete}
         isDeleting={Boolean(boutiqueToDelete && deletingId === boutiqueToDelete.id)}
-        onClose={() => !deletingId && setBoutiqueToDelete(null)}
+        onClose={() => { if (!deletingId) { setBoutiqueToDelete(null); setDeletionCode(""); setDeletionError(""); } }}
         onConfirm={handleDeleteBoutique}
+        requiresCode={boutiques.length <= 1}
+        code={deletionCode}
+        error={deletionError}
+        isSendingCode={sendingDeleteCode}
+        onCodeChange={setDeletionCode}
+        onRequestCode={requestDeleteCode}
       />
     </div>
   );
@@ -854,11 +924,23 @@ function DeleteBoutiqueModal({
   isDeleting,
   onClose,
   onConfirm,
+  requiresCode,
+  code,
+  error,
+  isSendingCode,
+  onCodeChange,
+  onRequestCode,
 }: {
   boutique: Boutique | null;
   isDeleting: boolean;
   onClose: () => void;
   onConfirm: () => void;
+  requiresCode: boolean;
+  code: string;
+  error: string;
+  isSendingCode: boolean;
+  onCodeChange: (value: string) => void;
+  onRequestCode: () => void;
 }) {
   return (
     <ModalPortal>
@@ -909,9 +991,18 @@ function DeleteBoutiqueModal({
                   <span className="font-bold text-slate-900">{boutique.nom}</span> ?
                 </p>
                 <p className="text-slate-400 text-[10px] mt-1 font-medium">
-                  Cette action est irreversible. La boutique active ne peut pas etre supprimee.
+                  {requiresCode ? "Cette derniere boutique exige un code envoye dans la messagerie du proprietaire." : "Cette action est irreversible. La boutique active ne peut pas etre supprimee."}
                 </p>
               </div>
+              {requiresCode && (
+                <div className="text-left space-y-2 rounded-xl border border-rose-100 bg-rose-50/60 p-3">
+                  {error && <p className="text-[11px] font-bold text-rose-600">{error}</p>}
+                  <button type="button" onClick={onRequestCode} disabled={isSendingCode || isDeleting} className="w-full px-3 py-2 rounded-xl bg-white border border-rose-200 text-rose-600 font-black text-[10px] uppercase tracking-wide disabled:opacity-50">
+                    {isSendingCode ? "Envoi en cours..." : "Envoyer le code au proprietaire"}
+                  </button>
+                  <input value={code} onChange={(event) => onCodeChange(event.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="Code a 6 chiffres" inputMode="numeric" className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-center text-sm font-black tracking-[0.35em] outline-none focus:border-rose-400" />
+                </div>
+              )}
             </div>
 
             <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
@@ -926,7 +1017,7 @@ function DeleteBoutiqueModal({
               <button
                 type="button"
                 onClick={onConfirm}
-                disabled={isDeleting}
+                disabled={isDeleting || (requiresCode && code.length !== 6)}
                 className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/60 rounded-xl font-bold text-[11px] transition-colors shadow-sm flex items-center gap-2 disabled:opacity-60"
               >
                 {isDeleting && <Loader2 size={12} className="animate-spin" />}
@@ -1141,4 +1232,7 @@ function SelectInput({
     </div>
   );
 }
+
+
+
 
