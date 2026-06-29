@@ -90,6 +90,11 @@ const permissions = [
   { nom: "ACTIVER_BOUTIQUE", module: "PARAMETRES", description: "Changer la boutique active de la session" },
   { nom: "MODIFIER_INFOS_BOUTIQUE", module: "PARAMETRES", description: "Changer le nom, logo ou adresse de la boutique" },
   { nom: "CHANGER_DEVISE", module: "PARAMETRES", description: "Modifier la monnaie de travail (USD, CDF, EUR)" },
+  { nom: "VOIR_NOTIFICATIONS", module: "PARAMETRES", description: "Consulter le centre de notifications de la boutique" },
+  { nom: "VOIR_NOTIFICATIONS_STOCK", module: "PARAMETRES", description: "Recevoir les notifications de stock, expiration et inventaire" },
+  { nom: "VOIR_NOTIFICATIONS_CAISSE", module: "PARAMETRES", description: "Recevoir les notifications de ventes, retours et caisse" },
+  { nom: "VOIR_NOTIFICATIONS_FINANCE", module: "PARAMETRES", description: "Recevoir les notifications financieres sensibles" },
+  { nom: "GERER_NOTIFICATIONS", module: "PARAMETRES", description: "Configurer les preferences et les destinataires des notifications" },
 
   // --- MODULE : ABONNEMENT ---
   { nom: "VOIR_ABONNEMENT", module: "ABONNEMENT", description: "Consulter le statut du plan actuel" },

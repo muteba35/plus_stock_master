@@ -1010,6 +1010,40 @@ const boutiqueSchema = new mongoose.Schema(
 
 
 
+
+const notificationSchema = new mongoose.Schema(
+  {
+    boutiqueId: { type: mongoose.Schema.Types.ObjectId, ref: "Boutique", required: true, index: true },
+    sourceKey: { type: String, required: true, trim: true },
+    title: { type: String, required: true, trim: true },
+    message: { type: String, required: true, trim: true },
+    type: { type: String, enum: ["info", "warning", "danger", "success"], default: "info" },
+    priority: { type: String, enum: ["critique", "important", "information"], default: "information", index: true },
+    category: { type: String, default: "systeme", trim: true, index: true },
+    href: { type: String, default: "/dashboard" },
+    actionLabel: { type: String, default: "Voir" },
+    actionHref: { type: String, default: "/dashboard" },
+    meta: { type: mongoose.Schema.Types.Mixed, default: {} },
+    readBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "Utilisateur" }],
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "Utilisateur", default: null },
+  },
+  { timestamps: true }
+);
+
+notificationSchema.index({ boutiqueId: 1, sourceKey: 1 }, { unique: true });
+
+const notificationPreferenceSchema = new mongoose.Schema(
+  {
+    boutiqueId: { type: mongoose.Schema.Types.ObjectId, ref: "Boutique", required: true, unique: true },
+    stockThresholdGlobal: { type: Number, default: 5, min: 0 },
+    expirationWarningDays: { type: Number, default: 7, min: 1, max: 365 },
+    receiveCashAlerts: { type: Boolean, default: true },
+    showEmployeeAlerts: { type: Boolean, default: true },
+    onlyOwnerSensitiveAlerts: { type: Boolean, default: true },
+  },
+  { timestamps: true }
+);
+
 const Permission = mongoose.model("Permission", permissionSchema);
 
 
@@ -1038,10 +1072,12 @@ const Utilisateur = mongoose.model("Utilisateur", utilisateurSchema);
 
 const Boutique = mongoose.model("Boutique", boutiqueSchema);
 const ExchangeRate = mongoose.model("ExchangeRate", exchangeRateSchema);
+const Notification = mongoose.model("Notification", notificationSchema);
+const NotificationPreference = mongoose.model("NotificationPreference", notificationPreferenceSchema);
 
 
 
 
 
-export { Permission, Role, RolePermission, Departement, Categorie, Produit, MouvementStock, Vente, RetourClient, InventaireAudit, Utilisateur, Boutique, ExchangeRate };
+export { Permission, Role, RolePermission, Departement, Categorie, Produit, MouvementStock, Vente, RetourClient, InventaireAudit, Utilisateur, Boutique, ExchangeRate, Notification, NotificationPreference };
 
