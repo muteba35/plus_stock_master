@@ -52,13 +52,28 @@ export const getAuditLogs = async (req, res) => {
     }
 
     const [logs, total] = await Promise.all([
-      AuditLog.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).lean(),
+      AuditLog.find(filter)
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .populate("userId", "prenom nom email")
+        .lean(),
       AuditLog.countDocuments(filter),
     ]);
 
+    const enrichedLogs = logs.map((log) => {
+      const populatedUser = log.userId && typeof log.userId === "object" ? log.userId : null;
+      const populatedName = populatedUser ? [populatedUser.prenom, populatedUser.nom].filter(Boolean).join(" ").trim() : "";
+      return {
+        ...log,
+        userName: log.userName && log.userName !== "Utilisateur inconnu" ? log.userName : populatedName || log.userEmail || "Utilisateur inconnu",
+        userEmail: log.userEmail || populatedUser?.email || "",
+      };
+    });
+
     return res.status(200).json({
       success: true,
-      logs,
+      logs: enrichedLogs,
       pagination: {
         page,
         limit,
