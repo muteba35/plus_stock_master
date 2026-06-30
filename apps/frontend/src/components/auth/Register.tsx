@@ -57,6 +57,7 @@ export default function Register() {
   const [isSuccess, setIsSuccess] = useState(false); 
   const [isBlocked, setIsBlocked] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showRequirements, setShowRequirements] = useState(false);
 
@@ -97,7 +98,12 @@ export default function Register() {
 
   const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!acceptedTerms || isBlocked || isLoading) return;
+    if (isBlocked || isLoading) return;
+
+    if (!acceptedTerms) {
+      setError("Veuillez accepter les conditions générales avant de créer votre compte.");
+      return;
+    }
     
     if (formData.password !== formData.confirmPassword) {
       setError("Les mots de passe ne correspondent pas.");
@@ -108,7 +114,10 @@ export default function Register() {
     setError(null);
 
     try {
-      const response = await axios.post(`${API_URL}/auth/register`, formData);
+      const response = await axios.post(`${API_URL}/auth/register`, {
+        ...formData,
+        acceptTerms: acceptedTerms,
+      });
       
       console.log("Réponse du serveur :", response.data);
 
@@ -332,7 +341,10 @@ export default function Register() {
                   </div>
                   {/* 🛡️ Correction de l'apostrophe pour le build Next.js */}
                   <label htmlFor="terms" className="text-[10px] text-slate-500 font-bold uppercase tracking-tight cursor-pointer">
-                    {"J'accepte"} les <Link href="#" className="text-indigo-600 hover:underline">Conditions Générales</Link>
+                    {"J'accepte"} les{" "}
+                    <button type="button" onClick={() => setShowTermsModal(true)} className="text-indigo-600 hover:underline font-black">
+                      Conditions générales
+                    </button>
                   </label>
                 </div>
 
@@ -386,7 +398,48 @@ export default function Register() {
           </div>
         </motion.div>
       </div>
+
+      <AnimatePresence>
+        {showTermsModal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[250] flex items-center justify-center p-4">
+            <button type="button" aria-label="Fermer" onClick={() => setShowTermsModal(false)} className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm" />
+            <motion.div initial={{ opacity: 0, y: 16, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8, scale: 0.98 }} className="relative z-10 w-full max-w-2xl max-h-[88vh] overflow-hidden bg-white rounded-3xl border border-slate-200 shadow-2xl">
+              <div className="p-5 border-b border-slate-100 bg-slate-50 flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">Boutiqo</p>
+                  <h2 className="text-lg font-black text-slate-950 mt-1">Conditions générales d'inscription</h2>
+                  <p className="text-xs text-slate-500 mt-1">Résumé des règles acceptées lors de la création du compte.</p>
+                </div>
+                <button type="button" onClick={() => setShowTermsModal(false)} className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-white">
+                  <X size={18} />
+                </button>
+              </div>
+              <div className="p-6 overflow-y-auto max-h-[calc(88vh-92px)] space-y-4 text-sm text-slate-600 leading-relaxed">
+                <TermsBlock title="Responsabilité du compte" text="Le propriétaire de boutique garantit l'exactitude des informations fournies et reste responsable des actions réalisées depuis son espace Boutiqo." />
+                <TermsBlock title="Sécurité des accès" text="Les mots de passe, codes temporaires et permissions doivent rester confidentiels. Les accès employés doivent être attribués uniquement aux personnes autorisées." />
+                <TermsBlock title="Données de gestion" text="Boutiqo conserve les données nécessaires au fonctionnement de la boutique : utilisateurs, produits, ventes, mouvements, audit, notifications et paramètres." />
+                <TermsBlock title="Traçabilité" text="Les actions sensibles peuvent être enregistrées dans le journal d'audit afin d'identifier qui a fait quoi, quand, depuis quelle adresse IP et quel navigateur." />
+                <TermsBlock title="Utilisation conforme" text="L'application doit être utilisée pour une gestion commerciale légale. Toute tentative de contournement de sécurité peut entraîner une restriction d'accès." />
+              </div>
+              <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end">
+                <button type="button" onClick={() => { setAcceptedTerms(true); setShowTermsModal(false); }} className="px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-black hover:bg-indigo-700">
+                  Accepter et continuer
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
+  );
+}
+
+function TermsBlock({ title, text }: { title: string; text: string }) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+      <h3 className="text-xs font-black uppercase tracking-wider text-slate-900">{title}</h3>
+      <p className="text-xs font-semibold text-slate-500 mt-2">{text}</p>
+    </div>
   );
 }
 
