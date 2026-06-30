@@ -16,7 +16,7 @@ export const DATE_FILTERS = [
 export type DateFilterValue = typeof DATE_FILTERS[number]["value"];
 
 type Metrics = { ventes: number; caHT: number; caTTC: number; tva: number; cout: number; marge: number; tauxMarge: number; retours: number; montantRetours: number; netApresRetours: number };
-type SaleDetail = { reference: string; factureReference?: string; clientNom?: string; date: string; caissier: string; paiement: string; produit: string; sku?: string; categorie?: string; quantite: number; prixVente: number; coutAchat: number; margeUnitaire: number; marge: number; totalTTC: number; devise?: string };
+type SaleDetail = { reference: string; factureReference?: string; clientNom?: string; date: string; caissier: string; paiement: string; produit: string; sku?: string; categorie?: string; quantite: number; prixVente: number; coutAchat: number; margeUnitaire: number; marge: number; montantRetourTTC?: number; margeApresRetour?: number; totalTTC: number; devise?: string };
 type ReportRow = { date?: string; caissier?: string; paiement?: string; ventes: number; quantite: number; caHT: number; totalTTC: number; tva: number; cout: number; marge: number; tauxMarge: number };
 type FinanceData = { success: boolean; scope: "all" | "own"; devise: string; metrics: Metrics; daily: ReportRow[]; cashiers: ReportRow[]; payments: ReportRow[]; salesDetails: SaleDetail[] };
 

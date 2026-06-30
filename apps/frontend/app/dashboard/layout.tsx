@@ -423,7 +423,8 @@ export default function DashboardLayout({
       subMenu: [
         { name: "Tableau de bord", href: "/dashboard/finances", permission: "VOIR_CHIFFRE_AFFAIRE" },
         { name: "Analyse Ventes", href: "/dashboard/finances/ventes", permission: "VOIR_HISTORIQUE_VENTES" },
-        { name: "Bénéfices & Pertes", href: "/dashboard/finances/benefices", permission: "VOIR_BENEFICES" },
+        { name: "Bénéfices & Pertes", href: "/dashboard/finances/benefices", permissions: ["VOIR_BENEFICES", "VOIR_ANALYSE_FINANCIERE"] },
+        { name: "Dépenses & Charges", href: "/dashboard/finances/charges", permissions: ["VOIR_CHARGES_FINANCE", "GERER_CHARGES_FINANCE"] },
         { name: "Rapports d'activité", href: "/dashboard/finances/rapports", permission: "VOIR_CHIFFRE_AFFAIRE" },
         { name: "Exportations", href: "/dashboard/finances/exportations", permission: "EXPORTER_RAPPORTS" },
         { name: "Formules", href: "/dashboard/finances/formules", permission: "VOIR_FORMULES_FINANCE" },
