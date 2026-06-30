@@ -1,7 +1,7 @@
 ﻿import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
-import { Boutique, ExchangeRate, Permission, Utilisateur } from "../models/Utilisateur.js";
+import { AuditLog, Boutique, Categorie, Departement, ExchangeRate, InventaireAudit, MouvementStock, Notification, NotificationPreference, Permission, Produit, RetourClient, Role, RolePermission, Utilisateur, Vente } from "../models/Utilisateur.js";
 import { sendEmail } from "../utils/sendEmail.js";
 
 const normalizeBoutique = (boutique, activeId) => ({
@@ -37,7 +37,38 @@ const createSessionPayload = async (userId, boutiqueId, permissionsOverride = nu
   return { token, permissions };
 };
 
-const escapeRegex = (value) => String(value).replace(/[.*+?^\${}()|[\]\\]/g, "\\$&");
+const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const deleteOwnerAccountData = async (ownerId, boutiqueId) => {
+  const roleIds = await Role.find({ boutiqueId }).distinct("_id");
+  const departementIds = await Departement.find({ boutiqueId }).distinct("_id");
+  const produitIds = await Produit.find({ boutiqueId }).distinct("_id");
+
+  await Promise.all([
+    RolePermission.deleteMany({ roleId: { $in: roleIds } }),
+    Role.deleteMany({ boutiqueId }),
+    Departement.deleteMany({ boutiqueId }),
+    Categorie.deleteMany({ boutiqueId }),
+    Produit.deleteMany({ boutiqueId }),
+    MouvementStock.deleteMany({ $or: [{ boutiqueId }, { produitId: { $in: produitIds } }] }),
+    Vente.deleteMany({ boutiqueId }),
+    RetourClient.deleteMany({ boutiqueId }),
+    InventaireAudit.deleteMany({ boutiqueId }),
+    ExchangeRate.deleteMany({ boutiqueId }),
+    Notification.deleteMany({ boutiqueId }),
+    NotificationPreference.deleteMany({ boutiqueId }),
+    AuditLog.deleteMany({ boutiqueId }),
+    Boutique.deleteMany({ userId: ownerId }),
+    Utilisateur.deleteMany({
+      $or: [
+        { _id: ownerId },
+        { boutiqueActive: boutiqueId },
+        { roleId: { $in: roleIds } },
+        { departementId: { $in: departementIds } },
+      ],
+    }),
+  ]);
+};
 
 const resolveBoutiqueContext = async (req, res) => {
   const user = await Utilisateur.findById(req.user.id).populate("boutiqueActive");
@@ -276,20 +307,27 @@ export const deleteBoutique = async (req, res) => {
       }
     }
 
+    if (isLastBoutique) {
+      await deleteOwnerAccountData(context.ownerId, boutique._id);
+      return res.status(200).json({
+        success: true,
+        accountDeleted: true,
+        clearedActive: true,
+        message: "Derniere boutique supprimee. Le compte proprietaire et les donnees liees ont ete fermes.",
+        id: boutique._id,
+      });
+    }
+
     boutique.isDeleted = true;
     boutique.deletionCodeHash = undefined;
     boutique.deletionCodeExpires = undefined;
     await boutique.save();
 
-    if (isActiveBoutique) {
-      context.user.boutiqueActive = null;
-      await context.user.save();
-    }
-
     return res.status(200).json({
       success: true,
-      message: isLastBoutique ? "Derniere boutique supprimee apres confirmation du proprietaire." : "Boutique supprimee avec succes.",
+      message: "Boutique supprimee avec succes.",
       id: boutique._id,
+      clearedActive: false,
     });
   } catch (error) {
     console.error("Erreur deleteBoutique:", error);
@@ -448,5 +486,6 @@ export const updateCurrencySettings = async (req, res) => {
     return res.status(500).json({ success: false, message: "Impossible d'enregistrer les taux de change." });
   }
 };
+
 
 

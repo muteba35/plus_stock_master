@@ -1030,6 +1030,9 @@ const auditLogSchema = new mongoose.Schema(
     target: { type: String, default: "", trim: true },
     description: { type: String, default: "", trim: true },
     severity: { type: String, enum: ["info", "warning", "danger", "success"], default: "info", index: true },
+    previousValue: { type: mongoose.Schema.Types.Mixed, default: null },
+    newValue: { type: mongoose.Schema.Types.Mixed, default: null },
+    changedFields: [{ type: String, trim: true }],
     metadata: { type: mongoose.Schema.Types.Mixed, default: {} },
   },
   { timestamps: true }
@@ -1108,5 +1111,7 @@ const AuditLog = mongoose.model("AuditLog", auditLogSchema);
 
 
 export { Permission, Role, RolePermission, Departement, Categorie, Produit, MouvementStock, Vente, RetourClient, InventaireAudit, Utilisateur, Boutique, ExchangeRate, Notification, NotificationPreference, AuditLog };
+
+
 
 
