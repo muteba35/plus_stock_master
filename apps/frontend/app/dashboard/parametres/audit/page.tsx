@@ -135,7 +135,7 @@ export default function AuditPage() {
             <ShieldCheck size={14} /> Traçabilité
           </div>
           <h1 className="text-xl font-bold text-slate-900">Journal d'audit global</h1>
-          <p className="text-xs text-slate-400 font-medium mt-1">Une lecture claire des actions sensibles : qui a fait quoi, quand, avec quelle IP et quel navigateur.</p>
+          <p className="text-xs text-slate-400 font-medium mt-1">Toutes les actions API sont suivies : connexion, consultation, modification, suppression, caisse, inventaire et paramètres.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button onClick={exportCsv} className={secondaryButton}><Download size={14} /> Export Excel</button>
