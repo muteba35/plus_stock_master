@@ -1013,6 +1013,35 @@ const boutiqueSchema = new mongoose.Schema(
 
 
 
+
+
+const financeChargeSchema = new mongoose.Schema(
+  {
+    boutiqueId: { type: mongoose.Schema.Types.ObjectId, ref: "Boutique", required: true, index: true },
+    utilisateurId: { type: mongoose.Schema.Types.ObjectId, ref: "Utilisateur", required: true },
+    libelle: { type: String, required: [true, "Le libelle de la charge est requis"], trim: true, maxlength: 160 },
+    type: {
+      type: String,
+      enum: ["TRANSPORT", "ELECTRICITE", "LOYER", "SALAIRE", "FOURNITURE", "TAXE", "AUTRE"],
+      default: "AUTRE",
+      index: true,
+    },
+    montant: { type: Number, required: true, min: 0 },
+    devise: { type: String, enum: ["USD ($)", "CDF (FC)", "EUR (€)"], required: true, default: "USD ($)" },
+    statut: { type: String, enum: ["PAYEE", "PREVUE"], default: "PAYEE", index: true },
+    recurrence: {
+      type: String,
+      enum: ["PONCTUELLE", "MENSUELLE", "HEBDOMADAIRE", "ANNUELLE"],
+      default: "PONCTUELLE",
+    },
+    dateCharge: { type: Date, required: true, default: Date.now, index: true },
+    note: { type: String, trim: true, default: "", maxlength: 500 },
+  },
+  { timestamps: true }
+);
+
+financeChargeSchema.index({ boutiqueId: 1, dateCharge: -1 });
+
 const auditLogSchema = new mongoose.Schema(
   {
     boutiqueId: { type: mongoose.Schema.Types.ObjectId, ref: "Boutique", default: null, index: true },
@@ -1105,12 +1134,13 @@ const ExchangeRate = mongoose.model("ExchangeRate", exchangeRateSchema);
 const Notification = mongoose.model("Notification", notificationSchema);
 const NotificationPreference = mongoose.model("NotificationPreference", notificationPreferenceSchema);
 const AuditLog = mongoose.model("AuditLog", auditLogSchema);
+const FinanceCharge = mongoose.model("FinanceCharge", financeChargeSchema);
 
 
 
 
 
-export { Permission, Role, RolePermission, Departement, Categorie, Produit, MouvementStock, Vente, RetourClient, InventaireAudit, Utilisateur, Boutique, ExchangeRate, Notification, NotificationPreference, AuditLog };
+export { Permission, Role, RolePermission, Departement, Categorie, Produit, MouvementStock, Vente, RetourClient, InventaireAudit, Utilisateur, Boutique, ExchangeRate, Notification, NotificationPreference, AuditLog, FinanceCharge };
 
 
 

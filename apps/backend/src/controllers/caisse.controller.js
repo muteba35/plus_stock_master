@@ -711,6 +711,14 @@ export const getRapportsCaisse = async (req, res) => {
     });
 
     const validReturns = retours.filter((item) => item.statut === "VALIDE");
+    const returnsBySaleAndProduct = new Map();
+    validReturns.forEach((retour) => {
+      retour.lignes.forEach((line) => {
+        const key = [retour.venteReference, line.sku || line.nomProduit].join("::");
+        const current = returnsBySaleAndProduct.get(key) || 0;
+        returnsBySaleAndProduct.set(key, current + Number(line.montantTTC || 0));
+      });
+    });
     const totalReturns = validReturns.reduce((sum, item) => sum + Number(item.montantTotalTTC || 0), 0);
     const devise = ventes.find((sale) => sale.deviseReference || sale.devise)?.deviseReference || ventes.find((sale) => sale.devise)?.devise || "USD ($)";
 
@@ -758,6 +766,8 @@ export const getRapportsCaisse = async (req, res) => {
         coutAchat: roundMoney(item.coutAchat),
         margeUnitaire: roundMoney(item.margeUnitaire),
         marge: roundMoney(item.marge),
+        montantRetourTTC: roundMoney(returnsBySaleAndProduct.get([item.reference, item.sku || item.produit].join("::")) || 0),
+        margeApresRetour: roundMoney(item.marge - (returnsBySaleAndProduct.get([item.reference, item.sku || item.produit].join("::")) || 0)),
         totalTTC: roundMoney(item.totalTTC),
       })),
       returns: validReturns.map((item) => ({ reference: item.reference, venteReference: item.venteReference, clientNom: item.clientNom, typeRetour: item.typeRetour, montantTotalTTC: item.montantTotalTTC, createdAt: item.createdAt })),

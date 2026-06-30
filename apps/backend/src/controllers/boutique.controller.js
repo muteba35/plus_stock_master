@@ -1,7 +1,7 @@
 ﻿import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
-import { AuditLog, Boutique, Categorie, Departement, ExchangeRate, InventaireAudit, MouvementStock, Notification, NotificationPreference, Permission, Produit, RetourClient, Role, RolePermission, Utilisateur, Vente } from "../models/Utilisateur.js";
+import { AuditLog, Boutique, Categorie, Departement, ExchangeRate, FinanceCharge, InventaireAudit, MouvementStock, Notification, NotificationPreference, Permission, Produit, RetourClient, Role, RolePermission, Utilisateur, Vente } from "../models/Utilisateur.js";
 import { sendEmail } from "../utils/sendEmail.js";
 
 const normalizeBoutique = (boutique, activeId) => ({
@@ -55,6 +55,7 @@ const deleteOwnerAccountData = async (ownerId, boutiqueId) => {
     RetourClient.deleteMany({ boutiqueId }),
     InventaireAudit.deleteMany({ boutiqueId }),
     ExchangeRate.deleteMany({ boutiqueId }),
+    FinanceCharge.deleteMany({ boutiqueId }),
     Notification.deleteMany({ boutiqueId }),
     NotificationPreference.deleteMany({ boutiqueId }),
     AuditLog.deleteMany({ boutiqueId }),

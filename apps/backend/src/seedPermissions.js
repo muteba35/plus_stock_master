@@ -82,6 +82,9 @@ const permissions = [
   { nom: "VOIR_BENEFICES", module: "FINANCE", description: "Donne accès au calcul des profits nets" },
   { nom: "EXPORTER_RAPPORTS", module: "FINANCE", description: "Télécharger les rapports en PDF/Excel" },
 
+  { nom: "VOIR_CHARGES_FINANCE", module: "FINANCE", description: "Consulter les depenses et charges de la boutique" },
+  { nom: "GERER_CHARGES_FINANCE", module: "FINANCE", description: "Ajouter, modifier et supprimer les depenses et charges" },
+  { nom: "VOIR_ANALYSE_FINANCIERE", module: "FINANCE", description: "Consulter les comparaisons, tops produits et analyses financieres" },
   { nom: "VOIR_FORMULES_FINANCE", module: "FINANCE", description: "Consulter les formules et definitions financieres" },
 
   // --- MODULE : PARAMETRES ---
