@@ -74,31 +74,52 @@ const trendPercent = (current, previous) => {
   return roundMoney(((current - previous) / Math.abs(previous)) * 100);
 };
 
+const createBucket = (date) => {
+  const value = startOfDay(date);
+  return {
+    key: value.toISOString().slice(0, 10),
+    name: value.toLocaleDateString("fr-FR", { weekday: "short", day: "2-digit" }),
+    ventes: 0,
+    benefices: 0,
+  };
+};
+
 const buildDateBuckets = (range) => {
   if (!range.start || !range.end) return [];
   const buckets = [];
   const cursor = startOfDay(range.start);
   while (cursor <= range.end) {
-    const key = cursor.toISOString().slice(0, 10);
-    buckets.push({
-      key,
-      name: cursor.toLocaleDateString("fr-FR", { weekday: "short", day: "2-digit" }),
-      ventes: 0,
-      benefices: 0,
-    });
+    buckets.push(createBucket(cursor));
     cursor.setDate(cursor.getDate() + 1);
   }
   return buckets;
 };
+
+const buildBucketsFromSales = (sales) => {
+  const days = [...new Set(
+    sales
+      .filter((sale) => sale.statut === "PAYEE")
+      .map((sale) => new Date(sale.createdAt).toISOString().slice(0, 10))
+  )].sort();
+  return days.slice(-7).map((day) => createBucket(day));
+};
+
+const getSaleMargin = (sale) => {
+  const taxable = Number(sale.taxableAmount || sale.sousTotalHT || 0);
+  const cost = Number(sale.coutTotal || 0);
+  return Number(sale.margeEstimee ?? (taxable - cost));
+};
+
+const getSaleTotal = (sale) => Number(sale.totalTTC || sale.taxableAmount || sale.sousTotalHT || 0);
 
 const summarizeSales = (sales) => {
   return sales.reduce(
     (acc, sale) => {
       if (sale.statut !== "PAYEE") return acc;
       acc.ventes += 1;
-      acc.caTTC += Number(sale.totalTTC || 0);
+      acc.caTTC += getSaleTotal(sale);
       acc.tva += Number(sale.tvaMontant || 0);
-      acc.marge += Number(sale.margeEstimee || 0);
+      acc.marge += getSaleMargin(sale);
       return acc;
     },
     { ventes: 0, caTTC: 0, tva: 0, marge: 0 }
@@ -138,9 +159,10 @@ export const getDashboardOverview = async (req, res) => {
     }
 
     const objectBoutiqueId = new mongoose.Types.ObjectId(boutiqueId);
-    const [sales, previousSales, inventoryStatsResult, alertCount, priorityProducts, recentSales, activeUsers, movementsCount, returns] = await Promise.all([
-      Vente.find({ boutiqueId, ...dateFilter }).select("+margeEstimee totalTTC tvaMontant statut createdAt paiement utilisateurId").populate("utilisateurId", "nom prenom").sort({ createdAt: 1 }).limit(2000),
-      Vente.find({ boutiqueId, ...previousDateFilter }).select("+margeEstimee totalTTC tvaMontant statut").limit(2000),
+    const [sales, previousSales, chartFallbackSales, inventoryStatsResult, alertCount, priorityProducts, recentSales, activeUsers, movementsCount, returns] = await Promise.all([
+      Vente.find({ boutiqueId, ...dateFilter }).select("+margeEstimee +coutTotal totalTTC tvaMontant taxableAmount sousTotalHT statut createdAt paiement utilisateurId deviseReference devise").populate("utilisateurId", "nom prenom").sort({ createdAt: 1 }).limit(2000),
+      Vente.find({ boutiqueId, ...previousDateFilter }).select("+margeEstimee +coutTotal totalTTC tvaMontant taxableAmount sousTotalHT statut").limit(2000),
+      Vente.find({ boutiqueId, statut: "PAYEE" }).select("+margeEstimee +coutTotal totalTTC tvaMontant taxableAmount sousTotalHT statut createdAt paiement utilisateurId deviseReference devise").sort({ createdAt: -1 }).limit(500),
       Produit.aggregate([
         { $match: { boutiqueId: objectBoutiqueId, isDeleted: false, isActive: true } },
         {
@@ -171,32 +193,38 @@ export const getDashboardOverview = async (req, res) => {
       RetourClient.find({ boutiqueId, ...dateFilter, statut: "VALIDE" }).select("montantTotalTTC"),
     ]);
 
-    const currentSummary = summarizeSales(sales);
-    const previousSummary = summarizeSales(previousSales);
+    const paidSales = sales.filter((sale) => sale.statut === "PAYEE");
+    const fallbackPaidSales = chartFallbackSales.filter((sale) => sale.statut === "PAYEE");
+    const chartUsesFallback = paidSales.length === 0 && fallbackPaidSales.length > 0;
+    const effectiveSales = chartUsesFallback ? fallbackPaidSales : sales;
+    const currentSummary = summarizeSales(effectiveSales);
+    const previousSummary = chartUsesFallback ? { ventes: 0, caTTC: 0, tva: 0, marge: 0 } : summarizeSales(previousSales);
     const inventoryStats = inventoryStatsResult[0] || { totalProducts: 0, totalUnits: 0, stockValue: 0 };
-    const returnAmount = returns.reduce((sum, item) => sum + Number(item.montantTotalTTC || 0), 0);
+    const returnAmount = chartUsesFallback ? 0 : returns.reduce((sum, item) => sum + Number(item.montantTotalTTC || 0), 0);
 
-    const buckets = buildDateBuckets(range);
+    const chartSales = chartUsesFallback ? fallbackPaidSales : sales;
+    const buckets = chartUsesFallback ? buildBucketsFromSales(chartFallbackSales) : buildDateBuckets(range);
     const bucketsByKey = new Map(buckets.map((bucket) => [bucket.key, bucket]));
-    sales.forEach((sale) => {
+    chartSales.forEach((sale) => {
       if (sale.statut !== "PAYEE") return;
       const key = new Date(sale.createdAt).toISOString().slice(0, 10);
       const bucket = bucketsByKey.get(key);
       if (!bucket) return;
-      bucket.ventes += Number(sale.totalTTC || 0);
-      bucket.benefices += Number(sale.margeEstimee || 0);
+      bucket.ventes += getSaleTotal(sale);
+      bucket.benefices += getSaleMargin(sale);
     });
 
-    const devise = boutique?.deviseParDefaut || sales.find((sale) => sale.deviseReference || sale.devise)?.deviseReference || "USD ($)";
+    const devise = boutique?.deviseParDefaut || effectiveSales.find((sale) => sale.deviseReference || sale.devise)?.deviseReference || "USD ($)";
 
     return res.status(200).json({
       success: true,
       devise,
       period: {
         period: range.period,
-        label: range.label,
+        label: chartUsesFallback ? "Dernieres ventes enregistrees" : range.label,
         startDate: range.start || null,
         endDate: range.end || null,
+        chartFallback: chartUsesFallback,
       },
       metrics: {
         caTTC: roundMoney(currentSummary.caTTC),

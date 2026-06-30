@@ -1,6 +1,7 @@
 import express from "express";
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import { protect } from "../middlewares/authMiddleware.js";
+import { authValidation } from "../middlewares/securityMiddleware.js";
 
 import {
   register,
@@ -116,22 +117,22 @@ const profileUpdateLimiter = createLimiter({
   message: "Trop de mises à jour de profil. Réessayez plus tard.",
 });
 
-router.post("/register", registerLimiter, register);
-router.post("/login", loginLimiter, login);
+router.post("/register", registerLimiter, authValidation.register, register);
+router.post("/login", loginLimiter, authValidation.login, login);
 
 router.get("/verify-email/:token", verifyEmail);
-router.post("/resend-verification", registerLimiter, resendVerification);
+router.post("/resend-verification", registerLimiter, authValidation.email, resendVerification);
 
-router.post("/verify-otp", verifyOTPLimiter, verifyOTP);
-router.post("/resend-otp", resendOTPLimiter, resendOTP);
+router.post("/verify-otp", verifyOTPLimiter, authValidation.otp, verifyOTP);
+router.post("/resend-otp", resendOTPLimiter, authValidation.email, resendOTP);
 
-router.post("/forgot-password", forgotPasswordLimiter, forgotPassword);
-router.post("/resend-forgot-password", forgotPasswordLimiter, resendForgotPassword);
-router.post("/reset-password/:token", resetPasswordLimiter, resetPassword);
+router.post("/forgot-password", forgotPasswordLimiter, authValidation.email, forgotPassword);
+router.post("/resend-forgot-password", forgotPasswordLimiter, authValidation.email, resendForgotPassword);
+router.post("/reset-password/:token", resetPasswordLimiter, authValidation.resetPassword, resetPassword);
 
 router.get("/me", protect, meLimiter, getMe);
 router.get("/profile", protect, getProfile);
 router.put("/profile", protect, profileUpdateLimiter, updateProfile);
-router.put("/update-password", protect, updatePasswordLimiter, updatePassword);
+router.put("/update-password", protect, updatePasswordLimiter, authValidation.updatePassword, updatePassword);
 
 export default router;

@@ -712,7 +712,10 @@ export const getRapportsCaisse = async (req, res) => {
 
     const validReturns = retours.filter((item) => item.statut === "VALIDE");
     const returnsBySaleAndProduct = new Map();
+    const returnsByDay = new Map();
     validReturns.forEach((retour) => {
+      const day = new Date(retour.createdAt).toISOString().slice(0, 10);
+      returnsByDay.set(day, (returnsByDay.get(day) || 0) + Number(retour.montantTotalTTC || 0));
       retour.lignes.forEach((line) => {
         const key = [retour.venteReference, line.sku || line.nomProduit].join("::");
         const current = returnsBySaleAndProduct.get(key) || 0;
@@ -720,6 +723,14 @@ export const getRapportsCaisse = async (req, res) => {
       });
     });
     const totalReturns = validReturns.reduce((sum, item) => sum + Number(item.montantTotalTTC || 0), 0);
+    const dailyRows = [...daily.values()].map((row) => {
+      const montantRetours = returnsByDay.get(row.date) || 0;
+      return {
+        ...row,
+        montantRetours,
+        margeApresRetour: Number(row.marge || 0) - montantRetours,
+      };
+    });
     const devise = ventes.find((sale) => sale.deviseReference || sale.devise)?.deviseReference || ventes.find((sale) => sale.devise)?.devise || "USD ($)";
 
     const serializeRows = (items) => items.map((item) => ({
@@ -729,7 +740,10 @@ export const getRapportsCaisse = async (req, res) => {
       tva: roundMoney(item.tva || 0),
       cout: roundMoney(item.cout),
       marge: roundMoney(item.marge),
+      montantRetours: roundMoney(item.montantRetours || 0),
+      margeApresRetour: roundMoney(item.margeApresRetour ?? item.marge),
       tauxMarge: item.caHT > 0 ? roundMoney((item.marge / item.caHT) * 100) : 0,
+      tauxMargeApresRetour: item.caHT > 0 ? roundMoney(((item.margeApresRetour ?? item.marge) / item.caHT) * 100) : 0,
       quantite: roundMoney(item.quantite),
     }));
 
@@ -754,7 +768,7 @@ export const getRapportsCaisse = async (req, res) => {
         montantRetours: roundMoney(totalReturns),
         netApresRetours: roundMoney(totalTTC - totalReturns),
       },
-      daily: serializeRows([...daily.values()]).sort((a, b) => a.date.localeCompare(b.date)),
+      daily: serializeRows(dailyRows).sort((a, b) => a.date.localeCompare(b.date)),
       cashiers: serializeRows([...cashiers.values()]).sort((a, b) => b.totalTTC - a.totalTTC),
       payments: serializeRows([...payments.values()]).sort((a, b) => b.totalTTC - a.totalTTC),
       products: serializeRows([...productsReport.values()]).sort((a, b) => b.marge - a.marge),
