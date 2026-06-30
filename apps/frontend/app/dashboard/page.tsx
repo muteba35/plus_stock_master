@@ -39,7 +39,7 @@ type PeriodValue = "today" | "7" | "month" | "30" | "custom";
 type DashboardData = {
   success: boolean;
   devise: string;
-  period: { period: PeriodValue; label: string; startDate?: string | null; endDate?: string | null };
+  period: { period: PeriodValue; label: string; startDate?: string | null; endDate?: string | null; chartFallback?: boolean };
   metrics: {
     caTTC: number;
     caTrend: number;
@@ -330,7 +330,7 @@ export default function OverviewPage() {
           <div className="flex justify-between items-center mb-6 gap-4">
             <div>
               <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Analyse des flux financiers</h3>
-              <p className="text-[11px] text-slate-400 font-medium mt-0.5">Évolution réelle des ventes et de la marge brute.</p>
+              <p className="text-[11px] text-slate-400 font-medium mt-0.5">{data.period.chartFallback ? "La période choisie est vide : affichage des dernières ventes enregistrées." : "Évolution réelle des ventes et de la marge brute."}</p>
             </div>
             <div className="flex items-center gap-4 text-[10px] font-bold uppercase tracking-wide">
               <span className="flex items-center gap-1.5 text-slate-600"><span className="w-2.5 h-2.5 rounded-full bg-indigo-500" />Ventes</span>

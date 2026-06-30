@@ -41,7 +41,10 @@ type ReportRow = {
   tva: number;
   cout: number;
   marge: number;
+  montantRetours?: number;
+  margeApresRetour?: number;
   tauxMarge: number;
+  tauxMargeApresRetour?: number;
 };
 
 type SaleDetail = {
@@ -343,7 +346,7 @@ export default function CashReportsPage() {
 
           <section className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
             <div className="p-4 border-b border-slate-100"><h2 className="text-sm font-bold text-slate-900">Chiffre d'affaires par jour</h2><p className="text-[11px] text-slate-400 mt-1">Vue rapide des derniers jours encaisses.</p></div>
-            <div className="overflow-x-auto"><table className="w-full min-w-[760px] text-left text-xs"><thead className="bg-slate-50 text-[10px] uppercase tracking-wider text-slate-400"><tr><th className="px-5 py-4">Date</th><th className="px-5 py-4">Ventes</th><th className="px-5 py-4">CA TTC</th><th className="px-5 py-4">TVA</th><th className="px-5 py-4">Marge</th></tr></thead><tbody className="divide-y divide-slate-100">{data.daily.slice(-10).reverse().map((row) => <tr key={row.date}><td className="px-5 py-4 font-bold">{formatDate(row.date)}</td><td className="px-5 py-4">{row.ventes}</td><td className="px-5 py-4 font-black">{formatMoney(row.totalTTC, data.devise)}</td><td className="px-5 py-4">{formatMoney(row.tva, data.devise)}</td><td className={(row.marge >= 0 ? "text-emerald-600" : "text-rose-600") + " px-5 py-4 font-black"}>{formatMoney(row.marge, data.devise)}</td></tr>)}</tbody></table></div>
+            <div className="overflow-x-auto"><table className="w-full min-w-[940px] text-left text-xs"><thead className="bg-slate-50 text-[10px] uppercase tracking-wider text-slate-400"><tr><th className="px-5 py-4">Date</th><th className="px-5 py-4">Ventes</th><th className="px-5 py-4">CA TTC</th><th className="px-5 py-4">TVA</th><th className="px-5 py-4">Marge</th><th className="px-5 py-4">Retours</th><th className="px-5 py-4">Marge apres retour</th></tr></thead><tbody className="divide-y divide-slate-100">{data.daily.slice(-10).reverse().map((row) => { const margeApresRetour = row.margeApresRetour ?? row.marge; return <tr key={row.date}><td className="px-5 py-4 font-bold">{formatDate(row.date)}</td><td className="px-5 py-4">{row.ventes}</td><td className="px-5 py-4 font-black">{formatMoney(row.totalTTC, data.devise)}</td><td className="px-5 py-4">{formatMoney(row.tva, data.devise)}</td><td className={(row.marge >= 0 ? "text-emerald-600" : "text-rose-600") + " px-5 py-4 font-black"}>{formatMoney(row.marge, data.devise)}</td><td className="px-5 py-4 text-rose-600 font-bold">{formatMoney(row.montantRetours || 0, data.devise)}</td><td className={(margeApresRetour >= 0 ? "text-emerald-600" : "text-rose-600") + " px-5 py-4 font-black"}>{formatMoney(margeApresRetour, data.devise)}</td></tr>; })}</tbody></table></div>
           </section>
         </>
       )}
