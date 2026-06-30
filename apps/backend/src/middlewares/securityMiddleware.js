@@ -125,6 +125,12 @@ const validators = {
     if (rule.max && value.length > rule.max) return "Liste trop longue.";
     return null;
   },
+  boolean(value, rule) {
+    if (value === undefined || value === null) return rule.required ? "Champ requis." : null;
+    if (typeof value !== "boolean") return "Doit etre vrai ou faux.";
+    if (rule.mustBeTrue && value !== true) return "Doit etre accepte.";
+    return null;
+  },
 };
 
 export const validateBody = (schema) => (req, res, next) => {
@@ -160,6 +166,7 @@ export const authValidation = {
     tailleBusiness: { required: true, max: 40 },
     password: { required: true, min: 8, max: 128 },
     confirmPassword: { required: true, min: 8, max: 128 },
+    acceptTerms: { type: "boolean", required: true, mustBeTrue: true },
   }),
   email: validateBody({
     email: { required: true, max: 180, pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ },

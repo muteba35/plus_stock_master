@@ -78,6 +78,32 @@ const getTokenPayload = (req) => {
   }
 };
 
+const getClientIp = (req) => {
+  const forwarded = req.headers["x-forwarded-for"]?.toString().split(",")[0]?.trim();
+  return forwarded || req.headers["x-real-ip"]?.toString() || req.ip || req.socket?.remoteAddress || "";
+};
+
+const resolveAuditUser = async (req, body = {}) => {
+  if (req.user?._id || req.user?.id) return req.user;
+  const tokenPayload = getTokenPayload(req);
+  const userId = tokenPayload?.id || tokenPayload?._id || body.userId;
+  if (!userId) return {};
+
+  try {
+    const user = await Utilisateur.findById(userId)
+      .select("nom prenom email boutiqueActive roleId departementId")
+      .lean();
+    if (!user) return {};
+    return {
+      ...user,
+      id: user._id,
+      boutiqueId: tokenPayload?.boutiqueId || user.boutiqueActive,
+    };
+  } catch {
+    return {};
+  }
+};
+
 const cleanValue = (value) => {
   if (value == null) return value;
   if (Array.isArray(value)) return value.map(cleanValue);
@@ -171,15 +197,16 @@ export const auditLogger = (req, res, next) => {
   };
 
   res.on("finish", async () => {
-    const user = req.user || {};
     const body = req.body || {};
+    const user = await resolveAuditUser(req, body);
+    const tokenPayload = getTokenPayload(req);
     const before = await beforePromise;
     const after = res.statusCode < 400 ? await captureSnapshot(req) : null;
     const fallbackAfter = after || (res.statusCode < 400 ? responseSnapshot(responseBody) : null);
     const changedFields = before && fallbackAfter ? diffValues(before, fallbackAfter) : [];
     const userName = [user.prenom, user.nom].filter(Boolean).join(" ").trim() || body.email || "Utilisateur inconnu";
-    const boutiqueId = user.boutiqueActive || user.boutiqueId || body.boutiqueId || getTokenPayload(req)?.boutiqueId || null;
-    const ipAddress = req.ip || req.headers["x-forwarded-for"]?.toString().split(",")[0]?.trim() || req.socket?.remoteAddress || "";
+    const boutiqueId = user.boutiqueActive || user.boutiqueId || body.boutiqueId || tokenPayload?.boutiqueId || null;
+    const ipAddress = getClientIp(req);
     const userAgent = req.headers["user-agent"] || "";
 
     AuditLog.create({
