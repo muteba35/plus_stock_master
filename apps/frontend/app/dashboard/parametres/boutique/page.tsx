@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   AlertCircle,
   AlertTriangle,
@@ -141,6 +142,7 @@ const normalizeExchangeRates = (rates: ExchangeRate[] = []) => {
 };
 
 export default function BoutiquePage() {
+  const router = useRouter();
   const [boutiques, setBoutiques] = useState<Boutique[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -535,6 +537,15 @@ export default function BoutiquePage() {
       const { data, message } = await readApiMessage(response, "Erreur lors de la suppression de la boutique.");
       if (!response.ok || !data?.success) {
         throw new Error(message);
+      }
+
+      if (data?.accountDeleted) {
+        localStorage.clear();
+        document.cookie = "stockmaster_token=; path=/; max-age=0; SameSite=Lax";
+        window.dispatchEvent(new Event("userProfileUpdated"));
+        showToast("success", data.message || "Compte ferme avec succes.");
+        window.setTimeout(() => router.replace("/login"), 900);
+        return;
       }
 
       setBoutiques((current) => current.filter((item) => item.id !== boutiqueToDelete.id));
@@ -1232,6 +1243,7 @@ function SelectInput({
     </div>
   );
 }
+
 
 
 

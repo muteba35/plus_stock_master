@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Download, FileText, Filter, Loader2, RefreshCw, Search, ShieldCheck } from "lucide-react";
+import { Download, Eye, FileText, Filter, Loader2, RefreshCw, Search, ShieldCheck, X } from "lucide-react";
 import { CashPagination, secondaryButton } from "../../caisse/components/cashier-ui";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://plus-stock-master.onrender.com/api";
@@ -22,6 +22,9 @@ type AuditLog = {
   description: string;
   severity: "info" | "warning" | "danger" | "success";
   createdAt: string;
+  previousValue?: unknown;
+  newValue?: unknown;
+  changedFields?: string[];
 };
 
 const getAuthHeaders = () => {
@@ -30,6 +33,7 @@ const getAuthHeaders = () => {
 };
 
 const formatDate = (value: string) => new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
+const formatJson = (value: unknown) => value == null ? "Aucune valeur" : JSON.stringify(value, null, 2);
 
 const severityClass = (severity: string) => {
   if (severity === "danger") return "bg-rose-50 text-rose-700";
@@ -50,6 +54,7 @@ export default function AuditPage() {
   const [endDate, setEndDate] = useState("");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
 
   const fetchLogs = useCallback(async () => {
     try {
@@ -79,7 +84,7 @@ export default function AuditPage() {
   const modules = useMemo(() => ["all", "AUTHENTIFICATION", "CAISSE", "INVENTAIRE", "EQUIPE", "PARAMETRES", "DASHBOARD", "SYSTEME"], []);
 
   const exportCsv = () => {
-    const header = ["Date", "Utilisateur", "Email", "Module", "Action", "Methode", "Statut", "IP", "Navigateur", "Cible", "Chemin"];
+    const header = ["Date", "Utilisateur", "Email", "Module", "Action", "Methode", "Statut", "IP", "Navigateur", "Cible", "Champs modifies", "Chemin"];
     const rows = logs.map((log) => [
       formatDate(log.createdAt),
       log.userName,
@@ -91,6 +96,7 @@ export default function AuditPage() {
       log.ipAddress,
       log.browser,
       log.target,
+      (log.changedFields || []).join(" | "),
       log.path,
     ]);
     const csv = [header, ...rows].map((row) => row.map((cell) => '"' + String(cell || "").replaceAll('"', '""') + '"').join(";")).join("\n");
@@ -153,11 +159,12 @@ export default function AuditPage() {
                 <th className="px-4 py-3">IP</th>
                 <th className="px-4 py-3">Navigateur</th>
                 <th className="px-4 py-3">Chemin</th>
+                <th className="px-4 py-3 text-right print:hidden">Détails</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {loading && <tr><td colSpan={8} className="px-4 py-16 text-center text-slate-400"><Loader2 className="animate-spin mx-auto mb-2 text-indigo-500" />Chargement...</td></tr>}
-              {!loading && logs.length === 0 && <tr><td colSpan={8} className="px-4 py-16 text-center text-slate-400 font-semibold">Aucune action trouvee.</td></tr>}
+              {loading && <tr><td colSpan={9} className="px-4 py-16 text-center text-slate-400"><Loader2 className="animate-spin mx-auto mb-2 text-indigo-500" />Chargement...</td></tr>}
+              {!loading && logs.length === 0 && <tr><td colSpan={9} className="px-4 py-16 text-center text-slate-400 font-semibold">Aucune action trouvee.</td></tr>}
               {!loading && logs.map((log) => (
                 <tr key={log._id} className="hover:bg-slate-50">
                   <td className="px-4 py-3 whitespace-nowrap font-semibold text-slate-500">{formatDate(log.createdAt)}</td>
@@ -168,6 +175,11 @@ export default function AuditPage() {
                   <td className="px-4 py-3 font-semibold text-slate-600">{log.ipAddress || "-"}</td>
                   <td className="px-4 py-3 font-semibold text-slate-600">{log.browser || "-"}</td>
                   <td className="px-4 py-3 text-[10px] text-slate-400 max-w-xs truncate">{log.path}</td>
+                  <td className="px-4 py-3 text-right print:hidden">
+                    <button type="button" onClick={() => setSelectedLog(log)} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-[10px] font-black text-slate-600 hover:text-indigo-600 hover:border-indigo-200">
+                      <Eye size={13} /> Voir
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -175,6 +187,65 @@ export default function AuditPage() {
         </div>
         <div className="print:hidden"><CashPagination page={page} pageSize={PAGE_SIZE} totalItems={total} onPageChange={setPage} /></div>
       </div>
+
+      {selectedLog && (
+        <div className="fixed inset-0 z-[220] flex items-center justify-center p-4 print:hidden">
+          <button type="button" aria-label="Fermer" onClick={() => setSelectedLog(null)} className="absolute inset-0 bg-slate-950/45 backdrop-blur-sm" />
+          <div className="relative z-10 w-full max-w-5xl max-h-[88vh] overflow-hidden bg-white rounded-3xl border border-slate-200 shadow-2xl">
+            <div className="p-5 border-b border-slate-100 flex items-start justify-between gap-4 bg-slate-50/80">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-wider text-indigo-600">Détails de l'audit</p>
+                <h2 className="text-lg font-black text-slate-950 mt-1">{selectedLog.action}</h2>
+                <p className="text-xs text-slate-500 mt-1">{formatDate(selectedLog.createdAt)} · {selectedLog.userName} · {selectedLog.ipAddress || "IP non renseignee"}</p>
+              </div>
+              <button type="button" onClick={() => setSelectedLog(null)} className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-white"><X size={18} /></button>
+            </div>
+
+            <div className="p-5 overflow-y-auto max-h-[calc(88vh-92px)] space-y-5">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <InfoBox label="Module" value={selectedLog.module} />
+                <InfoBox label="Cible" value={selectedLog.target || "-"} />
+                <InfoBox label="Navigateur" value={selectedLog.browser || "-"} />
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 overflow-hidden">
+                <div className="px-4 py-3 bg-slate-50 border-b border-slate-100">
+                  <p className="text-xs font-black text-slate-900">Champs modifies</p>
+                </div>
+                <div className="p-4 flex flex-wrap gap-2">
+                  {(selectedLog.changedFields || []).length > 0 ? selectedLog.changedFields?.map((field) => (
+                    <span key={field} className="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 text-[10px] font-black">{field}</span>
+                  )) : <p className="text-xs text-slate-400 font-semibold">Aucun champ different detecte ou action de creation sans valeur avant.</p>}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <JsonPanel title="Avant" value={selectedLog.previousValue} tone="rose" />
+                <JsonPanel title="Après" value={selectedLog.newValue} tone="emerald" />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function InfoBox({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-4">
+      <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">{label}</p>
+      <p className="text-sm font-black text-slate-900 mt-1 break-all">{value}</p>
+    </div>
+  );
+}
+
+function JsonPanel({ title, value, tone }: { title: string; value: unknown; tone: "rose" | "emerald" }) {
+  const styles = tone === "rose" ? "bg-rose-50 text-rose-700 border-rose-100" : "bg-emerald-50 text-emerald-700 border-emerald-100";
+  return (
+    <div className="rounded-2xl border border-slate-200 overflow-hidden">
+      <div className={"px-4 py-3 border-b text-xs font-black " + styles}>{title}</div>
+      <pre className="p-4 max-h-96 overflow-auto text-[11px] leading-relaxed bg-slate-950 text-slate-100 whitespace-pre-wrap">{formatJson(value)}</pre>
     </div>
   );
 }
