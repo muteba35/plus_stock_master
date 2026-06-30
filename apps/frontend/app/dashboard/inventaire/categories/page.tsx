@@ -250,7 +250,7 @@ export default function CategoriesInventairePage() {
     const url = URL.createObjectURL(new Blob([content], { type: "text/csv;charset=utf-8" }));
     const link = document.createElement("a");
     link.href = url;
-    link.download = "modele-categories-stockmaster.csv";
+    link.download = "modele-categories-boutiqo.csv";
     link.click();
     URL.revokeObjectURL(url);
   };

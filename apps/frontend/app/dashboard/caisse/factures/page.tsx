@@ -70,7 +70,7 @@ const downloadBlob = (content: string, filename: string, type: string) => {
 const exportPdf = (title: string, html: string) => {
   const printWindow = window.open("", "_blank", "width=1100,height=760");
   if (!printWindow) return;
-  printWindow.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${stripHtml(title)}</title><style>@page{size:A4 landscape;margin:12mm}body{font-family:Arial,sans-serif;color:#172033;margin:0}h1{font-size:20px;margin:0 0 4px}p{font-size:11px;color:#64748b;margin:0 0 18px}table{width:100%;border-collapse:collapse;font-size:9px}th{background:#f1f5f9;text-align:left;text-transform:uppercase;color:#64748b}th,td{padding:7px;border:1px solid #e2e8f0;vertical-align:top}.total{font-weight:800}.footer{margin-top:12px;font-size:9px;color:#94a3b8}</style></head><body><h1>${stripHtml(title)}</h1><p>Export du ${new Date().toLocaleString("fr-FR")}</p>${html}<div class="footer">StockMaster Pro · Document généré automatiquement</div><script>window.onload=()=>{window.print();}</script></body></html>`);
+  printWindow.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${stripHtml(title)}</title><style>@page{size:A4 landscape;margin:12mm}body{font-family:Arial,sans-serif;color:#172033;margin:0}h1{font-size:20px;margin:0 0 4px}p{font-size:11px;color:#64748b;margin:0 0 18px}table{width:100%;border-collapse:collapse;font-size:9px}th{background:#f1f5f9;text-align:left;text-transform:uppercase;color:#64748b}th,td{padding:7px;border:1px solid #e2e8f0;vertical-align:top}.total{font-weight:800}.footer{margin-top:12px;font-size:9px;color:#94a3b8}</style></head><body><h1>${stripHtml(title)}</h1><p>Export du ${new Date().toLocaleString("fr-FR")}</p>${html}<div class="footer">Boutiqo · Document généré automatiquement</div><script>window.onload=()=>{window.print();}</script></body></html>`);
   printWindow.document.close();
 };
 
@@ -91,12 +91,12 @@ const formatDate = (value: string) => {
 };
 
 const getBusinessName = () => {
-  if (typeof window === "undefined") return "StockMaster Pro";
+  if (typeof window === "undefined") return "Boutiqo";
   try {
     const profile = JSON.parse(localStorage.getItem("user_profile") || "{}");
-    return profile?.boutiqueActive?.nom || profile?.boutiqueNom || "StockMaster Pro";
+    return profile?.boutiqueActive?.nom || profile?.boutiqueNom || "Boutiqo";
   } catch {
-    return "StockMaster Pro";
+    return "Boutiqo";
   }
 };
 
@@ -174,7 +174,7 @@ const invoiceHtml = (sale: InvoiceSale, businessName: string) => {
           <div><span>TVA ${(sale.tvaRate * 100).toFixed(0)}%</span><strong>${formatMoney(sale.tvaMontant, sale.devise)}</strong></div>
           <div class="total"><span>Total TTC</span><strong>${formatMoney(sale.totalTTC, sale.devise)}</strong></div>
         </div>
-        <p class="footer">Merci pour votre achat. Facture générée par StockMaster Pro.</p>
+        <p class="footer">Merci pour votre achat. Facture générée par Boutiqo.</p>
       </section>
     </body>
   </html>`;
@@ -188,7 +188,7 @@ export default function InvoicesPage() {
   const [search, setSearch] = useState("");
   const [selectedInvoice, setSelectedInvoice] = useState<InvoiceSale | null>(null);
   const [page, setPage] = useState(1);
-  const [businessName, setBusinessName] = useState("StockMaster Pro");
+  const [businessName, setBusinessName] = useState("Boutiqo");
   const [metricOpen, setMetricOpen] = useState(false);
   const [{ permissions, isOwner }] = useState(getStoredAccess);
 

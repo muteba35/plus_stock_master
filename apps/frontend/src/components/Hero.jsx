@@ -94,7 +94,7 @@ export default function Hero() {
           >
             <img 
               src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=1000" 
-              alt="Dashboard StockMaster" 
+              alt="Dashboard Boutiqo" 
               className="rounded-[2rem] w-full" 
             />
           </motion.div>

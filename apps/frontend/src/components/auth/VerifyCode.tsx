@@ -284,12 +284,12 @@ export default function VerifyCode() {
           {/* Header */}
           <div className="flex flex-col items-center text-center mb-10">
             <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-indigo-600 to-indigo-700 flex items-center justify-center text-white shadow-2xl shadow-indigo-100 border border-indigo-500/20">
-              <Package2 size={36} strokeWidth={1.8} />
+              <img src="/boutiqo-mark.svg" alt="Boutiqo" className="w-9 h-9" />
             </div>
 
             <div className="mt-5">
               <h1 className="text-2xl font-black tracking-tighter uppercase text-slate-950">
-                STOCK<span className="text-indigo-600">MASTER</span>
+                BOUTI<span className="text-indigo-600">QO</span>
               </h1>
               <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-slate-400 mt-1">
                 PRO EDITION

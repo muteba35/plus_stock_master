@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
-import { Package2, Menu, X, ArrowRight } from "lucide-react";
+import { Menu, X, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -45,16 +45,16 @@ export default function Navbar() {
             <Link href="/" className="flex items-center gap-2 group">
               {/* Icône redimensionnée : petite sur mobile, normale sur desktop */}
               <div className="w-8 h-8 sm:w-10 sm:h-10 bg-indigo-600 rounded-lg sm:rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-600/20 group-hover:rotate-3 transition-transform">
-                <Package2 className="w-5 h-5 sm:w-6 sm:h-6" />
+                <img src="/boutiqo-mark.svg" alt="Boutiqo" className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
               
               {/* Texte Typo Moderne : Taille fluide */}
               <div className="flex flex-col leading-none">
                 <span className="text-sm sm:text-lg lg:text-xl font-black tracking-tighter text-slate-900 uppercase">
-                  STOCK<span className="text-indigo-600">MASTER</span>
+                  BOUTI<span className="text-indigo-600">QO</span>
                 </span>
                 <span className="text-[6px] sm:text-[8px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-0.5 ml-0.5">
-                  Pro Edition
+                  Commerce Platform
                 </span>
               </div>
             </Link>

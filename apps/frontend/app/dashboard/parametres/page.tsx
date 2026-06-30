@@ -30,7 +30,7 @@ export default function GeneralSettingsPage() {
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
         <h1 className="text-xl font-bold text-slate-900">Paramètres généraux</h1>
-        <p className="text-xs text-slate-400 font-medium mt-1">Point d’entrée rapide vers les réglages essentiels de StockMaster.</p>
+        <p className="text-xs text-slate-400 font-medium mt-1">Point d’entrée rapide vers les réglages essentiels de Boutiqo.</p>
       </div>
       <div className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-500 shadow-sm">
         <Settings2 size={15} className="text-indigo-500" />

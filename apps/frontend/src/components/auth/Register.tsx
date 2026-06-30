@@ -152,10 +152,10 @@ export default function Register() {
           <div className="lg:w-[320px] bg-[#090E1A] p-10 flex flex-col items-center justify-center relative shrink-0 border-r border-slate-800/40 text-center">
             <div className="relative z-10 flex flex-col items-center w-full">
               <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-xl flex items-center justify-center text-white shadow-xl mb-6">
-                <Package2 size={32} strokeWidth={1.5} />
+                <img src="/boutiqo-mark.svg" alt="Boutiqo" className="w-8 h-8" />
               </div>
               <h1 className="text-2xl font-black text-white tracking-tighter uppercase">
-                STOCK<span className="text-indigo-400">MASTER</span>
+                BOUTI<span className="text-indigo-400">QO</span>
               </h1>
               <div className="flex items-center gap-3 w-full my-8">
                 <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-slate-700" />

@@ -181,14 +181,11 @@ export default function Login() {
             <div className="relative z-10 flex flex-col items-center w-full">
 
               <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-xl flex items-center justify-center text-white shadow-xl mb-6 border border-white/10">
-                <Package2 size={32} strokeWidth={1.5} />
+                <img src="/boutiqo-mark.svg" alt="Boutiqo" className="w-8 h-8" />
               </div>
 
               <h1 className="text-2xl font-black text-white tracking-tighter uppercase">
-                STOCK
-                <span className="text-indigo-400">
-                  MASTER
-                </span>
+                BOUTI<span className="text-indigo-400">QO</span>
               </h1>
 
               <p className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.4em] mt-1">
@@ -204,7 +201,7 @@ export default function Login() {
               <p className="text-slate-500 text-[11px] font-medium leading-relaxed max-w-[200px] opacity-80 italic">
                 Accédez à votre tableau de bord
                 <span className="text-slate-300">
-                  {" "}StockMaster
+                  {" "}Boutiqo
                 </span>
               </p>
             </div>
@@ -229,7 +226,7 @@ export default function Login() {
                 <div className="h-1 w-8 bg-indigo-600 rounded-full mt-3 mx-auto lg:mx-0" />
 
                 <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-4">
-                  Ravis de vous revoir sur StockMaster
+                  Ravis de vous revoir sur Boutiqo
                 </p>
 
               </header>

@@ -18,7 +18,7 @@ export const exportXlsxWorkbook = (fileName: string, sheets: XlsxSheet[]) => {
   const workbook = XLSX.utils.book_new();
 
   sheets.forEach((sheet) => {
-    const data = [["StockMaster Pro", sheet.name, "Export du " + generatedAt()], [], sheet.columns, ...sheet.rows].map((row) => row.map(normalizeCell));
+    const data = [["Boutiqo", sheet.name, "Export du " + generatedAt()], [], sheet.columns, ...sheet.rows].map((row) => row.map(normalizeCell));
     const worksheet = XLSX.utils.aoa_to_sheet(data);
     worksheet["!cols"] = sheet.columns.map((column, index) => {
       const values = data.map((row) => String(row[index] ?? ""));

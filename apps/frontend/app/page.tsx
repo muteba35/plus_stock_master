@@ -54,7 +54,7 @@ export default function LandingPage() {
 
         <div className="grid md:grid-cols-3 gap-6">
           {[
-            { icon: <Smartphone size={20} />, t: "Application Mobile", d: "Installez StockMaster sur votre téléphone et gérez vos stocks comme une application native." },
+            { icon: <Smartphone size={20} />, t: "Application Mobile", d: "Installez Boutiqo sur votre téléphone et gérez vos stocks comme une application native." },
             { icon: <Zap size={20} />, t: "Vente Instantanée", d: "Une interface fluide conçue pour encaisser vos clients en quelques secondes sans attente." },
             { icon: <Store size={20} />, t: "Multi-Points de Vente", d: "Pilotez toutes vos boutiques depuis un compte unique, peu importe leur emplacement géographique." }
           ].map((s, i) => (
@@ -229,7 +229,7 @@ export default function LandingPage() {
                 Une solution pensée <span className="text-indigo-600">Pour Vous.</span>
               </p>
               <p className="text-slate-400 text-xs font-medium leading-relaxed mb-8 max-w-md">
-                Nous avons conçu StockMaster pour répondre aux défis quotidiens des entrepreneurs. Simplicité, sécurité et efficacité sont les fondations de notre service.
+                Nous avons conçu Boutiqo pour répondre aux défis quotidiens des entrepreneurs. Simplicité, sécurité et efficacité sont les fondations de notre service.
               </p>
               <div className="grid grid-cols-2 gap-6">
                 <div className="group">
@@ -276,7 +276,7 @@ export default function LandingPage() {
             <div className="space-y-6">
               <div className="flex items-center gap-2 group cursor-pointer">
                 <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center font-bold italic text-sm">S</div>
-                <span className="text-xl font-black uppercase tracking-tighter">StockMaster</span>
+                <span className="text-xl font-black uppercase tracking-tighter">Boutiqo</span>
               </div>
               <p className="text-slate-500 text-xs font-bold uppercase leading-relaxed tracking-tight">
                 La solution de gestion intelligente pour les commerçants ambitieux. Performance, simplicité et sécurité au service de votre croissance.
@@ -334,7 +334,7 @@ export default function LandingPage() {
                 </div>
                 <div className="flex items-center gap-3 text-slate-500">
                   <Mail size={16} className="text-indigo-500 shrink-0" />
-                  <span className="text-[10px] font-bold uppercase tracking-tight">contact@stockmaster.pro</span>
+                  <span className="text-[10px] font-bold uppercase tracking-tight">contact@boutiqo.app</span>
                 </div>
               </div>
             </div>
@@ -343,7 +343,7 @@ export default function LandingPage() {
           {/* Ligne de pied de page finale */}
           <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 text-center">
             <p className="text-slate-600 text-[9px] font-bold uppercase tracking-[0.2em]">
-              © 2026 StockMaster Pro. Tous droits réservés.
+              © 2026 Boutiqo. Tous droits réservés.
             </p>
             <div className="flex gap-6">
               <a href="#" className="text-slate-600 hover:text-white text-[9px] font-bold uppercase tracking-[0.2em] transition-colors">Confidentialité</a>

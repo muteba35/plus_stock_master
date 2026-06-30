@@ -104,7 +104,7 @@ export default function AuditPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = "journal-audit-stockmaster.csv";
+    link.download = "journal-audit-boutiqo.csv";
     link.click();
     URL.revokeObjectURL(url);
   };

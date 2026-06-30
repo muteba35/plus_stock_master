@@ -93,7 +93,7 @@ export default function FirstLoginPage() {
         >
           <div className="bg-[#090E1A] px-8 py-10 text-center text-white flex flex-col items-center justify-center">
             <div className="w-16 h-16 rounded-xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-950/40">
-              <Package2 size={30} />
+              <img src="/boutiqo-mark.svg" alt="Boutiqo" className="w-8 h-8" />
             </div>
             <h1 className="mt-5 text-xl font-black uppercase">Stock<span className="text-indigo-400">Master</span></h1>
             <p className="mt-8 text-xs leading-6 text-slate-400">
