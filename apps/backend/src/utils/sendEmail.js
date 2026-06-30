@@ -39,14 +39,14 @@ const getDefaultEmailTemplate = ({ title, alertColor, iconUrl, bodyMessage, show
         <div style="margin-top: 40px; padding: 20px; border-radius: 10px; background-color: #F8FAFC; border: 1px dashed #E2E8F0; text-align: center;">
           <p style="font-size: 13px; color: #64748B; margin: 0;">
             Besoin d'assistance ? Contactez le support technique : <br>
-            <a href="mailto:support@stockmaster.cd" style="color: #4F46E5; text-decoration: none; font-weight: 600;">support@stockmaster.cd</a>
+            <a href="mailto:support@boutiqo.app" style="color: #4F46E5; text-decoration: none; font-weight: 600;">support@boutiqo.app</a>
           </p>
         </div>`}
       </div>
 
       <div style="background-color: #F8FAFC; padding: 30px; text-align: center; border-top: 1px solid #F1F5F9;">
         <p style="font-size: 11px; color: #94A3B8; margin: 0; line-height: 1.5;">
-          <strong>STOCKMASTER SECURITY INFRASTRUCTURE</strong><br>
+          <strong>BOUTIQO SECURITY INFRASTRUCTURE</strong><br>
           Ceci est un message automatique de surveillance systeme.
         </p>
       </div>
@@ -98,7 +98,7 @@ const getSecurityAlertTemplate = ({ type, attemptsLeft = 0, frontendUrl }) => {
   const showSecureButton = type !== "banned";
   const attemptsMessage = type === "warning"
     ? `Il reste <strong style="color:${config.color};">${attemptsLeft} tentative(s)</strong> avant le verrouillage temporaire du compte.`
-    : "Cette mesure protege votre espace StockMaster contre les acces non autorises.";
+    : "Cette mesure protege votre espace Boutiqo contre les acces non autorises.";
 
   return `
   <div style="margin:0; padding:0; background:#F1F5F9; font-family:Inter, Segoe UI, Roboto, Helvetica, Arial, sans-serif; color:#0F172A;">
@@ -126,7 +126,7 @@ const getSecurityAlertTemplate = ({ type, attemptsLeft = 0, frontendUrl }) => {
               <td style="padding:34px 30px 10px;">
                 <div style="display:inline-block; padding:8px 12px; border-radius:999px; background:${config.bg}; color:${config.color}; border:1px solid ${config.border}; font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:1px;">${config.eyebrow}</div>
                 <h1 style="margin:18px 0 10px; font-size:25px; line-height:1.2; color:#0F172A; font-weight:900;">${config.title}</h1>
-                <p style="margin:0; color:#475569; font-size:14px; line-height:1.7;">Nous avons detecte plusieurs tentatives de connexion echouees sur votre compte StockMaster. ${attemptsMessage}</p>
+                <p style="margin:0; color:#475569; font-size:14px; line-height:1.7;">Nous avons detecte plusieurs tentatives de connexion echouees sur votre compte Boutiqo. ${attemptsMessage}</p>
               </td>
             </tr>
 
@@ -164,7 +164,7 @@ const getSecurityAlertTemplate = ({ type, attemptsLeft = 0, frontendUrl }) => {
             <tr>
               <td style="background:#F8FAFC; border-top:1px solid #E2E8F0; padding:22px 30px; text-align:center;">
                 <p style="margin:0; color:#64748B; font-size:12px; line-height:1.6;">Ce message est automatique. Si vous n'etes pas a l'origine de ces tentatives, prevenez votre administrateur.</p>
-                <p style="margin:10px 0 0; color:#94A3B8; font-size:10px; font-weight:800; letter-spacing:1px; text-transform:uppercase;">StockMaster Pro Security</p>
+                <p style="margin:10px 0 0; color:#94A3B8; font-size:10px; font-weight:800; letter-spacing:1px; text-transform:uppercase;">Boutiqo Security</p>
               </td>
             </tr>
           </table>
@@ -252,9 +252,9 @@ export const sendEmail = async (options) => {
     if (process.env.RESEND_API_KEY) {
       const resend = new Resend(process.env.RESEND_API_KEY);
       const info = await resend.emails.send({
-        from: process.env.EMAIL_FROM || "StockMaster <onboarding@resend.dev>",
+        from: process.env.EMAIL_FROM || "Boutiqo <onboarding@resend.dev>",
         to: options.email,
-        subject: options.subject || "Notification StockMaster Pro",
+        subject: options.subject || "Notification Boutiqo",
         html: htmlContent,
       });
 
@@ -264,9 +264,9 @@ export const sendEmail = async (options) => {
 
     const transporter = createSmtpTransporter();
     const info = await transporter.sendMail({
-      from: `"StockMaster Pro Security" <${process.env.EMAIL_USER}>`,
+      from: `"Boutiqo Security" <${process.env.EMAIL_USER}>`,
       to: options.email,
-      subject: options.subject || "Notification StockMaster Pro",
+      subject: options.subject || "Notification Boutiqo",
       html: htmlContent,
     });
 

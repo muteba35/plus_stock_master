@@ -28,7 +28,7 @@ app.use(requestPayloadGuard);
 app.use(auditLogger);
 
 app.get("/", (req, res) => {
-  res.send("Backend Plus Stock Master fonctionne !");
+  res.send("Backend Plus Boutiqo fonctionne !");
 });
 
 app.use("/api/auth", authRoutes);
