@@ -1,8 +1,9 @@
-﻿"use client";
+"use client";
 
 import React, { useCallback, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
+import { canUsePlan, fallbackSubscription, getRequiredPlanForPath, planNames, type PlanCode, type SubscriptionState } from "../../src/lib/subscriptionPlans";
 
 import {
   LayoutDashboard,
@@ -23,6 +24,7 @@ import {
   CircleDollarSign,
   ChevronRight,
   ShieldCheck,
+  LockKeyhole,
 } from "lucide-react";
 
 // ==========================================
@@ -60,6 +62,7 @@ interface SubMenuItem {
   href: string;
   permission?: string;
   permissions?: string[];
+  requiredPlan?: PlanCode;
 }
 
 interface NavigationItem {
@@ -71,6 +74,45 @@ interface NavigationItem {
   permissions?: string[];
   subMenu?: SubMenuItem[];
 }
+
+const LockedSubscriptionState = ({ requiredPlan, feature }: { requiredPlan: PlanCode; feature: string }) => (
+  <div className="min-h-full bg-[#f9fafd] rounded-3xl border border-slate-200/80 flex items-center justify-center p-8">
+    <div className="max-w-lg text-center bg-white border border-slate-200 rounded-3xl p-8 shadow-sm">
+      <div className="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center mx-auto mb-5">
+        <LockKeyhole size={24} />
+      </div>
+      <p className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-600 mb-3">Module premium</p>
+      <h2 className="text-lg font-black uppercase tracking-tight text-slate-900">{feature}</h2>
+      <p className="text-xs text-slate-500 font-medium mt-3 leading-relaxed">
+        Ce module est disponible dans l'offre {planNames[requiredPlan]}. Mettez votre boutique a niveau pour le debloquer.
+      </p>
+      <Link href="/dashboard/parametres/abonnement" className="mt-6 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-indigo-600 text-white text-xs font-black uppercase tracking-wider hover:bg-indigo-700 transition-colors">
+        Mettre a niveau
+        <ChevronRight size={15} />
+      </Link>
+    </div>
+  </div>
+);
+
+const ExpiredSubscriptionState = () => (
+  <div className="min-h-full bg-[#f9fafd] rounded-3xl border border-slate-200/80 flex items-center justify-center p-8">
+    <div className="max-w-xl text-center bg-white border border-slate-200 rounded-3xl p-8 shadow-sm">
+      <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center mx-auto mb-5">
+        <LockKeyhole size={24} />
+      </div>
+      <p className="text-[10px] font-black uppercase tracking-[0.3em] text-amber-600 mb-3">Essai terminé</p>
+      <h2 className="text-lg font-black uppercase tracking-tight text-slate-900">Votre période d'essai est arrivée à terme</h2>
+      <p className="text-xs text-slate-500 font-medium mt-3 leading-relaxed">
+        Vos données restent conservées. Pour continuer à utiliser la caisse, l'inventaire, l'équipe et la finance,
+        choisissez un abonnement adapté à votre boutique.
+      </p>
+      <Link href="/dashboard/parametres/abonnement" className="mt-6 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-indigo-600 text-white text-xs font-black uppercase tracking-wider hover:bg-indigo-700 transition-colors">
+        Choisir un abonnement
+        <ChevronRight size={15} />
+      </Link>
+    </div>
+  </div>
+);
 
 const EmptyPermissionState = () => (
   <div className="min-h-full bg-[#f9fafd] rounded-3xl border border-slate-200/80 flex items-center justify-center p-8">
@@ -123,6 +165,7 @@ export default function DashboardLayout({
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
   const [notificationsSeen, setNotificationsSeen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+  const [subscription, setSubscription] = useState<SubscriptionState>(fallbackSubscription);
 
   const [openSubMenus, setOpenSubMenus] = useState<Record<string, boolean>>({
     Caisse: false,
@@ -161,6 +204,11 @@ export default function DashboardLayout({
       // 2. Récupération du profil
       try {
         const storedProfile = localStorage.getItem("user_profile");
+
+        const storedSubscription = localStorage.getItem("subscription_state");
+        if (storedSubscription) {
+          setSubscription({ ...fallbackSubscription, ...JSON.parse(storedSubscription) });
+        }
 
         if (storedProfile) {
           const parsedProfile = JSON.parse(storedProfile);
@@ -221,6 +269,11 @@ export default function DashboardLayout({
 
         localStorage.setItem("user_profile", JSON.stringify(userData));
         localStorage.setItem("user_permissions", JSON.stringify(permissions));
+        if (data.subscription) {
+          const nextSubscription = { ...fallbackSubscription, ...data.subscription } as SubscriptionState;
+          localStorage.setItem("subscription_state", JSON.stringify(nextSubscription));
+          setSubscription(nextSubscription);
+        }
 
         setUserPermissions(permissions);
         setUser({
@@ -240,6 +293,7 @@ export default function DashboardLayout({
         localStorage.removeItem("token");
         localStorage.removeItem("user_permissions");
         localStorage.removeItem("user_profile");
+        localStorage.removeItem("subscription_state");
         router.push("/login");
       }
     };
@@ -373,7 +427,7 @@ export default function DashboardLayout({
         { name: "Historique Ventes", href: "/dashboard/caisse/ventes", permissions: ["VOIR_HISTORIQUE_VENTES", "VOIR_MES_VENTES"] },
         { name: "Factures", href: "/dashboard/caisse/factures", permissions: ["VOIR_FACTURES", "VOIR_MES_FACTURES", "IMPRIMER_FACTURE"] },
         { name: "Retours clients", href: "/dashboard/caisse/retours", permissions: ["VOIR_RETOURS_CLIENTS", "VOIR_MES_RETOURS_CLIENTS", "CREER_RETOUR_CLIENT", "ANNULER_VENTE"] },
-        { name: "Rapports Caisse", href: "/dashboard/caisse/rapports", permissions: ["VOIR_RAPPORTS_CAISSE", "VOIR_MES_RAPPORTS_CAISSE", "EXPORTER_RAPPORTS_CAISSE"] },
+        { name: "Rapports Caisse", href: "/dashboard/caisse/rapports", permissions: ["VOIR_RAPPORTS_CAISSE", "VOIR_MES_RAPPORTS_CAISSE", "EXPORTER_RAPPORTS_CAISSE"], requiredPlan: "PRO" },
       ],
     },
     {
@@ -385,7 +439,7 @@ export default function DashboardLayout({
         { name: "Gestion Produits", href: "/dashboard/inventaire/produits", permission: "VOIR_LISTE_PRODUITS" },
         { name: "Catégories", href: "/dashboard/inventaire/categories", permission: "VOIR_CATEGORIES" },
         { name: "Mouvements Stock", href: "/dashboard/inventaire/stock", permissions: ["VOIR_MOUVEMENTS_STOCK", "VOIR_MES_OPERATIONS_INVENTAIRE"] },
-        { name: "Projection Produits", href: "/dashboard/inventaire/projection", permissions: ["VOIR_PROJECTION_PRODUITS", "EXPORTER_PROJECTION_PRODUITS"] },
+        { name: "Projection Produits", href: "/dashboard/inventaire/projection", permissions: ["VOIR_PROJECTION_PRODUITS", "EXPORTER_PROJECTION_PRODUITS"], requiredPlan: "PRO" },
         { name: "Alertes Rupture", href: "/dashboard/inventaire/alertes", permission: "VOIR_ALERTES_STOCK" },
       ],
     },
@@ -438,8 +492,8 @@ export default function DashboardLayout({
         { name: "Général", href: "/dashboard/parametres", permission: "MODIFIER_INFOS_BOUTIQUE" },
         { name: "Ma Boutique", href: "/dashboard/parametres/boutique", permission: "VOIR_BOUTIQUES" },
         { name: "Profil", href: "/dashboard/profil", permissions: ["MODIFIER_PROFIL_RESTREINT", "MODIFIER_PROFIL_TOTAL"] },
-        { name: "Notifications", href: "/dashboard/parametres/notifications", permission: "GERER_NOTIFICATIONS" },
-        { name: "Journal d'audit", href: "/dashboard/parametres/audit", permission: "VOIR_AUDIT_GLOBAL" },
+        { name: "Notifications", href: "/dashboard/parametres/notifications", permission: "GERER_NOTIFICATIONS", requiredPlan: "PRO" },
+        { name: "Journal d'audit", href: "/dashboard/parametres/audit", permission: "VOIR_AUDIT_GLOBAL", requiredPlan: "PRO" },
         { name: "Aide & definitions", href: "/dashboard/parametres/aide", permission: "VOIR_AIDE_DEFINITIONS" },
         { name: "Abonnement", href: "/dashboard/parametres/abonnement", permission: "VOIR_ABONNEMENT" },
       ],
@@ -461,6 +515,18 @@ export default function DashboardLayout({
     user.roleId !== null &&
     user.roleId !== "" &&
     userPermissions.length === 0;
+  const expiredAllowedRoutes = [
+    "/dashboard/parametres/abonnement",
+    "/dashboard/profil",
+    "/dashboard/parametres",
+    "/dashboard/parametres/boutique",
+    "/dashboard/parametres/aide",
+  ];
+  const isSubscriptionExpired = subscription.status === "expired";
+  const canRenderExpiredRoute = !isSubscriptionExpired || expiredAllowedRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`));
+  const subscriptionRequirement = getRequiredPlanForPath(pathname);
+  const canRenderSubscriptionRoute = canUsePlan(subscription.planCode, subscriptionRequirement?.plan);
+
   const canRenderCurrentRoute =
     !isEmployeeWithNoPermission &&
     (currentRoute
@@ -643,6 +709,7 @@ export default function DashboardLayout({
                               className={isSubActive ? "text-indigo-400" : "text-slate-600"}
                             />
                             <span>{sub.name}</span>
+                            {sub.requiredPlan && !canUsePlan(subscription.planCode, sub.requiredPlan) && <LockKeyhole size={11} className="ml-auto text-amber-400" />}
                           </Link>
                         );
                       })}
@@ -908,12 +975,16 @@ export default function DashboardLayout({
 
         {/* MAIN CONTENT */}
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-[#F1F5F9]">
-          {canRenderCurrentRoute ? children : <EmptyPermissionState />}
+          {canRenderCurrentRoute ? (canRenderExpiredRoute ? (canRenderSubscriptionRoute ? children : <LockedSubscriptionState requiredPlan={subscriptionRequirement!.plan} feature={subscriptionRequirement!.feature} />) : <ExpiredSubscriptionState />) : <EmptyPermissionState />}
         </main>
       </div>
     </div>
   );
 }
+
+
+
+
 
 
 

@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
+import { ensureBoutiqueSubscription } from "./subscription.controller.js";
 import { Utilisateur, Boutique } from "../models/Utilisateur.js"; 
 import { sendEmail, sendSecurityAlertEmail } from "../utils/sendEmail.js";
 import { Permission, RolePermission } from "../models/Utilisateur.js";

@@ -1099,6 +1099,25 @@ const notificationSchema = new mongoose.Schema(
 
 notificationSchema.index({ boutiqueId: 1, sourceKey: 1 }, { unique: true });
 
+const subscriptionSchema = new mongoose.Schema(
+  {
+    boutiqueId: { type: mongoose.Schema.Types.ObjectId, ref: "Boutique", required: true, unique: true, index: true },
+    planCode: { type: String, enum: ["TRIAL", "STARTER", "PRO", "BUSINESS"], default: "TRIAL", index: true },
+    status: { type: String, enum: ["trialing", "active", "past_due", "expired", "cancelled"], default: "trialing", index: true },
+    paymentProvider: { type: String, enum: ["mock", "labyrinthe", "lygos", "flutterwave", "paystack"], default: "mock" },
+    providerCustomerId: { type: String, default: "", trim: true },
+    providerSubscriptionId: { type: String, default: "", trim: true },
+    providerReference: { type: String, default: "", trim: true },
+    trialEndsAt: { type: Date, default: null },
+    currentPeriodEnd: { type: Date, default: null },
+    cancelAtPeriodEnd: { type: Boolean, default: false },
+    metadata: { type: mongoose.Schema.Types.Mixed, default: {} },
+  },
+  { timestamps: true }
+);
+
+subscriptionSchema.index({ boutiqueId: 1, status: 1 });
+
 const notificationPreferenceSchema = new mongoose.Schema(
   {
     boutiqueId: { type: mongoose.Schema.Types.ObjectId, ref: "Boutique", required: true, unique: true },
@@ -1141,6 +1160,7 @@ const Boutique = mongoose.model("Boutique", boutiqueSchema);
 const ExchangeRate = mongoose.model("ExchangeRate", exchangeRateSchema);
 const Notification = mongoose.model("Notification", notificationSchema);
 const NotificationPreference = mongoose.model("NotificationPreference", notificationPreferenceSchema);
+const Subscription = mongoose.model("Subscription", subscriptionSchema);
 const AuditLog = mongoose.model("AuditLog", auditLogSchema);
 const FinanceCharge = mongoose.model("FinanceCharge", financeChargeSchema);
 
@@ -1148,7 +1168,7 @@ const FinanceCharge = mongoose.model("FinanceCharge", financeChargeSchema);
 
 
 
-export { Permission, Role, RolePermission, Departement, Categorie, Produit, MouvementStock, Vente, RetourClient, InventaireAudit, Utilisateur, Boutique, ExchangeRate, Notification, NotificationPreference, AuditLog, FinanceCharge };
+export { Permission, Role, RolePermission, Departement, Categorie, Produit, MouvementStock, Vente, RetourClient, InventaireAudit, Utilisateur, Boutique, ExchangeRate, Notification, NotificationPreference, Subscription, AuditLog, FinanceCharge };
 
 
 

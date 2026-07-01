@@ -170,53 +170,57 @@ export default function LandingPage() {
        {/* --- SECTION 5 : ABONNEMENTS & TARIFS --- */}
       <section id="pricing" className="py-24 px-6 max-w-6xl mx-auto scroll-mt-24">
         <motion.div {...reveal} className="text-center mb-16">
-          <h2 className="text-indigo-500 font-bold uppercase text-[9px] tracking-[0.4em] mb-3">Tarification</h2>
+          <h2 className="text-indigo-500 font-bold uppercase text-[9px] tracking-[0.4em] mb-3">Abonnements</h2>
           <p className="text-2xl md:text-4xl font-extrabold uppercase tracking-tighter text-white leading-none mb-4">
-            Des plans adaptés à <span className="text-indigo-600">votre croissance.</span>
+            Des offres pour chaque <span className="text-indigo-600">niveau de croissance.</span>
+          </p>
+          <p className="text-slate-400 text-xs font-bold uppercase tracking-tight max-w-2xl mx-auto">
+            Commencez avec l'essai gratuit, puis debloquez les modules avances selon la taille de votre boutique.
           </p>
         </motion.div>
 
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-5">
           {[
-            { name: "Essentiel", price: "15$", desc: "Pour les petites boutiques", features: ["1 Point de vente", "Gestion de stock de base", "1 Utilisateur", "Support par email"] },
-            { name: "Professionnel", price: "39$", desc: "Le choix des commerçants", features: ["Multi-boutiques (jusqu'à 3)", "Rapports avancés", "5 Utilisateurs", "Mode Hors-ligne complet", "Support Prioritaire"], popular: true },
-            { name: "Entreprise", price: "99$", desc: "Pour les réseaux de magasins", features: ["Boutiques illimitées", "Analytique sur mesure", "Utilisateurs illimités", "Accès API sécurisé", "Gestionnaire dédié"] }
+            { name: "Essai gratuit", price: "0$", desc: "Tester Boutiqo", features: ["1 boutique", "2 utilisateurs", "50 produits", "Caisse simple", "7 a 14 jours"] },
+            { name: "Starter", price: "15$", desc: "Stock + caisse", features: ["1 boutique", "3 utilisateurs", "Produits & categories", "Mouvements stock", "Exports limites"] },
+            { name: "Pro", price: "39$", desc: "Equipe + rapports", features: ["3 boutiques", "10 utilisateurs", "Finance complete", "Audit global", "Exports complets"], popular: true },
+            { name: "Business", price: "99$", desc: "Reseaux & croissance", features: ["Boutiques hautes limites", "Utilisateurs hautes limites", "Rapports consolides", "Support prioritaire", "API future"] }
           ].map((plan, i) => (
-            <motion.div 
-              key={i} {...reveal} transition={{delay: i*0.1}}
+            <motion.div
+              key={plan.name} {...reveal} transition={{delay: i*0.1}}
               whileHover={{ scale: 1.03, translateY: -10 }}
-              className={`relative p-8 rounded-[2rem] border transition-all duration-500 cursor-default ${plan.popular ? 'border-indigo-500 bg-indigo-500/10 shadow-[0_0_40px_-15px_rgba(79,70,229,0.3)]' : 'border-white/10 bg-white/5 hover:bg-white/[0.08]'} flex flex-col`}
+              className={`relative p-6 rounded-[2rem] border transition-all duration-500 cursor-default ${plan.popular ? 'border-indigo-500 bg-indigo-500/10 shadow-[0_0_40px_-15px_rgba(79,70,229,0.3)]' : 'border-white/10 bg-white/5 hover:bg-white/[0.08]'} flex flex-col`}
             >
               {plan.popular && (
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-indigo-600 text-white text-[8px] font-black uppercase px-4 py-1 rounded-full tracking-[0.2em]">
-                  Le plus populaire
+                  Recommande
                 </div>
               )}
-              <div className="mb-8">
-                <h3 className="text-white text-lg font-bold uppercase mb-2">{plan.name}</h3>
+              <div className="mb-7">
+                <h3 className="text-white text-sm font-black uppercase mb-2">{plan.name}</h3>
                 <div className="flex items-baseline gap-1 mb-2">
-                  <span className="text-4xl font-black text-white">{plan.price}</span>
+                  <span className="text-3xl font-black text-white">{plan.price}</span>
                   <span className="text-slate-500 text-xs font-bold">/mois</span>
                 </div>
                 <p className="text-slate-400 text-[10px] font-bold uppercase tracking-tight">{plan.desc}</p>
               </div>
-              <div className="space-y-4 mb-10 flex-grow">
-                {plan.features.map((f, idx) => (
-                  <div key={idx} className="flex items-center gap-3">
+              <div className="space-y-3 mb-8 flex-grow">
+                {plan.features.map((f) => (
+                  <div key={f} className="flex items-center gap-3">
                     <Check size={12} className="text-indigo-500" />
                     <span className="text-slate-300 text-[10px] font-bold uppercase tracking-tight">{f}</span>
                   </div>
                 ))}
               </div>
               <button className={`w-full py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all ${plan.popular ? 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-lg shadow-indigo-600/20' : 'bg-white/10 text-white hover:bg-white/20'}`}>
-                Choisir ce plan
+                Voir l'offre
               </button>
             </motion.div>
           ))}
         </div>
       </section>
-      
-      {/* --- SÉPARATEUR 2 --- */}
+
+      {/* --- SEPARATEUR 2 --- */}
       <div className="w-full flex justify-center px-6"><div className="w-full max-w-4xl h-[1px] bg-gradient-to-r from-transparent via-slate-200 to-transparent opacity-40" /></div>
 
         {/* --- SECTION VISION : POURQUOI NOUS ? --- */}

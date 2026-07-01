@@ -12,6 +12,7 @@ import dashboardRoutes from "./routes/dashboard.routes.js";
 import notificationRoutes from "./routes/notification.routes.js";
 import auditRoutes from "./routes/audit.routes.js";
 import financeRoutes from "./routes/finance.routes.js";
+import subscriptionRoutes from "./routes/subscription.routes.js";
 import { auditLogger } from "./middlewares/auditMiddleware.js";
 
 const app = express();
@@ -42,5 +43,6 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/audit", auditRoutes);
 app.use("/api/finances", financeRoutes);
+app.use("/api/subscriptions", subscriptionRoutes);
 
 export default app;
