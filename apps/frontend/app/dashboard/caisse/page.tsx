@@ -71,6 +71,8 @@ export default function CashRegisterPage() {
   const [scanCode, setScanCode] = useState("");
   const [scannerStatus, setScannerStatus] = useState("");
   const [cameraActive, setCameraActive] = useState(false);
+  const [cameraDevices, setCameraDevices] = useState<MediaDeviceInfo[]>([]);
+  const [selectedCameraId, setSelectedCameraId] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("Espèces");
   const [received, setReceived] = useState("");
   const [{ permissions, isOwner }] = useState(getStoredPermissions);
@@ -96,6 +98,28 @@ export default function CashRegisterPage() {
     scannerControlsRef.current = null;
     setCameraActive(false);
   }, []);
+
+  const getPreferredCameraId = useCallback((devices: MediaDeviceInfo[]) => {
+    const videoDevices = devices.filter((device) => device.kind === "videoinput");
+    const external = videoDevices.find((device) => /usb|external|logitech|webcam|camera|caméra/i.test(device.label));
+    const backCamera = videoDevices.find((device) => /back|rear|environment|arri[eè]re/i.test(device.label));
+    return (external || backCamera || videoDevices[videoDevices.length - 1] || videoDevices[0])?.deviceId || "";
+  }, []);
+
+  const refreshCameraDevices = useCallback(async (requestPermission = false) => {
+    if (!navigator.mediaDevices?.enumerateDevices) return [];
+
+    if (requestPermission && navigator.mediaDevices?.getUserMedia) {
+      const permissionStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      permissionStream.getTracks().forEach((track) => track.stop());
+    }
+
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const videoDevices = devices.filter((device) => device.kind === "videoinput");
+    setCameraDevices(videoDevices);
+    setSelectedCameraId((current) => current || getPreferredCameraId(videoDevices));
+    return videoDevices;
+  }, [getPreferredCameraId]);
 
   const fetchCurrencySettings = useCallback(async () => {
     try {
@@ -149,9 +173,10 @@ export default function CashRegisterPage() {
   }, []);
 
   useEffect(() => {
+    if (scannerOpen) void refreshCameraDevices();
     if (!scannerOpen) stopCameraScanner();
     return () => stopCameraScanner();
-  }, [scannerOpen, stopCameraScanner]);
+  }, [scannerOpen, refreshCameraDevices, stopCameraScanner]);
 
   useEffect(() => {
     if (!canDiscount && discount !== 0) setDiscount(0);
@@ -259,7 +284,7 @@ export default function CashRegisterPage() {
     setMessage(`${product.nom} ajouté au panier par scan.`);
   }, [products, cartCurrency, cart.length]);
 
-  const startCameraScanner = async () => {
+  const startCameraScanner = async (cameraId?: string) => {
     try {
       setScannerStatus("");
 
@@ -274,6 +299,15 @@ export default function CashRegisterPage() {
       }
 
       stopCameraScanner();
+
+      let nextCameraId = cameraId || selectedCameraId;
+      let devices = await refreshCameraDevices(false);
+      if (!nextCameraId || devices.length === 0 || devices.some((device) => !device.label)) {
+        devices = await refreshCameraDevices(true);
+      }
+      if (!nextCameraId) nextCameraId = getPreferredCameraId(devices);
+      if (nextCameraId) setSelectedCameraId(nextCameraId);
+
       setCameraActive(true);
       await new Promise((resolve) => window.requestAnimationFrame(resolve));
 
@@ -286,11 +320,17 @@ export default function CashRegisterPage() {
       const reader = new BrowserMultiFormatReader();
       scannerControlsRef.current = await reader.decodeFromConstraints(
         {
-          video: {
-            facingMode: { ideal: "environment" },
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-          },
+          video: nextCameraId
+            ? {
+                deviceId: { exact: nextCameraId },
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+              }
+            : {
+                facingMode: { ideal: "environment" },
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+              },
           audio: false,
         },
         videoRef.current,
@@ -554,9 +594,49 @@ export default function CashRegisterPage() {
               </div>
             )}
           </div>
-          <button type="button" onClick={startCameraScanner} className={`${secondaryButton} w-full`}>
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Caméras détectées</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">Choisissez la caméra interne ou externe à utiliser.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => void refreshCameraDevices(true)}
+                className="h-8 px-3 rounded-lg border border-slate-200 bg-white text-[10px] font-black text-slate-600 hover:text-indigo-600"
+              >
+                Détecter
+              </button>
+            </div>
+
+            {cameraDevices.length > 0 ? (
+              <div className="grid grid-cols-1 gap-2">
+                {cameraDevices.map((device, index) => {
+                  const isSelected = selectedCameraId === device.deviceId;
+                  return (
+                    <button
+                      key={device.deviceId || index}
+                      type="button"
+                      onClick={() => void startCameraScanner(device.deviceId)}
+                      className={`flex items-center justify-between gap-3 rounded-xl border px-3 py-2 text-left transition-all ${isSelected ? "border-indigo-300 bg-indigo-50 text-indigo-700" : "border-slate-200 bg-white text-slate-600 hover:border-indigo-200 hover:text-indigo-600"}`}
+                    >
+                      <span className="flex items-center gap-2 min-w-0">
+                        <Camera size={15} className="shrink-0" />
+                        <span className="truncate text-xs font-black">{device.label || `Caméra ${index + 1}`}</span>
+                      </span>
+                      <span className="text-[10px] font-black uppercase">{isSelected ? "Active" : "Utiliser"}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-[11px] text-slate-400 font-semibold">Aucune caméra listée pour l'instant. Cliquez sur Détecter puis autorisez l'accès caméra.</p>
+            )}
+          </div>
+
+          <button type="button" onClick={() => void startCameraScanner()} className={`${secondaryButton} w-full`}>
             <Camera size={14} />
-            Ouvrir la caméra
+            Ouvrir la caméra sélectionnée
           </button>
           {scannerStatus && <div className="p-3 rounded-xl bg-amber-50 border border-amber-100 text-xs font-semibold text-amber-700">{scannerStatus}</div>}
           <form onSubmit={(event) => { event.preventDefault(); handleManualScan(); }} className="space-y-2">

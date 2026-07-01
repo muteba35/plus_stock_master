@@ -272,7 +272,9 @@ export default function SalesHistoryPage() {
                       <span className="font-bold text-slate-800">{line.nomProduit} × {line.quantite}</span>
                       <strong>{formatMoney(line.totalTTC, selectedSale.devise)}</strong>
                     </div>
-                    <p className="text-[10px] text-slate-400 mt-1">SKU : {line.sku || "-"} · PU TTC : {formatMoney(line.prixUnitaireTTC, selectedSale.devise)}</p>
+                    <p className="text-[10px] text-slate-400 mt-1">
+                      SKU : {line.sku || "-"} · PU HT : {formatMoney(line.prixUnitaireHT, selectedSale.devise)} · PU TTC : {formatMoney(line.prixUnitaireTTC, selectedSale.devise)}
+                    </p>
                   </div>
                 ))}
               </div>

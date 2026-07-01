@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { Boutique, Categorie, MouvementStock, Produit } from "../models/Utilisateur.js";
+import { Boutique, Categorie, MouvementStock, Notification, Produit } from "../models/Utilisateur.js";
 import { logInventoryAction } from "../utils/inventoryAudit.js";
 
 const getBoutiqueId = (req) => {
@@ -48,7 +48,7 @@ export const expireProductsIfNeeded = async (boutiqueId, utilisateurId = null) =
     boutiqueId,
     isDeleted: false,
     isExpired: { $ne: true },
-    dateExpiration: { $ne: null, $lt: today },
+    dateExpiration: { $ne: null, $lte: today },
   }).select("+isDeleted");
 
   for (const product of expiredProducts) {
@@ -83,6 +83,27 @@ export const expireProductsIfNeeded = async (boutiqueId, utilisateurId = null) =
       label: `Produit expire : ${product.nom}`,
       details: { sku: product.sku, stockRetire: stockAvant, dateExpiration: product.dateExpiration },
     });
+
+    await Notification.updateOne(
+      { boutiqueId, sourceKey: `product-expired-${product._id}` },
+      {
+        $setOnInsert: {
+          boutiqueId,
+          sourceKey: `product-expired-${product._id}`,
+          title: "Produit expiré retiré du stock",
+          message: `${product.nom} a été retiré automatiquement du stock à cause de sa date d'expiration.`,
+          type: "danger",
+          priority: "critique",
+          category: "expiration",
+          href: "/dashboard/inventaire/produits",
+          actionLabel: "Voir les produits",
+          actionHref: "/dashboard/inventaire/produits",
+          createdBy: utilisateurId || null,
+          meta: { produitId: product._id, sku: product.sku, stockRetire: stockAvant, dateExpiration: product.dateExpiration },
+        },
+      },
+      { upsert: true }
+    );
   }
 };
 
@@ -212,6 +233,13 @@ export const createProduit = async (req, res) => {
       unite: String(req.body.unite || "Pièce").trim(),
       codeBarres: String(req.body.codeBarres || "").trim(),
       image: String(req.body.image || ""),
+      modeApprovisionnement,
+      libelleConditionnement: String(req.body.libelleConditionnement || "Carton").trim(),
+      quantiteParConditionnement,
+      nombreConditionnements,
+      codeBarresConditionnement: String(req.body.codeBarresConditionnement || "").trim(),
+      dateProduction,
+      dateExpiration,
     });
 
     if (stockInitial > 0) {
@@ -229,8 +257,10 @@ export const createProduit = async (req, res) => {
       });
     }
 
+    await expireProductsIfNeeded(boutiqueId, req.user?.id);
+    createdProduct = await Produit.findById(createdProduct._id).select("+prixAchat") || createdProduct;
     await createdProduct.populate("categorieId", "nom couleur");
-    await logInventoryAction({ boutiqueId, utilisateurId: req.user.id, action: "PRODUIT_CREE", entityType: "PRODUIT", entityId: createdProduct._id, label: `Produit créé : ${createdProduct.nom}`, details: { sku: createdProduct.sku, stockInitial } });
+    await logInventoryAction({ boutiqueId, utilisateurId: req.user.id, action: "PRODUIT_CREE", entityType: "PRODUIT", entityId: createdProduct._id, label: `Produit créé : ${createdProduct.nom}`, details: { sku: createdProduct.sku, stockInitial, dateProduction, dateExpiration } });
     return res.status(201).json({
       success: true,
       message: "Produit cree avec succes.",
@@ -364,7 +394,7 @@ export const updateProduit = async (req, res) => {
       return res.status(403).json({ success: false, message: "Cette boutique n'appartient pas a votre compte." });
     }
 
-    const product = await Produit.findOne({ _id: req.params.id, boutiqueId, isDeleted: false }).select("+prixAchat");
+    let product = await Produit.findOne({ _id: req.params.id, boutiqueId, isDeleted: false }).select("+prixAchat");
     if (!product) return res.status(404).json({ success: false, message: "Produit introuvable." });
 
     if (req.body.categorieId !== undefined) {
@@ -426,6 +456,8 @@ export const updateProduit = async (req, res) => {
     }
 
     await product.save();
+    await expireProductsIfNeeded(boutiqueId, req.user?.id);
+    product = await Produit.findById(product._id).select("+prixAchat") || product;
     await product.populate("categorieId", "nom couleur");
     await logInventoryAction({ boutiqueId, utilisateurId: req.user.id, action: "PRODUIT_MODIFIE", entityType: "PRODUIT", entityId: product._id, label: `Produit modifié : ${product.nom}`, details: { sku: product.sku } });
     return res.status(200).json({ success: true, message: "Produit mis a jour avec succes.", data: serializeProduct(product, canViewPurchasePrice(req)) });
