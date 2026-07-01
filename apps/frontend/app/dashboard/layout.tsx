@@ -737,7 +737,7 @@ export default function DashboardLayout({
               {showNotifications && (
                 <>
                   <div className="fixed inset-0 z-[90]" onClick={() => setShowNotifications(false)} />
-                  <div className="absolute right-0 mt-3 w-[min(340px,calc(100vw-24px))] bg-white border border-slate-200 rounded-2xl shadow-xl shadow-slate-900/12 z-[100] overflow-hidden">
+                  <div className="fixed left-3 right-3 top-20 sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-3 sm:w-[min(340px,calc(100vw-24px))] bg-white border border-slate-200 rounded-2xl shadow-xl shadow-slate-900/12 z-[100] overflow-hidden">
                     <div className="p-3.5 border-b border-slate-100 bg-gradient-to-br from-slate-950 to-indigo-950 text-white">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex items-center gap-3">

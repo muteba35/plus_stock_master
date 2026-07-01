@@ -93,6 +93,10 @@ const formatMoney = (value: number, devise: string) => {
   return new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 2 }).format(Number(value || 0)) + " " + symbol;
 };
 
+const compactMoney = (value: number, devise: string) => {
+  const symbol = devise.includes("(") ? devise.replace(/^.*\((.*)\).*$/, "$1") : devise;
+  return new Intl.NumberFormat("fr-FR", { notation: "compact", maximumFractionDigits: 1 }).format(Number(value || 0)) + " " + symbol;
+};
 const formatDate = (value?: string) => {
   if (!value) return "-";
   return new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short" }).format(new Date(value));
@@ -326,32 +330,34 @@ export default function OverviewPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
-          <div className="flex justify-between items-center mb-6 gap-4">
+        <div className="lg:col-span-2 bg-white p-4 sm:p-6 rounded-2xl border border-slate-200/80 shadow-sm min-w-0 overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-4">
             <div>
               <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Analyse des flux financiers</h3>
               <p className="text-[11px] text-slate-400 font-medium mt-0.5">{data.period.chartFallback ? "La période choisie est vide : affichage des dernières ventes enregistrées." : "Évolution réelle des ventes et de la marge brute."}</p>
             </div>
-            <div className="flex items-center gap-4 text-[10px] font-bold uppercase tracking-wide">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-[10px] font-bold uppercase tracking-wide">
               <span className="flex items-center gap-1.5 text-slate-600"><span className="w-2.5 h-2.5 rounded-full bg-indigo-500" />Ventes</span>
               <span className="flex items-center gap-1.5 text-slate-600"><span className="w-2.5 h-2.5 rounded-full bg-teal-400" />Bénéfice</span><span className="flex items-center gap-1.5 text-slate-600"><span className="w-2.5 h-2.5 rounded-full bg-rose-500" />Perte</span>
             </div>
           </div>
-          <div className="h-72 w-full text-xs">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+          <div className="w-full overflow-x-auto overflow-y-hidden pb-1">
+            <div className="h-64 sm:h-72 min-w-[520px] text-xs">
+              <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData} margin={{ top: 10, right: 18, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorVentes" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#4F46E5" stopOpacity={0.15}/><stop offset="95%" stopColor="#4F46E5" stopOpacity={0}/></linearGradient>
                   <linearGradient id="colorBenefs" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#2DD4BF" stopOpacity={0.15}/><stop offset="95%" stopColor="#2DD4BF" stopOpacity={0}/></linearGradient><linearGradient id="colorPertes" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#F43F5E" stopOpacity={0.16}/><stop offset="95%" stopColor="#F43F5E" stopOpacity={0}/></linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#edf2f9" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} stroke="#94A3B8" />
-                <YAxis axisLine={false} tickLine={false} stroke="#94A3B8" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} stroke="#94A3B8" tick={{ fontSize: 10 }} minTickGap={18} />
+                <YAxis axisLine={false} tickLine={false} stroke="#94A3B8" width={58} tick={{ fontSize: 10 }} tickFormatter={(value) => compactMoney(Number(value), data.devise)} />
                 <Tooltip formatter={(value) => formatMoney(Number(value), data.devise)} />
                 <Area type="monotone" dataKey="ventes" stroke="#4F46E5" strokeWidth={2} fillOpacity={1} fill="url(#colorVentes)" />
                 <Area type="monotone" dataKey="beneficePositif" name="Bénéfice" stroke="#2DD4BF" strokeWidth={2} fillOpacity={1} fill="url(#colorBenefs)" connectNulls={false} /><Area type="monotone" dataKey="perteNegative" name="Perte" stroke="#F43F5E" strokeWidth={2} fillOpacity={1} fill="url(#colorPertes)" connectNulls={false} />
               </AreaChart>
             </ResponsiveContainer>
+            </div>
           </div>
         </div>
 

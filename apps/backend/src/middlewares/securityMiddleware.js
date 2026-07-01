@@ -82,8 +82,11 @@ const inspectPayload = (value, path = "body", depth = 0) => {
       return "Champ interdit detecte dans la requete.";
     }
     const entry = value[key];
-    if (typeof entry === "string" && entry.length > 20000) {
-      return "Champ texte trop long.";
+    if (typeof entry === "string") {
+      const maxLength = ["image", "avatar", "logo"].includes(key) ? 900000 : 20000;
+      if (entry.length > maxLength) {
+        return "Champ texte trop long.";
+      }
     }
     const error = inspectPayload(entry, path + "." + key, depth + 1);
     if (error) return error;
@@ -156,8 +159,8 @@ export const validateBody = (schema) => (req, res, next) => {
 
 export const authValidation = {
   register: validateBody({
-    prenom: { required: true, min: 2, max: 80, pattern: /^[A-Za-zÀ-ÖØ-öø-ÿ\s'-]+$/ },
-    nom: { required: true, min: 2, max: 80, pattern: /^[A-Za-zÀ-ÖØ-öø-ÿ\s'-]+$/ },
+    prenom: { required: true, min: 2, max: 80, pattern: /^[\p{L}\s'-]+$/u },
+    nom: { required: true, min: 2, max: 80, pattern: /^[\p{L}\s'-]+$/u },
     email: { required: true, max: 180, pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ },
     telephone: { required: true, min: 9, max: 20, pattern: /^[0-9+\s()-]+$/ },
     nomBoutique: { required: true, min: 2, max: 120 },

@@ -3,6 +3,7 @@ import { AuditLog, Boutique, Categorie, Departement, ExchangeRate, Produit, Role
 
 const MUTATION_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 const AUDITED_METHODS = new Set(["GET", "POST", "PUT", "PATCH", "DELETE"]);
+const READ_ACTIONS_TO_KEEP = new Set(["CONSULTATION_DASHBOARD", "CONSULTATION_FINANCES", "CONSULTATION_MOUVEMENTS_STOCK", "CONSULTATION_CAISSE"]);
 const SENSITIVE_KEYS = new Set([
   "password",
   "temporaryAccessPassword",
@@ -227,6 +228,8 @@ export const auditLogger = (req, res, next) => {
 
   res.on("finish", async () => {
     const body = req.body || {};
+    const action = actionFromRequest(req);
+    if (req.method === "GET" && res.statusCode < 400 && !READ_ACTIONS_TO_KEEP.has(action)) return;
     const user = await resolveAuditUser(req, body, responseBody);
     const tokenPayload = getTokenPayload(req);
     const before = await beforePromise;
@@ -243,7 +246,7 @@ export const auditLogger = (req, res, next) => {
       userId: user._id || user.id || null,
       userName,
       userEmail: user.email || body.email || "",
-      action: actionFromRequest(req),
+      action,
       module: moduleFromPath(req.originalUrl || ""),
       method: req.method,
       path: req.originalUrl || req.path || "",

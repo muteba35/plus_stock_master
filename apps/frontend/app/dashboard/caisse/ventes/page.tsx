@@ -91,7 +91,7 @@ const getStoredAccess = () => {
   try {
     const permissions = JSON.parse(localStorage.getItem("user_permissions") || "[]") as string[];
     const profile = JSON.parse(localStorage.getItem("user_profile") || "{}") as { role?: string };
-    return { permissions, isOwner: profile.role === "Admin Général" || profile.role === "Admin GÃ©nÃ©ral" };
+    return { permissions, isOwner: profile.role === "Admin Général" || profile.role === "Admin Général" };
   } catch {
     return { permissions: [] as string[], isOwner: false };
   }
@@ -191,8 +191,8 @@ export default function SalesHistoryPage() {
               <option>Mobile</option>
             </select>
             <div className="relative">
-              <CalendarDays size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input type="date" value={date} onChange={(event) => setDate(event.target.value)} className={`${fieldClass} pl-9`} />
+              <CalendarDays size={14} className="hidden sm:block absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              <input type="date" value={date} onChange={(event) => setDate(event.target.value)} className={`${fieldClass} pl-3 sm:pl-9`} />
             </div>
           </div>
         </div>
