@@ -73,7 +73,7 @@ router.use(protect);
 
 router.route("/settings/exchange-rates")
   .get(checkAnyPermission("VOIR_BOUTIQUES", "MODIFIER_BOUTIQUE", "EFFECTUER_VENTE", "VOIR_HISTORIQUE_VENTES", "VOIR_MES_VENTES"), getCurrencySettings)
-  .put(checkPermission("CHANGER_DEVISE"), currencyUpdateLimiter, boutiqueValidation.currency, updateCurrencySettings);
+  .put(checkAnyPermission("CHANGER_DEVISE", "GERER_TVA_BOUTIQUE"), currencyUpdateLimiter, boutiqueValidation.currency, updateCurrencySettings);
 
 router.route("/")
   .get(checkPermission("VOIR_BOUTIQUES"), getBoutiques)
@@ -85,6 +85,6 @@ router.route("/:id")
   .put(checkPermission("MODIFIER_BOUTIQUE"), boutiqueValidation.update, updateBoutique)
   .delete(checkPermission("SUPPRIMER_BOUTIQUE"), confirmDeletionLimiter, boutiqueValidation.deleteCode, deleteBoutique);
 
-router.patch("/:id/active", checkPermission("ACTIVER_BOUTIQUE"), setActiveBoutique);
+router.patch("/:id/active", checkAnyPermission("ACTIVER_BOUTIQUE", "DESACTIVER_BOUTIQUE"), setActiveBoutique);
 
 export default router;

@@ -64,6 +64,8 @@ export default function CashRegisterPage() {
   const [message, setMessage] = useState("");
   const [currency, setCurrency] = useState("USD ($)");
   const [exchangeRates, setExchangeRates] = useState<ExchangeRate[]>([]);
+  const [tvaEnabled, setTvaEnabled] = useState(true);
+  const [tvaRate, setTvaRate] = useState(TVA_RATE);
   const [discount, setDiscount] = useState(0);
   const [customer, setCustomer] = useState("");
   const [paymentOpen, setPaymentOpen] = useState(false);
@@ -131,6 +133,8 @@ export default function CashRegisterPage() {
       if (response.ok && data.success) {
         const nextCurrency = data.deviseReference || getActiveBoutiqueCurrency();
         setCurrency(nextCurrency);
+        setTvaEnabled(data.tvaEnabled !== false);
+        setTvaRate(Number(data.tvaRate ?? TVA_RATE));
         setExchangeRates(data.rates || []);
       }
     } catch {
@@ -202,7 +206,8 @@ export default function CashRegisterPage() {
   const subtotalHT = cart.reduce((sum, line) => sum + (line.product.prixVente * getRate(line.product.devise || currency, currency)) * line.quantity, 0);
   const discountAmount = canDiscount ? (subtotalHT * Math.min(Math.max(discount, 0), 100)) / 100 : 0;
   const taxableAmount = subtotalHT - discountAmount;
-  const tvaAmount = taxableAmount * TVA_RATE;
+  const activeTvaRate = tvaEnabled ? tvaRate : 0;
+  const tvaAmount = taxableAmount * activeTvaRate;
   const totalTTC = taxableAmount + tvaAmount;
   const receivedAmount = Number(received || 0);
   const change = Math.max(0, receivedAmount - totalTTC);
@@ -397,7 +402,7 @@ export default function CashRegisterPage() {
       setDiscount(0);
       setCustomer("");
       setReceived("");
-      setMessage(`Vente ${data.data?.reference || ""} enregistrée avec succès. TVA 16% incluse.`);
+      setMessage(`Vente ${data.data?.reference || ""} enregistrée avec succès.${tvaEnabled ? " TVA incluse." : " Vente sans TVA."}`);
       await fetchProducts();
     } catch (saveError) {
       setMessage(saveError instanceof Error ? saveError.message : "Erreur pendant l'encaissement.");
@@ -410,7 +415,7 @@ export default function CashRegisterPage() {
     <div className="space-y-5 bg-[#f9fafd] p-3 sm:p-6 rounded-2xl sm:rounded-3xl min-h-screen text-slate-800 overflow-x-hidden">
       <CashHeader
         title="Accueil Caisse"
-        subtitle="Sélectionnez les articles, appliquez la TVA 16% et validez l'encaissement."
+        subtitle={tvaEnabled ? "Sélectionnez les articles, appliquez la TVA et validez l'encaissement." : "Sélectionnez les articles et validez l'encaissement sans TVA."}
         action={
           <button onClick={() => setScannerOpen(true)} className={secondaryButton}>
             <ScanLine size={15} />
@@ -557,11 +562,11 @@ export default function CashRegisterPage() {
               />
             </label>
             <div className="space-y-2 pt-2">
-              <div className="flex justify-between text-xs text-slate-500"><span>Sous-total HT</span><span>{formatMoney(subtotalHT, cartCurrency)}</span></div>
+              <div className="flex justify-between text-xs text-slate-500"><span>{tvaEnabled ? "Sous-total HT" : "Sous-total"}</span><span>{formatMoney(subtotalHT, cartCurrency)}</span></div>
               <div className="flex justify-between text-xs text-rose-500"><span>Remise</span><span>- {formatMoney(discountAmount, cartCurrency)}</span></div>
-              <div className="flex justify-between text-xs text-slate-500"><span>Base taxable</span><span>{formatMoney(taxableAmount, cartCurrency)}</span></div>
-              <div className="flex justify-between text-xs text-slate-500"><span>TVA 16%</span><span>{formatMoney(tvaAmount, cartCurrency)}</span></div>
-              <div className="flex justify-between text-lg font-black border-t border-dashed border-slate-200 pt-3"><span>Total TTC</span><span>{formatMoney(totalTTC, cartCurrency)}</span></div>
+              {tvaEnabled && <div className="flex justify-between text-xs text-slate-500"><span>Base taxable</span><span>{formatMoney(taxableAmount, cartCurrency)}</span></div>}
+              {tvaEnabled && <div className="flex justify-between text-xs text-slate-500"><span>TVA {(activeTvaRate * 100).toFixed(0)}%</span><span>{formatMoney(tvaAmount, cartCurrency)}</span></div>}
+              <div className="flex justify-between text-lg font-black border-t border-dashed border-slate-200 pt-3"><span>{tvaEnabled ? "Total TTC" : "Total"}</span><span>{formatMoney(totalTTC, cartCurrency)}</span></div>
             </div>
             <button disabled={!cart.length} onClick={() => setPaymentOpen(true)} className={`${primaryButton} w-full h-12`}>
               <CreditCard size={16} />
@@ -652,7 +657,7 @@ export default function CashRegisterPage() {
         open={paymentOpen}
         onClose={() => !saving && setPaymentOpen(false)}
         title="Encaissement"
-        subtitle={`Total TTC à payer : ${formatMoney(totalTTC, cartCurrency)}`}
+        subtitle={`${tvaEnabled ? "Total TTC" : "Total"} à payer : ${formatMoney(totalTTC, cartCurrency)}`}
         footer={
           <>
             <button disabled={saving} onClick={() => setPaymentOpen(false)} className={secondaryButton}>Annuler</button>
@@ -673,9 +678,9 @@ export default function CashRegisterPage() {
             ))}
           </div>
           <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 space-y-2">
-            <div className="flex justify-between text-xs text-slate-500"><span>Sous-total HT</span><strong>{formatMoney(subtotalHT, cartCurrency)}</strong></div>
-            <div className="flex justify-between text-xs text-slate-500"><span>TVA 16%</span><strong>{formatMoney(tvaAmount, cartCurrency)}</strong></div>
-            <div className="flex justify-between text-sm text-slate-900 font-black pt-2 border-t border-slate-200"><span>Total TTC</span><span>{formatMoney(totalTTC, cartCurrency)}</span></div>
+            <div className="flex justify-between text-xs text-slate-500"><span>{tvaEnabled ? "Sous-total HT" : "Sous-total"}</span><strong>{formatMoney(subtotalHT, cartCurrency)}</strong></div>
+            {tvaEnabled && <div className="flex justify-between text-xs text-slate-500"><span>TVA {(activeTvaRate * 100).toFixed(0)}%</span><strong>{formatMoney(tvaAmount, cartCurrency)}</strong></div>}
+            <div className="flex justify-between text-sm text-slate-900 font-black pt-2 border-t border-slate-200"><span>{tvaEnabled ? "Total TTC" : "Total"}</span><span>{formatMoney(totalTTC, cartCurrency)}</span></div>
           </div>
           {paymentMethod === "Espèces" && (
             <>

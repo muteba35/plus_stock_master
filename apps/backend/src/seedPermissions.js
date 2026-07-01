@@ -1,4 +1,4 @@
-﻿import mongoose from 'mongoose';
+import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 // Importation du modèle Permission
 import { Permission, RolePermission } from './models/Utilisateur.js';
@@ -92,9 +92,11 @@ const permissions = [
   { nom: "CREER_BOUTIQUE", module: "PARAMETRES", description: "Creer une nouvelle boutique rattachee au compte" },
   { nom: "MODIFIER_BOUTIQUE", module: "PARAMETRES", description: "Modifier les informations d'une boutique" },
   { nom: "SUPPRIMER_BOUTIQUE", module: "PARAMETRES", description: "Supprimer une boutique non active" },
-  { nom: "ACTIVER_BOUTIQUE", module: "PARAMETRES", description: "Changer la boutique active de la session" },
+  { nom: "ACTIVER_BOUTIQUE", module: "PARAMETRES", description: "Activer une boutique comme boutique de travail" },
+  { nom: "DESACTIVER_BOUTIQUE", module: "PARAMETRES", description: "Desactiver ou quitter la boutique active lorsque cela est autorise" },
   { nom: "MODIFIER_INFOS_BOUTIQUE", module: "PARAMETRES", description: "Changer le nom, logo ou adresse de la boutique" },
   { nom: "CHANGER_DEVISE", module: "PARAMETRES", description: "Modifier la monnaie de travail (USD, CDF, EUR)" },
+  { nom: "GERER_TVA_BOUTIQUE", module: "PARAMETRES", description: "Activer ou desactiver la TVA de la boutique" },
   { nom: "VOIR_NOTIFICATIONS", module: "PARAMETRES", description: "Consulter le centre de notifications de la boutique" },
   { nom: "VOIR_NOTIFICATIONS_STOCK", module: "PARAMETRES", description: "Recevoir les notifications de stock, expiration et inventaire" },
   { nom: "VOIR_NOTIFICATIONS_CAISSE", module: "PARAMETRES", description: "Recevoir les notifications de ventes, retours et caisse" },

@@ -1,4 +1,4 @@
-﻿import bcrypt from "bcryptjs";
+import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import { AuditLog, Boutique, Categorie, Departement, ExchangeRate, FinanceCharge, InventaireAudit, MouvementStock, Notification, NotificationPreference, Permission, Produit, RetourClient, Role, RolePermission, Utilisateur, Vente } from "../models/Utilisateur.js";
@@ -352,6 +352,16 @@ export const setActiveBoutique = async (req, res) => {
       return res.status(404).json({ message: "Boutique introuvable pour ce compte." });
     }
 
+    
+    const boutiquesCount = await Boutique.countDocuments({ userId: context.ownerId, isDeleted: false });
+    const isCurrentActive = String(context.activeBoutiqueId || "") === boutique._id.toString();
+    if (boutiquesCount <= 1 && isCurrentActive) {
+      return res.status(400).json({
+        success: false,
+        message: "Impossible de desactiver votre derniere boutique. Creez une nouvelle boutique ou supprimez definitivement le compte.",
+      });
+    }
+
     context.user.boutiqueActive = boutique._id;
     await context.user.save();
 
@@ -437,6 +447,8 @@ export const getCurrencySettings = async (req, res) => {
     return res.status(200).json({
       success: true,
       deviseReference: boutique.deviseParDefaut,
+      tvaEnabled: boutique.tvaEnabled !== false,
+      tvaRate: Number(boutique.tvaRate ?? 0.16),
       supportedCurrencies: SUPPORTED_CURRENCIES,
       rates,
     });
@@ -453,9 +465,15 @@ export const updateCurrencySettings = async (req, res) => {
 
     const deviseReference = String(req.body.deviseReference || boutique.deviseParDefaut);
     const rates = Array.isArray(req.body.rates) ? req.body.rates : [];
+    const tvaEnabled = req.body.tvaEnabled !== undefined ? Boolean(req.body.tvaEnabled) : boutique.tvaEnabled !== false;
+    const tvaRate = 0.16;
 
     if (!SUPPORTED_CURRENCIES.includes(deviseReference)) {
       return res.status(400).json({ success: false, message: "Devise de reference invalide." });
+    }
+
+    if (!Number.isFinite(tvaRate) || tvaRate < 0 || tvaRate > 1) {
+      return res.status(400).json({ success: false, message: "Taux TVA invalide." });
     }
 
     const normalizedRates = buildRatePairs(rates);
@@ -464,6 +482,8 @@ export const updateCurrencySettings = async (req, res) => {
     }
 
     boutique.deviseParDefaut = deviseReference;
+    boutique.tvaEnabled = tvaEnabled;
+    boutique.tvaRate = tvaEnabled ? 0.16 : 0;
     await boutique.save();
 
     for (const rate of normalizedRates) {
@@ -480,6 +500,8 @@ export const updateCurrencySettings = async (req, res) => {
       success: true,
       message: "Devise et taux de change mis a jour.",
       deviseReference: boutique.deviseParDefaut,
+      tvaEnabled: boutique.tvaEnabled !== false,
+      tvaRate: Number(boutique.tvaRate ?? 0.16),
       rates: savedRates,
     });
   } catch (error) {

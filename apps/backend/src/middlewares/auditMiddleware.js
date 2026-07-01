@@ -1,4 +1,4 @@
-﻿import jwt from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 import { AuditLog, Boutique, Categorie, Departement, ExchangeRate, Produit, Role, RolePermission, Utilisateur } from "../models/Utilisateur.js";
 
 const MUTATION_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
@@ -36,7 +36,7 @@ const actionFromRequest = (req) => {
   if (path.includes("/resend-otp")) return "RENVOI_OTP";
   if (path.includes("/me")) return "CONSULTATION_SESSION";
   if (path.includes("/update-password") || path.includes("/reset-password")) return "CHANGEMENT_MOT_DE_PASSE";
-  if (path.includes("/settings/exchange-rates")) return "CHANGEMENT_DEVISE_TAUX";
+  if (path.includes("/settings/exchange-rates")) return "CHANGEMENT_DEVISE_TAUX_TVA";
   if (path.includes("/roles")) {
     if (req.method === "GET") return "CONSULTATION_ROLES";
     return req.method === "POST" ? "CREATION_ROLE" : req.method === "DELETE" ? "SUPPRESSION_ROLE" : "MODIFICATION_ROLE";

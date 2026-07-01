@@ -172,6 +172,8 @@ export const createVente = async (req, res) => {
     }
 
     const boutique = await Boutique.findById(boutiqueId);
+    const tvaEnabled = boutique?.tvaEnabled !== false;
+    const effectiveTvaRate = tvaEnabled ? Number(boutique?.tvaRate ?? TVA_RATE) : 0;
     const deviseReference = boutique?.deviseParDefaut || "USD ($)";
     const paymentCurrency = devisePaiement || deviseReference;
     const exchangeRates = await ExchangeRate.find({ boutiqueId, isActive: true });
@@ -211,11 +213,11 @@ export const createVente = async (req, res) => {
         tauxConversion,
         prixUnitaireHTOriginal,
         totalHTOriginal: ligneTotalHTOriginal,
-        totalTTCOriginal: roundMoney(ligneTotalHTOriginal * (1 + TVA_RATE)),
+        totalTTCOriginal: roundMoney(ligneTotalHTOriginal * (1 + effectiveTvaRate)),
         prixUnitaireHT,
-        prixUnitaireTTC: roundMoney(prixUnitaireHT * (1 + TVA_RATE)),
+        prixUnitaireTTC: roundMoney(prixUnitaireHT * (1 + effectiveTvaRate)),
         totalHT: ligneTotalHT,
-        totalTTC: roundMoney(ligneTotalHT * (1 + TVA_RATE)),
+        totalTTC: roundMoney(ligneTotalHT * (1 + effectiveTvaRate)),
         coutUnitaire,
         totalCout,
         margeBrute: roundMoney(ligneTotalHT - totalCout),
@@ -232,7 +234,7 @@ export const createVente = async (req, res) => {
     sousTotalHT = roundMoney(sousTotalHT);
     const remiseMontant = roundMoney((sousTotalHT * remisePourcentage) / 100);
     const taxableAmount = roundMoney(sousTotalHT - remiseMontant);
-    const tvaMontant = roundMoney(taxableAmount * TVA_RATE);
+    const tvaMontant = roundMoney(taxableAmount * effectiveTvaRate);
     const totalTTC = roundMoney(taxableAmount + tvaMontant);
     const tauxPaiement = getRateForSale(paymentCurrency, deviseReference, exchangeRates);
     const montantRecu = paiement === "Espèces" ? roundMoney(montantRecuOriginal * tauxPaiement) : totalTTC;
@@ -276,7 +278,8 @@ export const createVente = async (req, res) => {
       remisePourcentage,
       remiseMontant,
       taxableAmount,
-      tvaRate: TVA_RATE,
+      tvaRate: effectiveTvaRate,
+      tvaApplied: tvaEnabled,
       tvaMontant,
       totalTTC,
       coutTotal: roundMoney(coutTotal),

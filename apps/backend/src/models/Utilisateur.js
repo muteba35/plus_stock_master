@@ -1,4 +1,4 @@
-﻿import mongoose from "mongoose";
+import mongoose from "mongoose";
 
 
 
@@ -570,6 +570,8 @@ const venteSchema = new mongoose.Schema(
 
     tvaRate: { type: Number, default: 0.16, min: 0 },
 
+    tvaApplied: { type: Boolean, default: true },
+
     tvaMontant: { type: Number, required: true, min: 0 },
 
     totalTTC: { type: Number, required: true, min: 0 },
@@ -963,6 +965,12 @@ const boutiqueSchema = new mongoose.Schema(
 
 
     },
+
+
+    tvaEnabled: { type: Boolean, default: true },
+
+
+    tvaRate: { type: Number, default: 0.16, min: 0, max: 1 },
 
 
     tailleBusiness: {

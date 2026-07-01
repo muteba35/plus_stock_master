@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -58,6 +58,7 @@ interface ExchangeRate {
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://plus-stock-master.onrender.com/api";
+const LAST_BOUTIQUE_MESSAGE = "Impossible de désactiver votre dernière boutique. Créez une nouvelle boutique ou supprimez définitivement le compte.";
 const PAGE_SIZE = 10;
 
 const SECTEURS = [
@@ -166,6 +167,8 @@ export default function BoutiquePage() {
   const [isOwner, setIsOwner] = useState(false);
   const [referenceCurrency, setReferenceCurrency] = useState("USD ($)");
   const [exchangeRates, setExchangeRates] = useState<ExchangeRate[]>(DEFAULT_EXCHANGE_RATES);
+  const [tvaEnabled, setTvaEnabled] = useState(true);
+  const [tvaRate, setTvaRate] = useState(0.16);
   const [ratesLoading, setRatesLoading] = useState(false);
   const [ratesSaving, setRatesSaving] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -242,6 +245,8 @@ export default function BoutiquePage() {
       const { data, message } = await readApiMessage(response, "Impossible de charger les taux de change.");
       if (!response.ok || !data?.success) throw new Error(message);
       setReferenceCurrency(data.deviseReference || "USD ($)");
+      setTvaEnabled(data.tvaEnabled !== false);
+      setTvaRate(Number(data.tvaRate ?? 0.16));
       setExchangeRates(normalizeExchangeRates(data.rates || []));
     } catch (error) {
       showToast("error", error instanceof Error ? error.message : "Erreur lors du chargement des taux.");
@@ -256,11 +261,13 @@ export default function BoutiquePage() {
       const response = await fetch(`${API_URL}/boutiques/settings/exchange-rates`, {
         method: "PUT",
         headers: getAuthHeaders(),
-        body: JSON.stringify({ deviseReference: referenceCurrency, rates: exchangeRates }),
+        body: JSON.stringify({ deviseReference: referenceCurrency, tvaEnabled, tvaRate: tvaEnabled ? 0.16 : 0, rates: exchangeRates }),
       });
       const { data, message } = await readApiMessage(response, "Impossible d'enregistrer les taux de change.");
       if (!response.ok || !data?.success) throw new Error(message);
       setReferenceCurrency(data.deviseReference || referenceCurrency);
+      setTvaEnabled(data.tvaEnabled !== false);
+      setTvaRate(Number(data.tvaRate ?? 0.16));
       setExchangeRates(normalizeExchangeRates(data.rates || exchangeRates));
       showToast("success", data.message || "Devise et taux mis à jour.");
       await fetchBoutiques();
@@ -321,8 +328,9 @@ export default function BoutiquePage() {
   const canCreate = isOwner || userPermissions.includes("CREER_BOUTIQUE");
   const canEdit = isOwner || userPermissions.includes("MODIFIER_BOUTIQUE");
   const canChangeCurrency = isOwner || userPermissions.includes("CHANGER_DEVISE");
+  const canManageTva = isOwner || userPermissions.includes("GERER_TVA_BOUTIQUE");
   const canDelete = isOwner || userPermissions.includes("SUPPRIMER_BOUTIQUE");
-  const canActivate = isOwner || userPermissions.includes("ACTIVER_BOUTIQUE");
+  const canActivate = isOwner || userPermissions.includes("ACTIVER_BOUTIQUE") || userPermissions.includes("DESACTIVER_BOUTIQUE");
 
   const filteredBoutiques = useMemo(
     () =>
@@ -475,6 +483,10 @@ export default function BoutiquePage() {
     showToast("success", `${imported} boutique(s) importee(s) avec succes.`);
   };
   const handleActivateBoutique = async (boutique: Boutique) => {
+    if (boutiques.length <= 1 && boutique.isActive) {
+      showToast("error", LAST_BOUTIQUE_MESSAGE);
+      return;
+    }
     if (boutique.isActive) return;
 
     try {
@@ -622,11 +634,11 @@ export default function BoutiquePage() {
         )}
       </div>
 
-      {canChangeCurrency && (
+      {(canChangeCurrency || canManageTva) && (
         <section className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
           <div className="p-5 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div>
-              <h2 className="text-sm font-bold text-slate-900">Devise & taux de change</h2>
+              <h2 className="text-sm font-bold text-slate-900">Devise, TVA & taux de change</h2>
               <p className="text-[11px] text-slate-400 mt-1">
                 La devise de référence consolide la caisse, les factures, les historiques et les futurs rapports.
               </p>
@@ -634,22 +646,33 @@ export default function BoutiquePage() {
             <button
               type="button"
               onClick={saveCurrencySettings}
-              disabled={ratesSaving || ratesLoading}
+              disabled={ratesSaving || ratesLoading || (!canChangeCurrency && !canManageTva)}
               className="inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl disabled:opacity-50"
             >
               {ratesSaving && <Loader2 size={14} className="animate-spin" />}
-              Enregistrer les taux
+              Enregistrer
             </button>
           </div>
           <div className="p-5 grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)] gap-5">
             <label className="space-y-1.5">
               <span className="text-[10px] font-bold uppercase text-slate-400">Devise de référence</span>
-              <select value={referenceCurrency} onChange={(event) => setReferenceCurrency(event.target.value)} className="w-full text-xs font-bold px-3 py-2.5 border border-slate-200 rounded-xl bg-white focus:outline-none focus:border-indigo-500">
+              <select value={referenceCurrency} disabled={!canChangeCurrency} onChange={(event) => setReferenceCurrency(event.target.value)} className="w-full text-xs font-bold px-3 py-2.5 border border-slate-200 rounded-xl bg-white focus:outline-none focus:border-indigo-500 disabled:bg-slate-50 disabled:text-slate-400">
                 {DEVISES.map((devise) => <option key={devise} value={devise}>{devise}</option>)}
               </select>
               <p className="text-[10px] text-slate-400 leading-relaxed">
                 Les ventes multi-devises seront converties vers cette devise au moment de l'encaissement.
               </p>
+              <div className="mt-3 rounded-xl border border-slate-100 bg-slate-50/70 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase text-slate-400">TVA 16%</p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">{tvaEnabled ? "Activée sur les nouvelles ventes." : "Désactivée pour les nouvelles ventes."}</p>
+                  </div>
+                  <button type="button" disabled={!canManageTva} onClick={() => { setTvaEnabled((current) => !current); setTvaRate(0.16); }} className={`relative h-7 w-12 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${tvaEnabled ? "bg-indigo-600" : "bg-slate-300"}`}>
+                    <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-all ${tvaEnabled ? "left-6" : "left-1"}`} />
+                  </button>
+                </div>
+              </div>
             </label>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {exchangeRates.map((rate, index) => (
@@ -660,8 +683,9 @@ export default function BoutiquePage() {
                     min="0.000001"
                     step="0.000001"
                     value={rate.taux}
+                    disabled={!canChangeCurrency}
                     onChange={(event) => updateRate(index, event.target.value)}
-                    className="w-full text-xs font-bold px-3 py-2.5 border border-slate-200 rounded-xl bg-white focus:outline-none focus:border-indigo-500"
+                    className="w-full text-xs font-bold px-3 py-2.5 border border-slate-200 rounded-xl bg-white focus:outline-none focus:border-indigo-500 disabled:bg-slate-50 disabled:text-slate-400"
                   />
                 </label>
               ))}

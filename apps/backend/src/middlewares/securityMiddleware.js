@@ -210,6 +210,8 @@ export const boutiqueValidation = {
   }),
   currency: validateBody({
     deviseReference: { required: true, enum: ["USD ($)", "CDF (FC)", "EUR (€)"] },
+    tvaEnabled: { type: "boolean", required: false },
+    tvaRate: { type: "number", required: false, min: 0, max: 1 },
     rates: { type: "array", required: true, max: 20 },
   }),
 };
