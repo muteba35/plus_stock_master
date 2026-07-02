@@ -18,12 +18,20 @@ interface Plan {
   unavailable: string[];
 }
 
+interface PendingPayment {
+  targetPlanCode: PlanCode;
+  reference: string;
+  orderNumber: string;
+  phone: string;
+}
+
 interface Subscription {
   planCode: PlanCode;
   planName: string;
   status: string;
   currentPeriodEnd?: string | null;
   trialEndsAt?: string | null;
+  pendingPayment?: PendingPayment | null;
 }
 
 const formatLimit = (value: number, label: string) => value >= 999 ? `${label} illimites` : `${value} ${label}`;
@@ -35,6 +43,7 @@ export default function AbonnementPage() {
   const [upgrading, setUpgrading] = useState<string | null>(null);
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [paymentPhone, setPaymentPhone] = useState("");
+  const [pendingPayment, setPendingPayment] = useState<PendingPayment | null>(null);
 
   const headers = useCallback(() => {
     const token = localStorage.getItem("token");
@@ -54,6 +63,7 @@ export default function AbonnementPage() {
       if (!response.ok || !data.success) throw new Error(data.message || "Impossible de charger les abonnements.");
       setPlans(data.plans || []);
       setSubscription(data.subscription);
+      setPendingPayment(data.subscription?.pendingPayment || null);
       localStorage.setItem("subscription_state", JSON.stringify(data.subscription));
       window.dispatchEvent(new Event("userProfileUpdated"));
     } catch (error) {
@@ -68,6 +78,8 @@ export default function AbonnementPage() {
     try {
       const profile = JSON.parse(localStorage.getItem("user_profile") || "{}");
       setPaymentPhone(profile.telephone || "");
+      const storedPending = localStorage.getItem("labyrinthe_pending_payment");
+      if (storedPending) setPendingPayment(JSON.parse(storedPending));
     } catch {
       setPaymentPhone("");
     }
@@ -83,12 +95,39 @@ export default function AbonnementPage() {
       const data = await response.json();
       if (!response.ok || !data.success) throw new Error(data.message || "Paiement impossible.");
       setSubscription(data.subscription);
+      const pending = data.pendingPayment || data.subscription?.pendingPayment || null;
+      setPendingPayment(pending);
+      if (pending) localStorage.setItem("labyrinthe_pending_payment", JSON.stringify(pending));
       localStorage.setItem("subscription_state", JSON.stringify(data.subscription));
       window.dispatchEvent(new Event("userProfileUpdated"));
-      showToast("success", data.message || "Paiement Labyrinthe lancé.");
+      showToast("success", data.message || "Push Labyrinthe envoyé. Valide le paiement puis clique sur vérifier.");
     } catch (error) {
       showToast("error", error instanceof Error ? error.message : "Erreur paiement Labyrinthe.");
     } finally { setUpgrading(null); }
+  };
+
+  const verifyLabyrinthePayment = async () => {
+    try {
+      if (!pendingPayment?.orderNumber) { showToast("error", "Aucune transaction Labyrinthe en attente."); return; }
+      setUpgrading("VERIFY_LABYRINTHE");
+      const response = await fetch(`${API_URL}/subscriptions/labyrinthe/verify`, {
+        method: "POST",
+        headers: headers(),
+        body: JSON.stringify({ orderNumber: pendingPayment.orderNumber, planCode: pendingPayment.targetPlanCode }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.message || "Paiement pas encore confirmé.");
+      setSubscription(data.subscription);
+      setPendingPayment(null);
+      localStorage.removeItem("labyrinthe_pending_payment");
+      localStorage.setItem("subscription_state", JSON.stringify(data.subscription));
+      window.dispatchEvent(new Event("userProfileUpdated"));
+      showToast("success", data.message || "Paiement confirmé.");
+    } catch (error) {
+      showToast("error", error instanceof Error ? error.message : "Erreur de vérification Labyrinthe.");
+    } finally {
+      setUpgrading(null);
+    }
   };
 
   const activatePlan = async (planCode: PlanCode) => {
@@ -170,6 +209,19 @@ export default function AbonnementPage() {
         </label>
         <p className="text-[11px] text-slate-400 font-semibold md:max-w-md">Le token Labyrinthe reste côté serveur. Le frontend envoie seulement le plan et le numéro de paiement.</p>
       </section>
+
+      {pendingPayment && (
+        <section className="bg-amber-50 rounded-2xl border border-amber-100 shadow-sm p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div>
+            <p className="text-xs font-black text-amber-800 uppercase tracking-wider">Transaction Labyrinthe en attente</p>
+            <p className="text-[11px] text-amber-700 mt-1">OrderNumber : <span className="font-black">{pendingPayment.orderNumber}</span>. Valide le push message sur le téléphone, puis vérifie le paiement.</p>
+          </div>
+          <button type="button" onClick={verifyLabyrinthePayment} disabled={upgrading === "VERIFY_LABYRINTHE"} className="h-10 px-4 rounded-xl bg-amber-600 text-white text-[10px] font-black uppercase tracking-wider flex items-center justify-center gap-2 disabled:opacity-50">
+            {upgrading === "VERIFY_LABYRINTHE" ? <Loader2 size={14} className="animate-spin" /> : <CreditCard size={14} />}
+            Vérifier le paiement
+          </button>
+        </section>
+      )}
 
       {loading ? (
         <div className="bg-white rounded-2xl border border-slate-200 p-16 flex items-center justify-center text-slate-400 gap-3 text-xs font-bold">

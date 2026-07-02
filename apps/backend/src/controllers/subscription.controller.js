@@ -45,6 +45,7 @@ const normalizeSubscription = (subscription) => {
     priceMonthly: plan.priceMonthly,
     currency: plan.currency,
     description: plan.description,
+    pendingPayment: subscription?.metadata?.pendingLabyrinthe || null,
   };
 };
 
@@ -166,6 +167,16 @@ export const activateMockSubscription = async (req, res) => {
 
 
 const normalizePhone = (phone) => String(phone || "").replace(/\s+/g, "").trim();
+const getLabyrintheToken = () => process.env.LABYRINTHE_TOKEN || process.env.LABYRINTHE_API_TOKEN;
+const labyrintheMobileUrl = () => process.env.LABYRINTHE_API_URL || "https://payment.labyrinthe-rdc.com/api/beta/mobile";
+const labyrintheGetTransactionUrl = () => process.env.LABYRINTHE_GET_TRANSACTION_URL || "https://payment.labyrinthe-rdc.com/api/beta/get-transaction";
+const mappedBoutiquePlan = (planCode) => planCode === "STARTER" ? "Moyenne" : "Premium";
+const extractLabyrintheTransaction = (providerData) => {
+  const root = providerData?.data || providerData || {};
+  const list = root.array || providerData?.array || [];
+  const first = Array.isArray(list?.[0]) ? list[0][0] : list?.[0];
+  return first || null;
+};
 
 export const initiateLabyrinthePayment = async (req, res) => {
   try {
@@ -174,21 +185,175 @@ export const initiateLabyrinthePayment = async (req, res) => {
     const phone = normalizePhone(req.body?.phone);
     const plan = getPlanByCode(planCode);
     if (!boutiqueId) return res.status(400).json({ success: false, message: "Aucune boutique active." });
-    if (!req.user?.isOwner) return res.status(403).json({ success: false, message: "Seul le proprietaire peut payer l abonnement." });
+    if (!req.user?.isOwner) return res.status(403).json({ success: false, message: "Seul le proprietaire peut payer l'abonnement." });
     if (!["STARTER", "PRO", "BUSINESS"].includes(plan.code)) return res.status(400).json({ success: false, message: "Plan payant invalide." });
     if (!phone) return res.status(400).json({ success: false, message: "Le numero de telephone est requis pour Labyrinthe." });
-    const token = process.env.LABYRINTHE_TOKEN || process.env.LABYRINTHE_API_TOKEN;
-    const apiUrl = process.env.LABYRINTHE_API_URL || "https://payment.labyrinthe-rdc.com/api/beta/mobile";
-    if (!token) return res.status(500).json({ success: false, message: "Token Labyrinthe manquant dans les variables d environnement." });
+
+    const token = getLabyrintheToken();
+    if (!token) return res.status(500).json({ success: false, message: "Token Labyrinthe manquant dans les variables d'environnement." });
+
     const reference = "BTQ-" + String(boutiqueId).slice(-6) + "-" + plan.code + "-" + Date.now();
-    const labyrintheResponse = await axios.post(apiUrl, { token, reference, phone }, { timeout: 30000 });
-    const periodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-    const subscription = await Subscription.findOneAndUpdate({ boutiqueId }, { $set: { planCode: plan.code, status: "active", paymentProvider: "labyrinthe", currentPeriodEnd: periodEnd, trialEndsAt: null, cancelAtPeriodEnd: false, providerReference: reference, metadata: { activatedBy: req.user.id, phone, reference, planCode: plan.code, providerResponse: labyrintheResponse.data, note: "Paiement Labyrinthe beta. Le montant beta est gere par Labyrinthe." } } }, { upsert: true, new: true, setDefaultsOnInsert: true });
-    const mappedPlan = plan.code === "STARTER" ? "Moyenne" : "Premium";
-    await Boutique.findByIdAndUpdate(boutiqueId, { plan: mappedPlan, statutPaiement: "A jour", trialExpiresAt: undefined });
-    return res.status(200).json({ success: true, message: "Paiement Labyrinthe lance avec succes.", reference, provider: labyrintheResponse.data, subscription: normalizeSubscription(subscription) });
+    const payload = new URLSearchParams({ token, reference, phone });
+    const labyrintheResponse = await axios.post(labyrintheMobileUrl(), payload.toString(), {
+      timeout: 30000,
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    });
+
+    const providerData = labyrintheResponse.data || {};
+    const firstResult = Array.isArray(providerData.array) ? providerData.array[0] : null;
+    const providerSuccess = providerData.success === true && (!firstResult || firstResult.success === true);
+    if (!providerSuccess) {
+      return res.status(400).json({
+        success: false,
+        message: firstResult?.message || providerData.message || providerData.error || "Labyrinthe a refuse la transaction.",
+        provider: providerData,
+      });
+    }
+
+    const orderNumber = firstResult?.data?.orderNumber || firstResult?.orderNumber || "";
+    if (!orderNumber) {
+      return res.status(400).json({ success: false, message: "Labyrinthe n'a pas renvoye de numero de transaction.", provider: providerData });
+    }
+
+    const subscription = await ensureBoutiqueSubscription(boutiqueId);
+    subscription.paymentProvider = "labyrinthe";
+    subscription.providerReference = orderNumber;
+    subscription.metadata = {
+      ...(subscription.metadata || {}),
+      pendingLabyrinthe: {
+        targetPlanCode: plan.code,
+        phone,
+        reference,
+        orderNumber,
+        providerResponse: providerData,
+        createdAt: new Date(),
+      },
+    };
+    await subscription.save();
+
+    return res.status(200).json({
+      success: true,
+      message: firstResult?.message || "Transaction envoyee. Veuillez valider le push message puis verifier le paiement.",
+      reference,
+      orderNumber,
+      pendingPayment: subscription.metadata.pendingLabyrinthe,
+      provider: providerData,
+      subscription: normalizeSubscription(subscription),
+    });
   } catch (error) {
-    console.error("initiateLabyrinthePayment:", error?.response?.data || error.message);
-    return res.status(500).json({ success: false, message: error?.response?.data?.message || "Impossible de lancer le paiement Labyrinthe." });
+    const providerStatus = error?.response?.status || null;
+    const providerData = error?.response?.data || null;
+    const providerMessage =
+      providerData?.message ||
+      providerData?.error ||
+      providerData?.detail ||
+      (typeof providerData === "string" ? providerData : "") ||
+      (providerStatus === 403
+        ? "Labyrinthe refuse la demande. Verifiez que le token est correct et que votre compte Labyrinthe est autorise a utiliser l'API beta mobile."
+        : "") ||
+      error.message;
+
+    console.error("initiateLabyrinthePayment:", { status: providerStatus, data: providerData, message: error.message });
+
+    return res.status(providerStatus && providerStatus >= 400 && providerStatus < 500 ? 400 : 500).json({
+      success: false,
+      message: providerMessage || "Impossible de lancer le paiement Labyrinthe.",
+      providerStatus,
+      providerData: process.env.NODE_ENV === "production" ? undefined : providerData,
+    });
+  }
+};
+
+export const verifyLabyrinthePayment = async (req, res) => {
+  try {
+    const boutiqueId = getActiveBoutiqueId(req);
+    if (!boutiqueId) return res.status(400).json({ success: false, message: "Aucune boutique active." });
+    if (!req.user?.isOwner) return res.status(403).json({ success: false, message: "Seul le proprietaire peut verifier l'abonnement." });
+
+    const subscription = await ensureBoutiqueSubscription(boutiqueId);
+    const pending = subscription?.metadata?.pendingLabyrinthe || null;
+    const orderNumber = String(req.body?.orderNumber || pending?.orderNumber || "").trim();
+    if (!orderNumber) return res.status(400).json({ success: false, message: "Aucune transaction Labyrinthe en attente." });
+
+    const token = getLabyrintheToken();
+    if (!token) return res.status(500).json({ success: false, message: "Token Labyrinthe manquant dans les variables d'environnement." });
+
+    const payload = new URLSearchParams({ token, orderNumber });
+    const labyrintheResponse = await axios.post(labyrintheGetTransactionUrl(), payload.toString(), {
+      timeout: 30000,
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    });
+
+    const providerData = labyrintheResponse.data || {};
+    const transaction = extractLabyrintheTransaction(providerData);
+    const status = Number(transaction?.status);
+    const paid = status === 1 || String(transaction?.status || "").toLowerCase() === "success" || String(transaction?.status || "").toLowerCase() === "paid";
+
+    if (!paid) {
+      subscription.metadata = {
+        ...(subscription.metadata || {}),
+        pendingLabyrinthe: {
+          ...(pending || {}),
+          orderNumber,
+          lastVerification: providerData,
+          checkedAt: new Date(),
+        },
+      };
+      await subscription.save();
+      return res.status(202).json({
+        success: false,
+        pending: true,
+        message: "Paiement non confirme par Labyrinthe. Validez le push message puis reessayez.",
+        orderNumber,
+        provider: providerData,
+        subscription: normalizeSubscription(subscription),
+      });
+    }
+
+    const targetPlanCode = pending?.targetPlanCode || String(req.body?.planCode || "PRO").toUpperCase();
+    const plan = getPlanByCode(targetPlanCode);
+    const periodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    subscription.planCode = plan.code;
+    subscription.status = "active";
+    subscription.paymentProvider = "labyrinthe";
+    subscription.currentPeriodEnd = periodEnd;
+    subscription.trialEndsAt = null;
+    subscription.cancelAtPeriodEnd = false;
+    subscription.providerReference = orderNumber;
+    subscription.metadata = {
+      ...(subscription.metadata || {}),
+      pendingLabyrinthe: null,
+      lastLabyrinthePayment: {
+        orderNumber,
+        planCode: plan.code,
+        verifiedAt: new Date(),
+        providerResponse: providerData,
+      },
+    };
+    await subscription.save();
+
+    await Boutique.findByIdAndUpdate(boutiqueId, {
+      plan: mappedBoutiquePlan(plan.code),
+      statutPaiement: "A jour",
+      trialExpiresAt: undefined,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Paiement confirme. Abonnement active.",
+      orderNumber,
+      provider: providerData,
+      subscription: normalizeSubscription(subscription),
+    });
+  } catch (error) {
+    const providerStatus = error?.response?.status || null;
+    const providerData = error?.response?.data || null;
+    console.error("verifyLabyrinthePayment:", { status: providerStatus, data: providerData, message: error.message });
+    return res.status(providerStatus && providerStatus >= 400 && providerStatus < 500 ? 400 : 500).json({
+      success: false,
+      message: providerData?.message || providerData?.error || error.message || "Impossible de verifier le paiement Labyrinthe.",
+      providerStatus,
+      providerData: process.env.NODE_ENV === "production" ? undefined : providerData,
+    });
   }
 };
