@@ -34,6 +34,7 @@ export default function AbonnementPage() {
   const [loading, setLoading] = useState(true);
   const [upgrading, setUpgrading] = useState<string | null>(null);
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [paymentPhone, setPaymentPhone] = useState("");
 
   const headers = useCallback(() => {
     const token = localStorage.getItem("token");
@@ -64,9 +65,31 @@ export default function AbonnementPage() {
 
   useEffect(() => {
     void fetchSubscription();
+    try {
+      const profile = JSON.parse(localStorage.getItem("user_profile") || "{}");
+      setPaymentPhone(profile.telephone || "");
+    } catch {
+      setPaymentPhone("");
+    }
   }, [fetchSubscription]);
 
   const currentLevel = useMemo(() => planOrder[subscription?.planCode || "TRIAL"], [subscription]);
+
+  const payWithLabyrinthe = async (planCode: PlanCode) => {
+    try {
+      if (!paymentPhone.trim()) { showToast("error", "Entre le numéro Mobile Money pour lancer le paiement Labyrinthe."); return; }
+      setUpgrading(planCode);
+      const response = await fetch(`${API_URL}/subscriptions/labyrinthe/initiate`, { method: "POST", headers: headers(), body: JSON.stringify({ planCode, phone: paymentPhone }) });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.message || "Paiement impossible.");
+      setSubscription(data.subscription);
+      localStorage.setItem("subscription_state", JSON.stringify(data.subscription));
+      window.dispatchEvent(new Event("userProfileUpdated"));
+      showToast("success", data.message || "Paiement Labyrinthe lancé.");
+    } catch (error) {
+      showToast("error", error instanceof Error ? error.message : "Erreur paiement Labyrinthe.");
+    } finally { setUpgrading(null); }
+  };
 
   const activatePlan = async (planCode: PlanCode) => {
     try {
@@ -108,7 +131,7 @@ export default function AbonnementPage() {
         </div>
         <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-slate-200 shadow-sm text-xs font-black text-slate-600">
           <CreditCard size={16} className="text-indigo-600" />
-          Paiement test actif
+          Labyrinthe prêt
         </div>
       </div>
 
@@ -138,6 +161,14 @@ export default function AbonnementPage() {
             </div>
           </div>
         </div>
+      </section>
+
+      <section className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 flex flex-col md:flex-row md:items-end gap-3">
+        <label className="flex-1 space-y-1.5">
+          <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Numéro de paiement Labyrinthe</span>
+          <input value={paymentPhone} onChange={(event) => setPaymentPhone(event.target.value)} className="w-full h-11 rounded-xl border border-slate-200 px-4 text-sm font-bold text-slate-700 outline-none focus:border-indigo-500" placeholder="Ex: 0990835638" />
+        </label>
+        <p className="text-[11px] text-slate-400 font-semibold md:max-w-md">Le token Labyrinthe reste côté serveur. Le frontend envoie seulement le plan et le numéro de paiement.</p>
       </section>
 
       {loading ? (
@@ -184,11 +215,11 @@ export default function AbonnementPage() {
                 <button
                   type="button"
                   disabled={active || upgrading === plan.code}
-                  onClick={() => activatePlan(plan.code)}
+                  onClick={() => plan.code === "TRIAL" ? activatePlan(plan.code) : payWithLabyrinthe(plan.code)}
                   className={`mt-6 w-full py-3 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${active ? "bg-slate-100 text-slate-400 cursor-not-allowed" : upgrade ? "bg-indigo-600 text-white hover:bg-indigo-700" : "bg-slate-950 text-white hover:bg-slate-800"}`}
                 >
                   {upgrading === plan.code ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-                  {active ? "Plan actuel" : "Activer en test"}
+                  {active ? "Plan actuel" : plan.code === "TRIAL" ? "Activer en test" : "Payer avec Labyrinthe"}
                 </button>
               </motion.article>
             );

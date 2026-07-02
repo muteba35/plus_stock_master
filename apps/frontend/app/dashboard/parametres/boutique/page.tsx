@@ -724,7 +724,7 @@ export default function BoutiquePage() {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -8, scale: 0.98 }}
                 transition={{ duration: 0.16, ease: "easeOut" }}
-                className="absolute right-4 top-full mt-2 z-50 w-[min(calc(100vw-4rem),420px)] origin-top-right rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl shadow-slate-200/70 ring-1 ring-slate-900/5"
+                className="fixed right-4 top-28 z-[220] w-[min(calc(100vw-2rem),420px)] max-h-[75vh] overflow-y-auto origin-top-right rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl shadow-slate-300/70 ring-1 ring-slate-900/5"
               >
                 <div className="grid grid-cols-1 gap-3">
                   <label className="space-y-1.5">

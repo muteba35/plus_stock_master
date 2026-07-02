@@ -8,6 +8,8 @@ const glossary = [
   { sigle: "HT", name: "Hors taxes", text: "Montant avant ajout de la TVA." },
   { sigle: "TTC", name: "Toutes taxes comprises", text: "Montant final payé par le client, TVA incluse si la TVA est active." },
   { sigle: "CA", name: "Chiffre d'affaires", text: "Total des ventes réalisées sur une période." },
+  { sigle: "CA HT", name: "Chiffre d'affaires hors taxes", text: "Total des ventes sans TVA. C'est la base utilisée pour calculer la marge brute." },
+  { sigle: "CA TTC", name: "Chiffre d'affaires toutes taxes comprises", text: "Total payé par les clients, TVA incluse quand la TVA est active." },
   { sigle: "TVA", name: "Taxe sur la valeur ajoutée", text: "Taxe collectée sur les ventes. Dans Boutiqo, elle peut être activée ou désactivée par boutique." },
   { sigle: "Marge", name: "Différence vente - coût", text: "Ce qui reste après comparaison entre prix de vente hors taxes et coût d'achat." },
   { sigle: "Coût sorti", name: "Valeur d'achat vendue", text: "Somme des prix d'achat des produits réellement sortis du stock." },

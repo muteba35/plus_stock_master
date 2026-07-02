@@ -310,16 +310,25 @@ export const importProduits = async (req, res) => {
       const category = categoryByName.get(categoryName);
       const prixAchat = Number(row?.prixAchat || 0);
       const prixVente = Number(row?.prixVente);
-      const stockInitial = Number(row?.stockInitial || 0);
+      const modeApprovisionnement = row?.modeApprovisionnement === "GROS" ? "GROS" : "DETAIL";
+      const nombreConditionnements = Number(row?.nombreConditionnements || 0);
+      const quantiteParConditionnement = Number(row?.quantiteParConditionnement || 0);
+      const stockInitial = modeApprovisionnement === "GROS" ? nombreConditionnements * quantiteParConditionnement : Number(row?.stockInitial || 0);
       const seuilAlerte = Number(row?.seuilAlerte ?? 5);
       const codeBarres = String(row?.codeBarres || "").trim();
+      const codeBarresConditionnement = String(row?.codeBarresConditionnement || "").trim();
       const devise = normalizeCurrency(row?.devise, boutiqueCurrency);
+      const dateProduction = parseOptionalDate(row?.dateProduction);
+      const dateExpiration = parseOptionalDate(row?.dateExpiration);
       const numbers = [prixAchat, prixVente, stockInitial, seuilAlerte];
 
       let reason = "";
       if (!nom || !sku || !categoryName) reason = "Nom, SKU ou categorie manquant";
       else if (!category) reason = "Categorie inexistante ou inactive";
+      else if (dateProduction === undefined || dateExpiration === undefined) reason = "Date de production ou expiration invalide";
+      else if (dateProduction && dateExpiration && dateExpiration <= dateProduction) reason = "Date d expiration anterieure a la production";
       else if (!numbers.every(Number.isFinite) || numbers.some((value) => value < 0)) reason = "Prix, stock ou seuil invalide";
+      else if (modeApprovisionnement === "GROS" && (!Number.isFinite(nombreConditionnements) || !Number.isFinite(quantiteParConditionnement) || nombreConditionnements <= 0 || quantiteParConditionnement <= 0)) reason = "Conditionnement gros invalide";
       else if (existingSkus.has(sku)) reason = "SKU deja existant";
       else if (fileSkus.has(sku)) reason = "SKU en double dans le fichier";
       else if (codeBarres && existingBarcodes.has(codeBarres)) reason = "Code-barres deja existant";
@@ -346,6 +355,13 @@ export const importProduits = async (req, res) => {
         unite: String(row?.unite || "Pièce").trim(),
         codeBarres,
         image: "",
+        modeApprovisionnement,
+        libelleConditionnement: String(row?.libelleConditionnement || "Carton").trim(),
+        quantiteParConditionnement,
+        nombreConditionnements,
+        codeBarresConditionnement,
+        dateProduction,
+        dateExpiration,
       });
     });
 

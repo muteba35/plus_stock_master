@@ -104,7 +104,7 @@ export default function InventairePage() {
 
   return (
     <div className="space-y-6 bg-[#f9fafd] p-3 sm:p-6 rounded-2xl sm:rounded-3xl min-h-screen text-slate-800 overflow-x-hidden">
-      <PageHeader title="Vue d’ensemble de l’inventaire" subtitle="Disponibilité, valorisation et activité de la boutique active." action={canCreateProduct ? <Link href="/dashboard/inventaire/produits" className={primaryButton}><PackagePlus size={15} /> Nouveau produit</Link> : undefined} />
+      <PageHeader title="Vue d’ensemble de l’inventaire" subtitle="Disponibilité, valorisation et activité de la boutique active." action={canCreateProduct ? <Link href="/dashboard/inventaire/produits?new=1" className={primaryButton}><PackagePlus size={15} /> Nouveau produit</Link> : undefined} />
       {error && <div className="flex items-center gap-2 p-3 rounded-xl border border-rose-100 bg-rose-50 text-rose-700 text-xs font-semibold"><XCircle size={15} />{error}<button onClick={() => void fetchOverview()} className="ml-auto font-bold underline">Réessayer</button></div>}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">

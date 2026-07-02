@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { AlertTriangle, CheckCircle2, Download, Edit2, Eye, FileSpreadsheet, ImagePlus, Loader2, PackagePlus, Plus, RotateCcw, SlidersHorizontal, Trash2, Upload, XCircle } from "lucide-react";
 import { InventoryModal, InventoryPagination, PageHeader, SearchInput, StatusBadge, fieldClass, primaryButton, secondaryButton } from "../components/inventory-ui";
 import { formatMoney, getActiveBoutiqueCurrency } from "../components/currency";
@@ -68,6 +69,13 @@ type ImportProductRow = {
   unite: string;
   codeBarres: string;
   devise: string;
+  modeApprovisionnement: "DETAIL" | "GROS";
+  libelleConditionnement: string;
+  quantiteParConditionnement: string;
+  nombreConditionnements: string;
+  codeBarresConditionnement: string;
+  dateProduction: string;
+  dateExpiration: string;
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://plus-stock-master.onrender.com/api";
@@ -95,7 +103,7 @@ const EMPTY_FORM: ProductForm = {
   isActive: true,
   devise: "USD ($)",
 };
-const UNITS = ["Pièce", "Boîte", "Paquet", "Kg", "Gramme", "Litre", "Mètre"];
+const UNITS = ["Pièce", "Boîte", "Paquet", "Kg", "Gramme", "Litre", "Mètre", "Sachet", "Bouteille", "Casier", "Caisse", "Carton", "Bidon"];
 
 const requestHeaders = () => {
   const token = localStorage.getItem("token");
@@ -173,6 +181,9 @@ const parseProductCsv = (content: string): ImportProductRow[] => {
     nom: indexOf("nom", "name", "produit"), sku: indexOf("sku", "reference"), categorie: indexOf("categorie", "category"),
     description: indexOf("description"), prixAchat: indexOf("prix_achat", "purchase_price"), prixVente: indexOf("prix_vente", "sale_price"),
     stockInitial: indexOf("stock_initial", "stock"), seuilAlerte: indexOf("seuil_alerte", "seuil"), unite: indexOf("unite", "unit"), codeBarres: indexOf("code_barres", "barcode"), devise: indexOf("devise", "currency"),
+    modeApprovisionnement: indexOf("mode_approvisionnement", "mode", "type_insertion"), libelleConditionnement: indexOf("conditionnement", "libelle_conditionnement"),
+    quantiteParConditionnement: indexOf("quantite_par_conditionnement", "unites_par_conditionnement"), nombreConditionnements: indexOf("nombre_conditionnements", "nb_conditionnements"),
+    codeBarresConditionnement: indexOf("code_barres_conditionnement", "barcode_conditionnement"), dateProduction: indexOf("date_production"), dateExpiration: indexOf("date_expiration"),
   };
   if (indexes.nom < 0 || indexes.sku < 0 || indexes.categorie < 0 || indexes.prixVente < 0) {
     throw new Error("Colonnes obligatoires : nom, sku, categorie et prix_vente.");
@@ -185,11 +196,19 @@ const parseProductCsv = (content: string): ImportProductRow[] => {
       nom: valueAt(values, indexes.nom), sku: valueAt(values, indexes.sku).toUpperCase(), categorie: valueAt(values, indexes.categorie),
       description: valueAt(values, indexes.description), prixAchat: valueAt(values, indexes.prixAchat, "0"), prixVente: valueAt(values, indexes.prixVente),
       stockInitial: valueAt(values, indexes.stockInitial, "0"), seuilAlerte: valueAt(values, indexes.seuilAlerte, "5"), unite: valueAt(values, indexes.unite, "Pièce"), codeBarres: valueAt(values, indexes.codeBarres), devise: valueAt(values, indexes.devise, getActiveBoutiqueCurrency()),
+      modeApprovisionnement: valueAt(values, indexes.modeApprovisionnement, "DETAIL").toUpperCase() === "GROS" ? "GROS" : "DETAIL",
+      libelleConditionnement: valueAt(values, indexes.libelleConditionnement, "Carton"),
+      quantiteParConditionnement: valueAt(values, indexes.quantiteParConditionnement, ""),
+      nombreConditionnements: valueAt(values, indexes.nombreConditionnements, ""),
+      codeBarresConditionnement: valueAt(values, indexes.codeBarresConditionnement, ""),
+      dateProduction: valueAt(values, indexes.dateProduction, ""),
+      dateExpiration: valueAt(values, indexes.dateExpiration, ""),
     };
   });
 };
 
 export default function ProduitsPage() {
+  const searchParams = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -252,6 +271,10 @@ export default function ProduitsPage() {
     return () => window.removeEventListener("userProfileUpdated", syncCurrency);
   }, []);
   useEffect(() => { void fetchData(); }, [fetchData]);
+  useEffect(() => {
+    if (searchParams.get("new") === "1" && canCreate && !formOpen) openCreate();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, canCreate, categories.length]);
   useEffect(() => {
     const close = (event: MouseEvent) => {
       if (filterRef.current && !filterRef.current.contains(event.target as Node)) setFilterOpen(false);
@@ -419,7 +442,7 @@ export default function ProduitsPage() {
   };
 
   const downloadImportTemplate = () => {
-    const content = "\uFEFFnom;sku;categorie;description;prix_achat;prix_vente;stock_initial;seuil_alerte;unite;code_barres\r\nClavier mécanique;CLA-MEC-001;Périphériques;Clavier USB professionnel;45;69;20;5;Pièce;1234567890123";
+    const content = "\uFEFFnom;sku;categorie;description;prix_achat;prix_vente;stock_initial;seuil_alerte;unite;code_barres;devise;mode_approvisionnement;conditionnement;nombre_conditionnements;quantite_par_conditionnement;code_barres_conditionnement;date_production;date_expiration\r\nClavier mécanique;CLA-MEC-001;Périphériques;Clavier USB professionnel;45;69;20;5;Pièce;1234567890123;USD ($);DETAIL;;;;;2026-01-01;2027-01-01\r\nMayonnaise carton;MAY-GRO-001;Alimentation;Carton de 10 bouteilles;10;15;0;5;Bouteille;9876543210001;CDF (FC);GROS;Carton;2;10;9876543219999;2026-01-01;2026-12-31";
     const url = URL.createObjectURL(new Blob([content], { type: "text/csv;charset=utf-8" }));
     const link = document.createElement("a");
     link.href = url;
@@ -448,7 +471,9 @@ export default function ProduitsPage() {
       const invalid = rows.find((row) =>
         !row.nom || !row.sku || !row.categorie || !row.prixVente || !DEVISES.includes(row.devise || currency) ||
         !categoryNames.has(row.categorie.toLocaleLowerCase("fr")) ||
-        [row.prixAchat, row.prixVente, row.stockInitial, row.seuilAlerte].some((value) => !Number.isFinite(Number(value)) || Number(value) < 0)
+        [row.prixAchat, row.prixVente, row.seuilAlerte].some((value) => !Number.isFinite(Number(value)) || Number(value) < 0) ||
+        (row.modeApprovisionnement === "DETAIL" && (!Number.isFinite(Number(row.stockInitial)) || Number(row.stockInitial) < 0)) ||
+        (row.modeApprovisionnement === "GROS" && (!Number.isFinite(Number(row.nombreConditionnements)) || !Number.isFinite(Number(row.quantiteParConditionnement)) || Number(row.nombreConditionnements) <= 0 || Number(row.quantiteParConditionnement) <= 0))
       );
       if (invalid) throw new Error(`La ligne ${invalid.line} contient une catégorie inconnue ou une valeur obligatoire invalide.`);
       setImportRows(rows);
