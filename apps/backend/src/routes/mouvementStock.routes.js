@@ -1,6 +1,7 @@
 import express from "express";
 import { createMouvement, getMouvements } from "../controllers/mouvementStock.controller.js";
 import { protect } from "../middlewares/authMiddleware.js";
+import { attachSubscription, requireFeature } from "../middlewares/subscriptionMiddleware.js";
 
 const router = express.Router();
 const permissionByMovementType = {
@@ -37,8 +38,9 @@ const checkMovementReadPermission = (req, res, next) => {
 };
 
 router.use(protect);
+router.use(attachSubscription);
 router.route("/")
-  .get(checkMovementReadPermission, getMouvements)
-  .post(checkMovementPermission, createMouvement);
+  .get(requireFeature("STOCK_MOVEMENTS", "Starter"), checkMovementReadPermission, getMouvements)
+  .post(requireFeature("STOCK_MOVEMENTS", "Starter"), checkMovementPermission, createMouvement);
 
 export default router;

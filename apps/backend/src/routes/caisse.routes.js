@@ -1,14 +1,16 @@
 import express from "express";
 import { createRetour, createVente, getFactures, getRapportsCaisse, getRetours, getVentes } from "../controllers/caisse.controller.js";
 import { checkAnyPermission, checkPermission, protect } from "../middlewares/authMiddleware.js";
+import { attachSubscription, requireFeature } from "../middlewares/subscriptionMiddleware.js";
 
 const router = express.Router();
 
 router.use(protect);
+router.use(attachSubscription);
 
 router
   .route("/rapports")
-  .get(checkAnyPermission("VOIR_RAPPORTS_CAISSE", "VOIR_MES_RAPPORTS_CAISSE", "EXPORTER_RAPPORTS_CAISSE"), getRapportsCaisse);
+  .get(requireFeature("CASH_REPORTS", "Pro"), checkAnyPermission("VOIR_RAPPORTS_CAISSE", "VOIR_MES_RAPPORTS_CAISSE", "EXPORTER_RAPPORTS_CAISSE"), getRapportsCaisse);
 
 router
   .route("/factures")
@@ -17,7 +19,7 @@ router
 router
   .route("/retours")
   .get(checkAnyPermission("VOIR_RETOURS_CLIENTS", "VOIR_MES_RETOURS_CLIENTS", "EXPORTER_RETOURS_CLIENTS", "ANNULER_VENTE"), getRetours)
-  .post(checkAnyPermission("CREER_RETOUR_CLIENT", "ANNULER_VENTE"), createRetour);
+  .post(requireFeature("RETURNS_BASIC", "Starter"), checkAnyPermission("CREER_RETOUR_CLIENT", "ANNULER_VENTE"), createRetour);
 
 router
   .route("/ventes")

@@ -10,17 +10,19 @@ import {
 } from "../controllers/employe.controller.js";
 
 import { protect, checkPermission, checkAnyPermission } from "../middlewares/authMiddleware.js";
+import { attachSubscription, enforceUserLimit, requireFeature } from "../middlewares/subscriptionMiddleware.js";
 
 const router = express.Router();
 
 // Toutes les routes employes necessitent une session valide
 router.use(protect);
+router.use(attachSubscription);
 
 // Liste + creation
 router
   .route("/")
   .get(checkAnyPermission("VOIR_EMPLOYES", "VOIR_EQUIPE"), getEmployes)
-  .post(checkPermission("AJOUTER_EMPLOYE"), createEmploye);
+  .post(requireFeature("TEAM_LIMITED", "Starter"), checkPermission("AJOUTER_EMPLOYE"), enforceUserLimit, createEmploye);
 
 // Detail + modification + suppression
 router

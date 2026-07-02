@@ -79,7 +79,7 @@ const getStoredAccess = () => {
   try {
     const permissions = JSON.parse(localStorage.getItem("user_permissions") || "[]") as string[];
     const profile = JSON.parse(localStorage.getItem("user_profile") || "{}") as { role?: string };
-    return { permissions, isOwner: profile.role === "Admin Général" || profile.role === "Admin GÃ©nÃ©ral" };
+    return { permissions, isOwner: profile.role === "Admin Général" || profile.role === "Admin Général" };
   } catch {
     return { permissions: [] as string[], isOwner: false };
   }

@@ -33,12 +33,21 @@ export const fallbackSubscription: SubscriptionState = {
 };
 
 export const routePlanRequirements: Array<{ href: string; plan: PlanCode; feature: string }> = [
-  { href: "/dashboard/finances", plan: "PRO", feature: "Finance complete" },
+  { href: "/dashboard/caisse/retours", plan: "STARTER", feature: "Retours clients" },
   { href: "/dashboard/caisse/rapports", plan: "PRO", feature: "Rapports caisse" },
+  { href: "/dashboard/inventaire/stock", plan: "STARTER", feature: "Mouvements de stock" },
   { href: "/dashboard/inventaire/projection", plan: "PRO", feature: "Projection produits" },
-  { href: "/dashboard/parametres/audit", plan: "PRO", feature: "Audit global" },
-  { href: "/dashboard/equipe/roles", plan: "PRO", feature: "Roles et permissions avances" },
+  { href: "/dashboard/equipe", plan: "STARTER", feature: "Equipe" },
   { href: "/dashboard/equipe/departements", plan: "PRO", feature: "Departements" },
+  { href: "/dashboard/equipe/roles", plan: "PRO", feature: "Roles et permissions avances" },
+  { href: "/dashboard/finances", plan: "PRO", feature: "Finance complete" },
+  { href: "/dashboard/finances/ventes", plan: "PRO", feature: "Analyse ventes finance" },
+  { href: "/dashboard/finances/benefices", plan: "PRO", feature: "Benefices et pertes" },
+  { href: "/dashboard/finances/charges", plan: "PRO", feature: "Depenses et charges" },
+  { href: "/dashboard/finances/rapports", plan: "PRO", feature: "Rapports d'activite finance" },
+  { href: "/dashboard/finances/exportations", plan: "PRO", feature: "Exportations finance" },
+  { href: "/dashboard/finances/formules", plan: "PRO", feature: "Formules finance" },
+  { href: "/dashboard/parametres/audit", plan: "PRO", feature: "Audit global" },
   { href: "/dashboard/parametres/notifications", plan: "PRO", feature: "Notifications avancees" },
 ];
 

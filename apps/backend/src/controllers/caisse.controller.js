@@ -690,6 +690,7 @@ export const getRapportsCaisse = async (req, res) => {
         const unitSale = quantity > 0 ? roundMoney(Number(line.totalHT || 0) / quantity) : Number(line.prixUnitaireHT || 0);
         const unitCost = quantity > 0 ? roundMoney(lineCost / quantity) : Number(line.coutUnitaire || product?.prixAchat || 0);
         const unitMargin = roundMoney(unitSale - unitCost);
+        const lineTva = roundMoney(Number(line.totalTTC || 0) - Number(line.totalHT || 0));
         addToMap(productsReport, String(line.produitId || productName), { produit: productName, sku, categorie: categoryName, caHT: Number(line.totalHT || 0), totalTTC: Number(line.totalTTC || 0), cout: lineCost, marge: lineMargin, quantite: quantity, ventes: 1 });
         addToMap(categoriesReport, categoryName, { categorie: categoryName, caHT: Number(line.totalHT || 0), totalTTC: Number(line.totalTTC || 0), cout: lineCost, marge: lineMargin, quantite: quantity, ventes: 1 });
         salesDetails.push({
@@ -708,6 +709,7 @@ export const getRapportsCaisse = async (req, res) => {
           margeUnitaire: unitMargin,
           marge: lineMargin,
           totalTTC: Number(line.totalTTC || 0),
+          tva: lineTva,
           devise: sale.deviseReference || sale.devise,
         });
       });

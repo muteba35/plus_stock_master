@@ -426,7 +426,7 @@ export default function DashboardLayout({
         { name: "Accueil Caisse", href: "/dashboard/caisse", permission: "EFFECTUER_VENTE" },
         { name: "Historique Ventes", href: "/dashboard/caisse/ventes", permissions: ["VOIR_HISTORIQUE_VENTES", "VOIR_MES_VENTES"] },
         { name: "Factures", href: "/dashboard/caisse/factures", permissions: ["VOIR_FACTURES", "VOIR_MES_FACTURES", "IMPRIMER_FACTURE"] },
-        { name: "Retours clients", href: "/dashboard/caisse/retours", permissions: ["VOIR_RETOURS_CLIENTS", "VOIR_MES_RETOURS_CLIENTS", "CREER_RETOUR_CLIENT", "ANNULER_VENTE"] },
+        { name: "Retours clients", href: "/dashboard/caisse/retours", permissions: ["VOIR_RETOURS_CLIENTS", "VOIR_MES_RETOURS_CLIENTS", "CREER_RETOUR_CLIENT", "ANNULER_VENTE"], requiredPlan: "STARTER" },
         { name: "Rapports Caisse", href: "/dashboard/caisse/rapports", permissions: ["VOIR_RAPPORTS_CAISSE", "VOIR_MES_RAPPORTS_CAISSE", "EXPORTER_RAPPORTS_CAISSE"], requiredPlan: "PRO" },
       ],
     },
@@ -438,7 +438,7 @@ export default function DashboardLayout({
         { name: "Vue Globale", href: "/dashboard/inventaire", permission: "VOIR_RESUME_INVENTAIRE" },
         { name: "Gestion Produits", href: "/dashboard/inventaire/produits", permission: "VOIR_LISTE_PRODUITS" },
         { name: "Catégories", href: "/dashboard/inventaire/categories", permission: "VOIR_CATEGORIES" },
-        { name: "Mouvements Stock", href: "/dashboard/inventaire/stock", permissions: ["VOIR_MOUVEMENTS_STOCK", "VOIR_MES_OPERATIONS_INVENTAIRE"] },
+        { name: "Mouvements Stock", href: "/dashboard/inventaire/stock", permissions: ["VOIR_MOUVEMENTS_STOCK", "VOIR_MES_OPERATIONS_INVENTAIRE"], requiredPlan: "STARTER" },
         { name: "Projection Produits", href: "/dashboard/inventaire/projection", permissions: ["VOIR_PROJECTION_PRODUITS", "EXPORTER_PROJECTION_PRODUITS"], requiredPlan: "PRO" },
         { name: "Alertes Rupture", href: "/dashboard/inventaire/alertes", permission: "VOIR_ALERTES_STOCK" },
       ],
@@ -451,22 +451,26 @@ export default function DashboardLayout({
     { 
       name: "Vue d'ensemble", 
       href: "/dashboard/equipe", 
-      permission: "VOIR_EQUIPE" // Permet à quiconque ayant un droit dans l'équipe d'y accéder
+      permission: "VOIR_EQUIPE",
+      requiredPlan: "STARTER" // Permet à quiconque ayant un droit dans l'équipe d'y accéder
     },
     { 
       name: "Employés", 
       href: "/dashboard/equipe/employes", 
-      permission: "VOIR_EMPLOYES" //
+      permission: "VOIR_EMPLOYES",
+      requiredPlan: "STARTER" //
     },
     { 
       name: "Départements", 
       href: "/dashboard/equipe/departements", 
-      permission: "VOIR_DEPARTEMENTS" // Cohérent (Visualisation)
+      permission: "VOIR_DEPARTEMENTS",
+      requiredPlan: "PRO" // Cohérent (Visualisation)
     },
     { 
       name: "Rôles", 
       href: "/dashboard/equipe/roles", 
-      permission: "VOIR_ROLES" // Cohérent avec la page RolesPage qu'on vient de faire
+      permission: "VOIR_ROLES",
+      requiredPlan: "PRO" // Cohérent avec la page RolesPage qu'on vient de faire
     },
   ],
 },
@@ -475,13 +479,13 @@ export default function DashboardLayout({
       icon: CircleDollarSign,
       module: "FINANCE",
       subMenu: [
-        { name: "Tableau de bord", href: "/dashboard/finances", permission: "VOIR_CHIFFRE_AFFAIRE" },
-        { name: "Analyse Ventes", href: "/dashboard/finances/ventes", permission: "VOIR_HISTORIQUE_VENTES" },
-        { name: "Bénéfices & Pertes", href: "/dashboard/finances/benefices", permissions: ["VOIR_BENEFICES", "VOIR_ANALYSE_FINANCIERE"] },
-        { name: "Dépenses & Charges", href: "/dashboard/finances/charges", permissions: ["VOIR_CHARGES_FINANCE", "GERER_CHARGES_FINANCE"] },
-        { name: "Rapports d'activité", href: "/dashboard/finances/rapports", permission: "VOIR_CHIFFRE_AFFAIRE" },
-        { name: "Exportations", href: "/dashboard/finances/exportations", permission: "EXPORTER_RAPPORTS" },
-        { name: "Formules", href: "/dashboard/finances/formules", permission: "VOIR_FORMULES_FINANCE" },
+        { name: "Tableau de bord", href: "/dashboard/finances", permission: "VOIR_CHIFFRE_AFFAIRE", requiredPlan: "PRO" },
+        { name: "Analyse Ventes", href: "/dashboard/finances/ventes", permission: "VOIR_HISTORIQUE_VENTES", requiredPlan: "PRO" },
+        { name: "Bénéfices & Pertes", href: "/dashboard/finances/benefices", permissions: ["VOIR_BENEFICES", "VOIR_ANALYSE_FINANCIERE"], requiredPlan: "PRO" },
+        { name: "Dépenses & Charges", href: "/dashboard/finances/charges", permissions: ["VOIR_CHARGES_FINANCE", "GERER_CHARGES_FINANCE"], requiredPlan: "PRO" },
+        { name: "Rapports d'activité", href: "/dashboard/finances/rapports", permission: "VOIR_CHIFFRE_AFFAIRE", requiredPlan: "PRO" },
+        { name: "Exportations", href: "/dashboard/finances/exportations", permission: "EXPORTER_RAPPORTS", requiredPlan: "PRO" },
+        { name: "Formules", href: "/dashboard/finances/formules", permission: "VOIR_FORMULES_FINANCE", requiredPlan: "PRO" },
       ],
     },
     {

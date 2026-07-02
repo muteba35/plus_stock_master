@@ -14,6 +14,7 @@ import auditRoutes from "./routes/audit.routes.js";
 import financeRoutes from "./routes/finance.routes.js";
 import subscriptionRoutes from "./routes/subscription.routes.js";
 import { auditLogger } from "./middlewares/auditMiddleware.js";
+import { attachSubscription } from "./middlewares/subscriptionMiddleware.js";
 
 const app = express();
 
