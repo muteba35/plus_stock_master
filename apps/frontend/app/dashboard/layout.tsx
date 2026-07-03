@@ -573,7 +573,7 @@ export default function DashboardLayout({
           <div className="p-6 border-b border-slate-800/60 bg-[#141C2F] h-20 flex items-center justify-between shrink-0">
             <div className="flex items-center space-x-3 overflow-hidden">
               <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-600/20 shrink-0">
-                <img src="/boutiqo-mark.svg" alt="Boutiqo" className="w-5 h-5" />
+                <img src="/movoora-mark.svg" alt="Movoora" className="w-5 h-5" />
               </div>
 
               {(isSidebarOpen || isMobileSidebarOpen) && (
@@ -713,7 +713,7 @@ export default function DashboardLayout({
                               className={isSubActive ? "text-indigo-400" : "text-slate-600"}
                             />
                             <span>{sub.name}</span>
-                            {sub.requiredPlan && !canUsePlan(subscription.planCode, sub.requiredPlan) && <LockKeyhole size={11} className="ml-auto text-amber-400" />}
+                            {sub.requiredPlan && !canUsePlan(subscription.planCode, sub.requiredPlan) && <span className="ml-auto inline-flex items-center gap-1 rounded-md border border-amber-400/20 bg-amber-400/10 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wide text-amber-300"><LockKeyhole size={9} /> Pro</span>}
                           </Link>
                         );
                       })}
@@ -985,6 +985,8 @@ export default function DashboardLayout({
     </div>
   );
 }
+
+
 
 
 

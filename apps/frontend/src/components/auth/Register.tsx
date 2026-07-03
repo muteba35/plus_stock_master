@@ -161,7 +161,7 @@ export default function Register() {
           <div className="lg:w-[320px] bg-[#090E1A] p-10 flex flex-col items-center justify-center relative shrink-0 border-r border-slate-800/40 text-center">
             <div className="relative z-10 flex flex-col items-center w-full">
               <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-xl flex items-center justify-center text-white shadow-xl mb-6">
-                <img src="/boutiqo-mark.svg" alt="Boutiqo" className="w-8 h-8" />
+                <img src="/movoora-mark.svg" alt="Movoora" className="w-8 h-8" />
               </div>
               <h1 className="text-2xl font-black text-white tracking-tighter uppercase">
                 BOUTI<span className="text-indigo-400">QO</span>
@@ -406,7 +406,7 @@ export default function Register() {
             <motion.div initial={{ opacity: 0, y: 16, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8, scale: 0.98 }} className="relative z-10 w-full max-w-2xl max-h-[88vh] overflow-hidden bg-white rounded-3xl border border-slate-200 shadow-2xl">
               <div className="p-5 border-b border-slate-100 bg-slate-50 flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">Boutiqo</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">Movoora</p>
                   <h2 className="text-lg font-black text-slate-950 mt-1">Conditions générales d'inscription</h2>
                   <p className="text-xs text-slate-500 mt-1">Résumé des règles acceptées lors de la création du compte.</p>
                 </div>
@@ -415,9 +415,9 @@ export default function Register() {
                 </button>
               </div>
               <div className="p-6 overflow-y-auto max-h-[calc(88vh-92px)] space-y-4 text-sm text-slate-600 leading-relaxed">
-                <TermsBlock title="Responsabilité du compte" text="Le propriétaire de boutique garantit l'exactitude des informations fournies et reste responsable des actions réalisées depuis son espace Boutiqo." />
+                <TermsBlock title="Responsabilité du compte" text="Le propriétaire de boutique garantit l'exactitude des informations fournies et reste responsable des actions réalisées depuis son espace Movoora." />
                 <TermsBlock title="Sécurité des accès" text="Les mots de passe, codes temporaires et permissions doivent rester confidentiels. Les accès employés doivent être attribués uniquement aux personnes autorisées." />
-                <TermsBlock title="Données de gestion" text="Boutiqo conserve les données nécessaires au fonctionnement de la boutique : utilisateurs, produits, ventes, mouvements, audit, notifications et paramètres." />
+                <TermsBlock title="Données de gestion" text="Movoora conserve les données nécessaires au fonctionnement de la boutique : utilisateurs, produits, ventes, mouvements, audit, notifications et paramètres." />
                 <TermsBlock title="Traçabilité" text="Les actions sensibles peuvent être enregistrées dans le journal d'audit afin d'identifier qui a fait quoi, quand, depuis quelle adresse IP et quel navigateur." />
                 <TermsBlock title="Utilisation conforme" text="L'application doit être utilisée pour une gestion commerciale légale. Toute tentative de contournement de sécurité peut entraîner une restriction d'accès." />
               </div>
@@ -459,3 +459,5 @@ function InputGroup({ label, icon: Icon, ...props }: InputGroupProps & { name: s
     </div>
   );
 }
+
+

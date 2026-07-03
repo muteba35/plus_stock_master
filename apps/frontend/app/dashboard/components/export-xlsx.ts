@@ -18,7 +18,7 @@ export const exportXlsxWorkbook = (fileName: string, sheets: XlsxSheet[]) => {
   const workbook = XLSX.utils.book_new();
 
   sheets.forEach((sheet) => {
-    const data = [["Boutiqo", sheet.name, "Export du " + generatedAt()], [], sheet.columns, ...sheet.rows].map((row) => row.map(normalizeCell));
+    const data = [["Movoora", sheet.name, "Export du " + generatedAt()], [], sheet.columns, ...sheet.rows].map((row) => row.map(normalizeCell));
     const worksheet = XLSX.utils.aoa_to_sheet(data);
     worksheet["!cols"] = sheet.columns.map((column, index) => {
       const values = data.map((row) => String(row[index] ?? ""));
@@ -31,3 +31,4 @@ export const exportXlsxWorkbook = (fileName: string, sheets: XlsxSheet[]) => {
 
   XLSX.writeFile(workbook, fileName.endsWith(".xlsx") ? fileName : fileName + ".xlsx", { compression: true });
 };
+

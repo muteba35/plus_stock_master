@@ -364,7 +364,7 @@ export default function RolesPage() {
           {loading ? (
             <div className="flex flex-col items-center justify-center p-16 gap-3 text-slate-400">
               <Loader2 className="animate-spin text-indigo-500" size={24} />
-              <span className="text-xs font-medium">Connexion à Boutiqo en cours...</span>
+              <span className="text-xs font-medium">Connexion à Movoora en cours...</span>
             </div>
           ) : (
             <table className="w-full text-left text-xs min-w-[850px]">
@@ -519,3 +519,5 @@ export default function RolesPage() {
     </div>
   );
 }
+
+

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Check, CreditCard, Loader2, LockKeyhole, ShieldCheck, Sparkles, Store, Users } from "lucide-react";
+import { Check, Loader2, LockKeyhole, ShieldCheck, Sparkles, Store, Users } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { planOrder, type PlanCode } from "../../../../src/lib/subscriptionPlans";
 
@@ -18,20 +18,12 @@ interface Plan {
   unavailable: string[];
 }
 
-interface PendingPayment {
-  targetPlanCode: PlanCode;
-  reference: string;
-  orderNumber: string;
-  phone: string;
-}
-
 interface Subscription {
   planCode: PlanCode;
   planName: string;
   status: string;
   currentPeriodEnd?: string | null;
   trialEndsAt?: string | null;
-  pendingPayment?: PendingPayment | null;
 }
 
 const formatLimit = (value: number, label: string) => value >= 999 ? `${label} illimites` : `${value} ${label}`;
@@ -42,8 +34,6 @@ export default function AbonnementPage() {
   const [loading, setLoading] = useState(true);
   const [upgrading, setUpgrading] = useState<string | null>(null);
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
-  const [paymentPhone, setPaymentPhone] = useState("");
-  const [pendingPayment, setPendingPayment] = useState<PendingPayment | null>(null);
 
   const headers = useCallback(() => {
     const token = localStorage.getItem("token");
@@ -63,7 +53,6 @@ export default function AbonnementPage() {
       if (!response.ok || !data.success) throw new Error(data.message || "Impossible de charger les abonnements.");
       setPlans(data.plans || []);
       setSubscription(data.subscription);
-      setPendingPayment(data.subscription?.pendingPayment || null);
       localStorage.setItem("subscription_state", JSON.stringify(data.subscription));
       window.dispatchEvent(new Event("userProfileUpdated"));
     } catch (error) {
@@ -75,60 +64,9 @@ export default function AbonnementPage() {
 
   useEffect(() => {
     void fetchSubscription();
-    try {
-      const profile = JSON.parse(localStorage.getItem("user_profile") || "{}");
-      setPaymentPhone(profile.telephone || "");
-      const storedPending = localStorage.getItem("labyrinthe_pending_payment");
-      if (storedPending) setPendingPayment(JSON.parse(storedPending));
-    } catch {
-      setPaymentPhone("");
-    }
   }, [fetchSubscription]);
 
   const currentLevel = useMemo(() => planOrder[subscription?.planCode || "TRIAL"], [subscription]);
-
-  const payWithLabyrinthe = async (planCode: PlanCode) => {
-    try {
-      if (!paymentPhone.trim()) { showToast("error", "Entre le numéro Mobile Money pour lancer le paiement Labyrinthe."); return; }
-      setUpgrading(planCode);
-      const response = await fetch(`${API_URL}/subscriptions/labyrinthe/initiate`, { method: "POST", headers: headers(), body: JSON.stringify({ planCode, phone: paymentPhone }) });
-      const data = await response.json();
-      if (!response.ok || !data.success) throw new Error(data.message || "Paiement impossible.");
-      setSubscription(data.subscription);
-      const pending = data.pendingPayment || data.subscription?.pendingPayment || null;
-      setPendingPayment(pending);
-      if (pending) localStorage.setItem("labyrinthe_pending_payment", JSON.stringify(pending));
-      localStorage.setItem("subscription_state", JSON.stringify(data.subscription));
-      window.dispatchEvent(new Event("userProfileUpdated"));
-      showToast("success", data.message || "Push Labyrinthe envoyé. Valide le paiement puis clique sur vérifier.");
-    } catch (error) {
-      showToast("error", error instanceof Error ? error.message : "Erreur paiement Labyrinthe.");
-    } finally { setUpgrading(null); }
-  };
-
-  const verifyLabyrinthePayment = async () => {
-    try {
-      if (!pendingPayment?.orderNumber) { showToast("error", "Aucune transaction Labyrinthe en attente."); return; }
-      setUpgrading("VERIFY_LABYRINTHE");
-      const response = await fetch(`${API_URL}/subscriptions/labyrinthe/verify`, {
-        method: "POST",
-        headers: headers(),
-        body: JSON.stringify({ orderNumber: pendingPayment.orderNumber, planCode: pendingPayment.targetPlanCode }),
-      });
-      const data = await response.json();
-      if (!response.ok || !data.success) throw new Error(data.message || "Paiement pas encore confirmé.");
-      setSubscription(data.subscription);
-      setPendingPayment(null);
-      localStorage.removeItem("labyrinthe_pending_payment");
-      localStorage.setItem("subscription_state", JSON.stringify(data.subscription));
-      window.dispatchEvent(new Event("userProfileUpdated"));
-      showToast("success", data.message || "Paiement confirmé.");
-    } catch (error) {
-      showToast("error", error instanceof Error ? error.message : "Erreur de vérification Labyrinthe.");
-    } finally {
-      setUpgrading(null);
-    }
-  };
 
   const activatePlan = async (planCode: PlanCode) => {
     try {
@@ -141,9 +79,10 @@ export default function AbonnementPage() {
       const data = await response.json();
       if (!response.ok || !data.success) throw new Error(data.message || "Activation impossible.");
       setSubscription(data.subscription);
+      localStorage.removeItem("labyrinthe_pending_payment");
       localStorage.setItem("subscription_state", JSON.stringify(data.subscription));
       window.dispatchEvent(new Event("userProfileUpdated"));
-      showToast("success", "Plan active en mode test. Labyrinthe sera branche ensuite.");
+      showToast("success", "Plan active en mode test. Le paiement sera branche ensuite.");
     } catch (error) {
       showToast("error", error instanceof Error ? error.message : "Erreur activation.");
     } finally {
@@ -165,12 +104,12 @@ export default function AbonnementPage() {
 
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">Abonnements Boutiqo</h1>
+          <h1 className="text-xl font-bold text-slate-900">Abonnements Movoora</h1>
           <p className="text-xs text-slate-400 font-medium mt-1">Plans, limites et modules premium de la boutique active.</p>
         </div>
         <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-slate-200 shadow-sm text-xs font-black text-slate-600">
-          <CreditCard size={16} className="text-indigo-600" />
-          Labyrinthe prêt
+          <Sparkles size={16} className="text-indigo-600" />
+          Activation test active
         </div>
       </div>
 
@@ -202,26 +141,13 @@ export default function AbonnementPage() {
         </div>
       </section>
 
-      <section className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 flex flex-col md:flex-row md:items-end gap-3">
-        <label className="flex-1 space-y-1.5">
-          <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Numéro de paiement Labyrinthe</span>
-          <input value={paymentPhone} onChange={(event) => setPaymentPhone(event.target.value)} className="w-full h-11 rounded-xl border border-slate-200 px-4 text-sm font-bold text-slate-700 outline-none focus:border-indigo-500" placeholder="Ex: 0990835638" />
-        </label>
-        <p className="text-[11px] text-slate-400 font-semibold md:max-w-md">Le token Labyrinthe reste côté serveur. Le frontend envoie seulement le plan et le numéro de paiement.</p>
+      <section className="bg-indigo-50 rounded-2xl border border-indigo-100 shadow-sm p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div>
+          <p className="text-xs font-black text-indigo-700 uppercase tracking-wider">Mode paiement temporaire</p>
+          <p className="text-[11px] text-indigo-600 mt-1 font-semibold">En attendant Labyrinthe, un clic active directement le plan choisi pour faciliter les tests.</p>
+        </div>
+        <span className="px-3 py-2 rounded-xl bg-white text-indigo-700 text-[10px] font-black border border-indigo-100">TEST INTERNE</span>
       </section>
-
-      {pendingPayment && (
-        <section className="bg-amber-50 rounded-2xl border border-amber-100 shadow-sm p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-          <div>
-            <p className="text-xs font-black text-amber-800 uppercase tracking-wider">Transaction Labyrinthe en attente</p>
-            <p className="text-[11px] text-amber-700 mt-1">OrderNumber : <span className="font-black">{pendingPayment.orderNumber}</span>. Valide le push message sur le téléphone, puis vérifie le paiement.</p>
-          </div>
-          <button type="button" onClick={verifyLabyrinthePayment} disabled={upgrading === "VERIFY_LABYRINTHE"} className="h-10 px-4 rounded-xl bg-amber-600 text-white text-[10px] font-black uppercase tracking-wider flex items-center justify-center gap-2 disabled:opacity-50">
-            {upgrading === "VERIFY_LABYRINTHE" ? <Loader2 size={14} className="animate-spin" /> : <CreditCard size={14} />}
-            Vérifier le paiement
-          </button>
-        </section>
-      )}
 
       {loading ? (
         <div className="bg-white rounded-2xl border border-slate-200 p-16 flex items-center justify-center text-slate-400 gap-3 text-xs font-bold">
@@ -240,7 +166,7 @@ export default function AbonnementPage() {
                     <h2 className="text-sm font-black text-slate-950">{plan.name}</h2>
                     <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">{plan.description}</p>
                   </div>
-                  {active ? <span className="px-2 py-1 rounded-lg bg-indigo-50 text-indigo-600 text-[9px] font-black">ACTIF</span> : <LockKeyhole size={16} className="text-slate-300" />}
+                  {active ? <span className="px-2 py-1 rounded-lg bg-indigo-50 text-indigo-600 text-[9px] font-black">ACTIF</span> : <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-50 border border-slate-200 text-slate-500 text-[9px] font-black uppercase"><LockKeyhole size={11} /> Upgrade</span>}
                 </div>
 
                 <div className="mt-5">
@@ -267,11 +193,11 @@ export default function AbonnementPage() {
                 <button
                   type="button"
                   disabled={active || upgrading === plan.code}
-                  onClick={() => plan.code === "TRIAL" ? activatePlan(plan.code) : payWithLabyrinthe(plan.code)}
+                  onClick={() => activatePlan(plan.code)}
                   className={`mt-6 w-full py-3 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${active ? "bg-slate-100 text-slate-400 cursor-not-allowed" : upgrade ? "bg-indigo-600 text-white hover:bg-indigo-700" : "bg-slate-950 text-white hover:bg-slate-800"}`}
                 >
                   {upgrading === plan.code ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-                  {active ? "Plan actuel" : plan.code === "TRIAL" ? "Activer en test" : "Payer avec Labyrinthe"}
+                  {active ? "Plan actuel" : "Activer ce plan"}
                 </button>
               </motion.article>
             );

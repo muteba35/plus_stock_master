@@ -84,7 +84,7 @@ export default function ForgotPassword() {
                 <header className="text-center mb-10">
                   <div className="flex flex-col items-center gap-3 mb-8">
                     <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-indigo-100">
-                      <img src="/boutiqo-mark.svg" alt="Boutiqo" className="w-8 h-8" />
+                      <img src="/movoora-mark.svg" alt="Movoora" className="w-8 h-8" />
                     </div>
                     <div className="flex flex-col leading-none">
                       <span className="text-xl font-black tracking-tighter text-slate-900 uppercase">
@@ -209,3 +209,5 @@ export default function ForgotPassword() {
     </>
   );
 }
+
+

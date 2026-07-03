@@ -1,10 +1,11 @@
 import VerifyEmail from "../../src/components/auth/VerifyEmail";
 
 export const metadata = {
-  title: "Vérification | Boutiqo",
-  description: "Vérifiez votre adresse email pour activer votre compte Boutiqo.",
+  title: "Vérification | Movoora",
+  description: "Vérifiez votre adresse email pour activer votre compte Movoora.",
 };
 
 export default function VerifyEmailPage() {
   return <VerifyEmail />;
 }
+

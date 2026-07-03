@@ -19,7 +19,7 @@ export default function HelpDefinitionsPage() {
           <BookOpen size={14} /> Aide metier
         </div>
         <h1 className="text-xl font-bold text-slate-900">Aide, formules et definitions</h1>
-        <p className="text-xs text-slate-400 font-medium mt-1">Les notions importantes utilisees dans Boutiqo, expliquees simplement.</p>
+        <p className="text-xs text-slate-400 font-medium mt-1">Les notions importantes utilisees dans Movoora, expliquees simplement.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
@@ -43,3 +43,4 @@ export default function HelpDefinitionsPage() {
     </div>
   );
 }
+

@@ -284,7 +284,7 @@ export default function VerifyCode() {
           {/* Header */}
           <div className="flex flex-col items-center text-center mb-10">
             <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-indigo-600 to-indigo-700 flex items-center justify-center text-white shadow-2xl shadow-indigo-100 border border-indigo-500/20">
-              <img src="/boutiqo-mark.svg" alt="Boutiqo" className="w-9 h-9" />
+              <img src="/movoora-mark.svg" alt="Movoora" className="w-9 h-9" />
             </div>
 
             <div className="mt-5">
@@ -431,3 +431,5 @@ export default function VerifyCode() {
     </>
   );
 }
+
+
