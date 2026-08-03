@@ -579,7 +579,7 @@ export default function DashboardLayout({
               {(isSidebarOpen || isMobileSidebarOpen) && (
                 <div className="flex flex-col items-start">
                   <h1 className="text-lg font-black tracking-tight leading-none text-white">
-                    BOUTI<span className="text-indigo-500">QO</span>
+                    MOVO<span className="text-indigo-500">ORA</span>
                   </h1>
                   <span className="text-[8px] font-bold text-slate-500 uppercase tracking-[0.2em] mt-1">
                     Commerce Platform

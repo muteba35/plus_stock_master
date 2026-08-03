@@ -122,7 +122,7 @@ export default function AuditPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = "journal-audit-movoora.csv";
+    link.download = "journal-audit-movora.csv";
     link.click();
     URL.revokeObjectURL(url);
   };

@@ -110,7 +110,7 @@ export default function ResetPassword() {
                     </div>
                     <div className="flex flex-col leading-none">
                       <span className="text-xl font-black tracking-tighter text-slate-900 uppercase">
-                        BOUTI<span className="text-indigo-600">QO</span>
+                        MOVO<span className="text-indigo-600">ORA</span>
                       </span>
                       <span className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-1">Pro Edition</span>
                     </div>

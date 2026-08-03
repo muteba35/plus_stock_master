@@ -250,7 +250,7 @@ export default function CategoriesInventairePage() {
     const url = URL.createObjectURL(new Blob([content], { type: "text/csv;charset=utf-8" }));
     const link = document.createElement("a");
     link.href = url;
-    link.download = "modele-categories-movoora.csv";
+    link.download = "modele-categories-movora.csv";
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -362,7 +362,7 @@ export default function CategoriesInventairePage() {
         <div className="space-y-4">
           <label className="block space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Nom de la catégorie</span><input value={form.nom} onChange={(event) => setForm({ ...form, nom: event.target.value })} maxLength={100} className={fieldClass} placeholder="Ex: Consommables" /></label>
           <label className="block space-y-1.5"><span className="text-[10px] font-bold uppercase text-slate-400">Description</span><textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} maxLength={500} rows={4} className={`${fieldClass} h-auto py-3 resize-none`} placeholder="Décrivez les produits regroupés ici..." /></label>
-          <div className="space-y-2"><span className="text-[10px] font-bold uppercase text-slate-400">Couleur d’identification</span><div className="flex flex-wrap gap-2">{COLORS.map((color) => <button key={color} type="button" onClick={() => setForm({ ...form, couleur: color })} className={`w-8 h-8 rounded-lg border-2 transition-transform ${form.couleur === color ? "border-slate-800 scale-110" : "border-white shadow-sm"}`} style={{ backgroundColor: color }} title={`Couleur ${color}`} />)}</div></div>
+          <div className="space-y-2"><span className="text-[10px] font-bold uppercase text-slate-400">Couleur d'identification</span><div className="flex flex-wrap gap-2">{COLORS.map((color) => <button key={color} type="button" onClick={() => setForm({ ...form, couleur: color })} className={`w-8 h-8 rounded-lg border-2 transition-transform ${form.couleur === color ? "border-slate-800 scale-110" : "border-white shadow-sm"}`} style={{ backgroundColor: color }} title={`Couleur ${color}`} />)}</div></div>
         </div>
       </InventoryModal>
 

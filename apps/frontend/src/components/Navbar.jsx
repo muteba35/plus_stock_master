@@ -51,7 +51,7 @@ export default function Navbar() {
               {/* Texte Typo Moderne : Taille fluide */}
               <div className="flex flex-col leading-none">
                 <span className="text-sm sm:text-lg lg:text-xl font-black tracking-tighter text-slate-900 uppercase">
-                  BOUTI<span className="text-indigo-600">QO</span>
+                  MOVO<span className="text-indigo-600">ORA</span>
                 </span>
                 <span className="text-[6px] sm:text-[8px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-0.5 ml-0.5">
                   Commerce Platform

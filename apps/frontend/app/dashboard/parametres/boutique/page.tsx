@@ -15,6 +15,7 @@ import {
   FileText,
   FileSpreadsheet,
   Loader2,
+  RefreshCw,
   Plus,
   Power,
   Search,
@@ -171,6 +172,7 @@ export default function BoutiquePage() {
   const [tvaRate, setTvaRate] = useState(0.16);
   const [ratesLoading, setRatesLoading] = useState(false);
   const [ratesSaving, setRatesSaving] = useState(false);
+  const [ratesSyncing, setRatesSyncing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [deletionCode, setDeletionCode] = useState("");
   const [deletionError, setDeletionError] = useState("");
@@ -245,8 +247,8 @@ export default function BoutiquePage() {
       const { data, message } = await readApiMessage(response, "Impossible de charger les taux de change.");
       if (!response.ok || !data?.success) throw new Error(message);
       setReferenceCurrency(data.deviseReference || "USD ($)");
-      setTvaEnabled(data.tvaEnabled !== false);
-      setTvaRate(Number(data.tvaRate ?? 0.16));
+      setTvaEnabled(true);
+      setTvaRate(0.16);
       setExchangeRates(normalizeExchangeRates(data.rates || []));
     } catch (error) {
       showToast("error", error instanceof Error ? error.message : "Erreur lors du chargement des taux.");
@@ -261,15 +263,15 @@ export default function BoutiquePage() {
       const response = await fetch(`${API_URL}/boutiques/settings/exchange-rates`, {
         method: "PUT",
         headers: getAuthHeaders(),
-        body: JSON.stringify({ deviseReference: referenceCurrency, tvaEnabled, tvaRate: tvaEnabled ? 0.16 : 0, rates: exchangeRates }),
+        body: JSON.stringify({ deviseReference: referenceCurrency, rates: exchangeRates }),
       });
       const { data, message } = await readApiMessage(response, "Impossible d'enregistrer les taux de change.");
       if (!response.ok || !data?.success) throw new Error(message);
       setReferenceCurrency(data.deviseReference || referenceCurrency);
-      setTvaEnabled(data.tvaEnabled !== false);
-      setTvaRate(Number(data.tvaRate ?? 0.16));
+      setTvaEnabled(true);
+      setTvaRate(0.16);
       setExchangeRates(normalizeExchangeRates(data.rates || exchangeRates));
-      showToast("success", data.message || "Devise et taux mis à jour.");
+      showToast("success", data.message || "Devise et taux mis a jour.");
       await fetchBoutiques();
     } catch (error) {
       showToast("error", error instanceof Error ? error.message : "Erreur lors de l'enregistrement des taux.");
@@ -278,6 +280,27 @@ export default function BoutiquePage() {
     }
   };
 
+
+  const syncDailyExchangeRates = async () => {
+    try {
+      setRatesSyncing(true);
+      const response = await fetch(`${API_URL}/boutiques/settings/exchange-rates/sync`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+      });
+      const { data, message } = await readApiMessage(response, "Impossible de synchroniser les taux du jour.");
+      if (!response.ok || !data?.success) throw new Error(message);
+      setReferenceCurrency(data.deviseReference || referenceCurrency);
+      setTvaEnabled(true);
+      setTvaRate(0.16);
+      setExchangeRates(normalizeExchangeRates(data.rates || exchangeRates));
+      showToast("success", data.message || "Taux du jour synchronises.");
+    } catch (error) {
+      showToast("error", error instanceof Error ? error.message : "Erreur lors de la synchronisation des taux.");
+    } finally {
+      setRatesSyncing(false);
+    }
+  };
   const updateRate = (index: number, value: string) => {
     const taux = Number(value);
     setExchangeRates((current) => current.map((rate, rateIndex) => rateIndex === index ? { ...rate, taux } : rate));
@@ -634,44 +657,48 @@ export default function BoutiquePage() {
         )}
       </div>
 
-      {(canChangeCurrency || canManageTva) && (
+      {canChangeCurrency && (
         <section className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
           <div className="p-5 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div>
-              <h2 className="text-sm font-bold text-slate-900">Devise, TVA & taux de change</h2>
+              <h2 className="text-sm font-bold text-slate-900">Devise & taux de change</h2>
               <p className="text-[11px] text-slate-400 mt-1">
-                La devise de référence consolide la caisse, les factures, les historiques et les futurs rapports.
+                La devise de reference consolide la caisse, les factures, les historiques et les futurs rapports.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={saveCurrencySettings}
-              disabled={ratesSaving || ratesLoading || (!canChangeCurrency && !canManageTva)}
-              className="inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl disabled:opacity-50"
-            >
-              {ratesSaving && <Loader2 size={14} className="animate-spin" />}
-              Enregistrer
-            </button>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <button
+                type="button"
+                onClick={syncDailyExchangeRates}
+                disabled={ratesSyncing || ratesSaving || ratesLoading || !canChangeCurrency}
+                className="inline-flex items-center justify-center gap-2 border border-indigo-100 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold px-4 py-2.5 rounded-xl disabled:opacity-50"
+              >
+                {ratesSyncing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+                Synchroniser
+              </button>
+              <button
+                type="button"
+                onClick={saveCurrencySettings}
+                disabled={ratesSaving || ratesSyncing || ratesLoading || !canChangeCurrency}
+                className="inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl disabled:opacity-50"
+              >
+                {ratesSaving && <Loader2 size={14} className="animate-spin" />}
+                Enregistrer
+              </button>
+            </div>
           </div>
           <div className="p-5 grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)] gap-5">
             <label className="space-y-1.5">
-              <span className="text-[10px] font-bold uppercase text-slate-400">Devise de référence</span>
+              <span className="text-[10px] font-bold uppercase text-slate-400">Devise de reference</span>
               <select value={referenceCurrency} disabled={!canChangeCurrency} onChange={(event) => setReferenceCurrency(event.target.value)} className="w-full text-xs font-bold px-3 py-2.5 border border-slate-200 rounded-xl bg-white focus:outline-none focus:border-indigo-500 disabled:bg-slate-50 disabled:text-slate-400">
                 {DEVISES.map((devise) => <option key={devise} value={devise}>{devise}</option>)}
               </select>
               <p className="text-[10px] text-slate-400 leading-relaxed">
                 Les ventes multi-devises seront converties vers cette devise au moment de l'encaissement.
               </p>
-              <div className="mt-3 rounded-xl border border-slate-100 bg-slate-50/70 p-3">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-[10px] font-bold uppercase text-slate-400">TVA 16%</p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">{tvaEnabled ? "Activée sur les nouvelles ventes." : "Désactivée pour les nouvelles ventes."}</p>
-                  </div>
-                  <button type="button" disabled={!canManageTva} onClick={() => { setTvaEnabled((current) => !current); setTvaRate(0.16); }} className={`relative h-7 w-12 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${tvaEnabled ? "bg-indigo-600" : "bg-slate-300"}`}>
-                    <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-all ${tvaEnabled ? "left-6" : "left-1"}`} />
-                  </button>
-                </div>
+              <div className="mt-3 rounded-xl border border-indigo-100 bg-indigo-50/60 p-3">
+                <p className="text-[10px] font-bold uppercase text-indigo-600">TVA incluse</p>
+                <p className="text-[11px] text-slate-500 mt-0.5">Le taux standard de 16% est applique automatiquement aux nouvelles ventes.</p>
               </div>
             </label>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">

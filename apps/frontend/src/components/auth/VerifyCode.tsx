@@ -289,7 +289,7 @@ export default function VerifyCode() {
 
             <div className="mt-5">
               <h1 className="text-2xl font-black tracking-tighter uppercase text-slate-950">
-                BOUTI<span className="text-indigo-600">QO</span>
+                MOVO<span className="text-indigo-600">ORA</span>
               </h1>
               <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-slate-400 mt-1">
                 PRO EDITION

@@ -185,7 +185,7 @@ export default function Login() {
               </div>
 
               <h1 className="text-2xl font-black text-white tracking-tighter uppercase">
-                BOUTI<span className="text-indigo-400">QO</span>
+                MOVO<span className="text-indigo-400">ORA</span>
               </h1>
 
               <p className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.4em] mt-1">
