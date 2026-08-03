@@ -6,7 +6,7 @@ export const SUBSCRIPTION_PLANS = [
     priceMonthly: 0,
     currency: "USD",
     durationDays: 14,
-    description: "Pour tester Boutiqo avec une boutique et une caisse simple.",
+    description: "Pour tester Movoora avec une boutique et une caisse simple.",
     limits: { boutiques: 1, users: 2, products: 50 },
     features: [
       "DASHBOARD_LIMITED",
@@ -152,3 +152,4 @@ export const featurePlanLabel = (feature) => {
   const plan = SUBSCRIPTION_PLANS.find((item) => item.features.includes(feature));
   return plan?.name || "Pro";
 };
+

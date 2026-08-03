@@ -167,9 +167,21 @@ export const activateMockSubscription = async (req, res) => {
 
 
 const normalizePhone = (phone) => String(phone || "").replace(/\s+/g, "").trim();
-const getLabyrintheToken = () => process.env.LABYRINTHE_TOKEN || process.env.LABYRINTHE_API_TOKEN;
-const labyrintheMobileUrl = () => process.env.LABYRINTHE_API_URL || "https://payment.labyrinthe-rdc.com/api/beta/mobile";
-const labyrintheGetTransactionUrl = () => process.env.LABYRINTHE_GET_TRANSACTION_URL || "https://payment.labyrinthe-rdc.com/api/beta/get-transaction";
+const cleanEnvValue = (value) => String(value || "").trim().replace(/^["']|["']$/g, "");
+const normalizeLabyrintheUrl = (value, fallbackPath) => {
+  const cleaned = cleanEnvValue(value).replace(/\/+$/g, "");
+  const baseUrl = "https://payment.labyrinthe-rdc.com/api/beta";
+
+  if (!cleaned) return `${baseUrl}/${fallbackPath}`;
+  if (cleaned.endsWith("/api/beta")) return `${cleaned}/${fallbackPath}`;
+  return cleaned;
+};
+const getLabyrintheToken = () => {
+  const rawToken = process.env.LABYRINTHE_TOKEN || process.env.LABYRINTHE_API_TOKEN || "";
+  return cleanEnvValue(rawToken).replace(/\\\//g, "/");
+};
+const labyrintheMobileUrl = () => normalizeLabyrintheUrl(process.env.LABYRINTHE_API_URL, "mobile");
+const labyrintheGetTransactionUrl = () => normalizeLabyrintheUrl(process.env.LABYRINTHE_GET_TRANSACTION_URL, "get-transaction");
 const mappedBoutiquePlan = (planCode) => planCode === "STARTER" ? "Moyenne" : "Premium";
 const extractLabyrintheTransaction = (providerData) => {
   const root = providerData?.data || providerData || {};
@@ -192,7 +204,7 @@ export const initiateLabyrinthePayment = async (req, res) => {
     const token = getLabyrintheToken();
     if (!token) return res.status(500).json({ success: false, message: "Token Labyrinthe manquant dans les variables d'environnement." });
 
-    const reference = "BTQ-" + String(boutiqueId).slice(-6) + "-" + plan.code + "-" + Date.now();
+    const reference = "MVO-" + String(boutiqueId).slice(-6) + "-" + plan.code + "-" + Date.now();
     const payload = new URLSearchParams({ token, reference, phone });
     const labyrintheResponse = await axios.post(labyrintheMobileUrl(), payload.toString(), {
       timeout: 30000,
@@ -201,7 +213,7 @@ export const initiateLabyrinthePayment = async (req, res) => {
 
     const providerData = labyrintheResponse.data || {};
     const firstResult = Array.isArray(providerData.array) ? providerData.array[0] : null;
-    const providerSuccess = providerData.success === true && (!firstResult || firstResult.success === true);
+    const providerSuccess = providerData.success === true && (!firstResult || firstResult.success !== false);
     if (!providerSuccess) {
       return res.status(400).json({
         success: false,
@@ -248,6 +260,9 @@ export const initiateLabyrinthePayment = async (req, res) => {
       providerData?.error ||
       providerData?.detail ||
       (typeof providerData === "string" ? providerData : "") ||
+      (providerStatus === 404 && String(providerData?.message || "").includes("api/beta")
+        ? "Endpoint Labyrinthe introuvable. Verifiez LABYRINTHE_API_URL : il doit finir par /api/beta/mobile."
+        : "") ||
       (providerStatus === 403
         ? "Labyrinthe refuse la demande. Verifiez que le token est correct et que votre compte Labyrinthe est autorise a utiliser l'API beta mobile."
         : "") ||

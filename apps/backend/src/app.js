@@ -30,7 +30,7 @@ app.use(requestPayloadGuard);
 app.use(auditLogger);
 
 app.get("/", (req, res) => {
-  res.send("Backend Plus Boutiqo fonctionne !");
+  res.send("Backend Plus Movoora fonctionne !");
 });
 
 app.use("/api/auth", authRoutes);
@@ -47,3 +47,4 @@ app.use("/api/finances", financeRoutes);
 app.use("/api/subscriptions", subscriptionRoutes);
 
 export default app;
+

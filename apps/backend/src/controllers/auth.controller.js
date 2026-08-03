@@ -15,7 +15,7 @@ export const register = async (req, res) => {
     } = req.body;
 
     // --- 1. VALIDATIONS ---
-    const nameRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ\s-]{2,}$/;
+    const nameRegex = /^[A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u00FF\s-]{2,}$/;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const phoneRegex = /^[0-9]{9}$/; 
 
@@ -121,7 +121,7 @@ export const register = async (req, res) => {
           <tr>
             <td style="background-color: #f8fafc; padding: 25px; text-align: center; border-top: 1px solid #f1f5f9;">
               <p style="font-size: 11px; color: #94a3b8; margin: 0; line-height: 1.5;">
-                &copy; ${new Date().getFullYear()} <strong>Boutiqo</strong><br>
+                &copy; ${new Date().getFullYear()} <strong>Movoora</strong><br>
                 Sécurité certifiée et données cryptées
               </p>
             </td>
@@ -133,7 +133,7 @@ export const register = async (req, res) => {
    try {
       await sendEmail({
         email: cleanEmail,
-        subject: "Activez votre compte Boutiqo",
+        subject: "Activez votre compte Movoora",
         html: emailHtml // Utilise ta variable emailHtml ici
       });
     } catch (mailError) {
@@ -152,7 +152,7 @@ export const register = async (req, res) => {
 };
 
 /**
- * LOGIQUE DE CONNEXION (Login - Étape 1 : Password ➔ Génération OTP)
+ * LOGIQUE DE CONNEXION (Login - Étape 1 : Password → Génération OTP)
  */
 /**
  * Helper : Génère le template HTML professionnel pour l'envoi de l'OTP
@@ -180,7 +180,7 @@ const renderOtpEmail = (prenom, otp) => {
           <h2 style="font-size: 22px; color: #0f172a; margin: 0 0 20px 0; font-weight: 700;">Code de vérification</h2>
           <p style="font-size: 15px; color: #475569; line-height: 1.6; margin: 0 0 30px 0;">
             Bonjour <strong style="color: #0f172a;">${prenom}</strong>,<br>
-            Utilisez le code de sécurité ci-dessous pour finaliser votre connexion à votre interface <strong>Boutiqo</strong> :
+            Utilisez le code de sécurité ci-dessous pour finaliser votre connexion à votre interface <strong>Movoora</strong> :
           </p>
 
           <div style="background-color: #f8fafc; border: 2px dashed #e2e8f0; border-radius: 16px; padding: 30px; margin: 0 auto; max-width: 300px;">
@@ -201,7 +201,7 @@ const renderOtpEmail = (prenom, otp) => {
       <tr>
         <td style="background-color: #f8fafc; padding: 30px; text-align: center; border-top: 1px solid #f1f5f9;">
           <p style="font-size: 11px; color: #94a3b8; margin: 0; line-height: 1.5; font-weight: 500;">
-            &copy; ${new Date().getFullYear()} <strong>Boutiqo</strong><br>
+            &copy; ${new Date().getFullYear()} <strong>Movoora</strong><br>
             RDC • Système de gestion sécurisé
           </p>
         </td>
@@ -363,7 +363,7 @@ export const login = async (req, res) => {
         requiresOTP: false,
         message: user.mustChangePassword
           ? "Connexion validee. Vous devez modifier votre mot de passe temporaire."
-          : "Connexion reussie ! Bienvenue sur Boutiqo.",
+          : "Connexion reussie ! Bienvenue sur Movoora.",
       });
     }
     // Configuration de l'OTP
@@ -379,7 +379,7 @@ export const login = async (req, res) => {
     try {
       await sendEmail({
         email: user.email,
-        subject: `Votre code Boutiqo : ${otp}`,
+        subject: `Votre code Movoora : ${otp}`,
         html: renderOtpEmail(user.prenom, otp) 
       });
     } catch (mailError) {
@@ -421,7 +421,7 @@ export const verifyEmail = async (req, res) => {
       return res.redirect(`${frontendUrl}/verify-email?status=invalid`);
     }
 
-    // 1. Chercher l’utilisateur possédant ce token
+    // 1. Chercher l'utilisateur possédant ce token
     const user = await Utilisateur.findOne({ activationToken: token });
 
     if (!user) {
@@ -541,7 +541,7 @@ export const resendVerification = async (req, res) => {
       <tr>
         <td style="background-color: #f8fafc; padding: 30px; text-align: center; border-top: 1px solid #f1f5f9;">
           <p style="font-size: 11px; color: #94a3b8; margin: 0; line-height: 1.5; font-weight: 500;">
-            &copy; ${new Date().getFullYear()} <strong>Boutiqo</strong><br>
+            &copy; ${new Date().getFullYear()} <strong>Movoora</strong><br>
             Système de gestion de stock intelligent sécurisé
           </p>
         </td>
@@ -554,7 +554,7 @@ export const resendVerification = async (req, res) => {
     try {
       await sendEmail({
         email: user.email,
-        subject: "Nouveau lien de vérification - Boutiqo",
+        subject: "Nouveau lien de vérification - Movoora",
         html: emailHtml
       });
     } catch (mailError) {
@@ -692,7 +692,7 @@ export const verifyOTP = async (req, res) => {
         boutiqueActive: user.boutiqueActive 
       },
       permissions: finalPermissions, 
-      message: "Connexion réussie ! Bienvenue sur Boutiqo."
+      message: "Connexion réussie ! Bienvenue sur Movoora."
     });
 
   } catch (error) {
@@ -788,7 +788,7 @@ export const resendOTP = async (req, res) => {
           <tr>
             <td style="background-color: #f8fafc; padding: 30px; text-align: center; border-top: 1px solid #f1f5f9;">
               <p style="font-size: 11px; color: #94a3b8; margin: 0; line-height: 1.5; font-weight: 500;">
-                &copy; ${new Date().getFullYear()} <strong>Boutiqo</strong><br>
+                &copy; ${new Date().getFullYear()} <strong>Movoora</strong><br>
                 Infrastructure de Gestion Sécurisée
               </p>
             </td>
@@ -800,7 +800,7 @@ export const resendOTP = async (req, res) => {
     try {
       await sendEmail({
         email: email, 
-        subject: `[ACTION REQUISE] Votre nouveau code Boutiqo : ${newOtp}`,
+        subject: `[ACTION REQUISE] Votre nouveau code Movoora : ${newOtp}`,
         html: emailOtp
       });
 
@@ -877,7 +877,7 @@ export const forgotPassword = async (req, res) => {
               <h2 style="font-size: 22px; color: #0f172a; margin: 0 0 15px 0; font-weight: 700;">Réinitialisation de mot de passe</h2>
               <p style="font-size: 15px; color: #475569; line-height: 1.6; margin: 0 0 35px 0;">
                 Bonjour <strong style="color: #0f172a;">${user.prenom}</strong>,<br>
-                Nous avons reçu une demande de réinitialisation de mot de passe pour votre compte Boutiqo. Cliquez sur le bouton ci-dessous pour définir un nouveau mot de passe.
+                Nous avons reçu une demande de réinitialisation de mot de passe pour votre compte Movoora. Cliquez sur le bouton ci-dessous pour définir un nouveau mot de passe.
               </p>
 
               <div style="margin: 30px 0;">
@@ -901,7 +901,7 @@ export const forgotPassword = async (req, res) => {
           <tr>
             <td style="background-color: #f8fafc; padding: 30px; text-align: center; border-top: 1px solid #f1f5f9;">
               <p style="font-size: 11px; color: #94a3b8; margin: 0; line-height: 1.5; font-weight: 500;">
-                &copy; ${new Date().getFullYear()} <strong>Boutiqo</strong><br>
+                &copy; ${new Date().getFullYear()} <strong>Movoora</strong><br>
                 Infrastructure de Gestion Sécurisée
               </p>
             </td>
@@ -913,7 +913,7 @@ export const forgotPassword = async (req, res) => {
     // 4. Envoi effectif de l'email
     await sendEmail({
       email: user.email,
-      subject: "Réinitialisation de votre mot de passe - Boutiqo",
+      subject: "Réinitialisation de votre mot de passe - Movoora",
       html: emailHtml
     });
 
@@ -981,7 +981,7 @@ export const resetPassword = async (req, res) => {
     // PHASE 3 : MISE À JOUR SÉCURISÉE
     // ==========================================
 
-    // [⚠️ ATTENTION PIÈGE MONGOOSE] :
+    // [Attention ATTENTION PIÈGE MONGOOSE] :
     // SI tu as un hook 'pre-save' de hachage dans ton modèle Utilisateur, écris juste :
     // user.password = password;
     //
@@ -1058,7 +1058,7 @@ export const resendForgotPassword = async (req, res) => {
     // 4. Envoi de l'email
     await sendEmail({
       email: user.email,
-      subject: "Nouveau lien de réinitialisation - Boutiqo",
+      subject: "Nouveau lien de réinitialisation - Movoora",
       html: `
         <div style="background-color: #f1f5f9; padding: 40px 20px; font-family: 'Segoe UI', Arial, sans-serif;">
           <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; background-color: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.05); border: 1px solid #e2e8f0;">
@@ -1094,7 +1094,7 @@ export const resendForgotPassword = async (req, res) => {
             <tr>
               <td style="background-color: #f8fafc; padding: 25px; text-align: center; border-top: 1px solid #f1f5f9;">
                 <p style="font-size: 10px; color: #94a3b8; margin: 0;">
-                  &copy; ${new Date().getFullYear()} Boutiqo. Tous droits réservés.
+                  &copy; ${new Date().getFullYear()} Movoora. Tous droits réservés.
                 </p>
               </td>
             </tr>
@@ -1490,3 +1490,5 @@ export const updatePassword = async (req, res) => {
     res.status(500).json({ error: "Erreur serveur lors du changement de mot de passe." });
   }
 };
+
+

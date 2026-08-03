@@ -8,6 +8,7 @@ import {
   setActiveBoutique,
   updateBoutique,
   getCurrencySettings,
+  syncCurrencySettings,
   updateCurrencySettings,
 } from "../controllers/boutique.controller.js";
 import { checkAnyPermission, checkPermission, protect } from "../middlewares/authMiddleware.js";
@@ -73,9 +74,11 @@ const confirmDeletionLimiter = createLimiter({
 router.use(protect);
 router.use(attachSubscription);
 
+router.post("/settings/exchange-rates/sync", checkPermission("CHANGER_DEVISE"), currencyUpdateLimiter, syncCurrencySettings);
+
 router.route("/settings/exchange-rates")
   .get(checkAnyPermission("VOIR_BOUTIQUES", "MODIFIER_BOUTIQUE", "EFFECTUER_VENTE", "VOIR_HISTORIQUE_VENTES", "VOIR_MES_VENTES"), getCurrencySettings)
-  .put(checkAnyPermission("CHANGER_DEVISE", "GERER_TVA_BOUTIQUE"), currencyUpdateLimiter, boutiqueValidation.currency, updateCurrencySettings);
+  .put(checkPermission("CHANGER_DEVISE"), currencyUpdateLimiter, boutiqueValidation.currency, updateCurrencySettings);
 
 router.route("/")
   .get(checkPermission("VOIR_BOUTIQUES"), getBoutiques)

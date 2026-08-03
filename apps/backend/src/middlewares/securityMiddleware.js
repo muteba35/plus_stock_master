@@ -14,8 +14,8 @@ const splitOrigins = (value) =>
 const configuredOrigins = [
   ...splitOrigins(process.env.CORS_ORIGINS),
   ...splitOrigins(process.env.FRONTEND_URL),
-  "https://plusstockmaster.netlify.app",
-  "https://plustockmaster.netlify.app",
+  "https://plusmovoora.netlify.app",
+  "https://plumovoora.netlify.app",
 ];
 
 const allowedOrigins = new Set([

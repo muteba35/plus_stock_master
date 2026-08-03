@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
+import axios from "axios";
 import { AuditLog, Boutique, Categorie, Departement, ExchangeRate, FinanceCharge, InventaireAudit, MouvementStock, Notification, NotificationPreference, Permission, Produit, RetourClient, Role, RolePermission, Utilisateur, Vente } from "../models/Utilisateur.js";
 import { sendEmail } from "../utils/sendEmail.js";
 
@@ -242,7 +243,7 @@ export const requestBoutiqueDeletionCode = async (req, res) => {
 
     await sendEmail({
       email: owner.email,
-      subject: `Code de suppression boutique Boutiqo : ${code}`,
+      subject: `Code de suppression boutique Movoora : ${code}`,
       html: `
         <div style="font-family:Arial,sans-serif;background:#f8fafc;padding:24px;color:#172033">
           <div style="max-width:560px;margin:auto;background:#ffffff;border:1px solid #e2e8f0;border-radius:18px;overflow:hidden">
@@ -251,7 +252,7 @@ export const requestBoutiqueDeletionCode = async (req, res) => {
               <p style="margin:6px 0 0;color:#cbd5e1;font-size:13px">Boutique concernee : ${boutique.nom}</p>
             </div>
             <div style="padding:24px">
-              <p style="font-size:14px;line-height:1.6;margin:0 0 14px">Un utilisateur a demande la suppression de cette boutique. Pour confirmer l'action, saisissez le code ci-dessous dans Boutiqo.</p>
+              <p style="font-size:14px;line-height:1.6;margin:0 0 14px">Un utilisateur a demande la suppression de cette boutique. Pour confirmer l'action, saisissez le code ci-dessous dans Movoora.</p>
               <div style="font-size:28px;font-weight:800;letter-spacing:6px;text-align:center;background:#fff1f2;color:#be123c;border:1px solid #fecdd3;border-radius:14px;padding:16px;margin:18px 0">${code}</div>
               <p style="font-size:12px;color:#64748b;line-height:1.6;margin:0">Ce code expire dans 15 minutes. Si vous n'etes pas a l'origine de cette demande, ignorez ce message et verifiez les acces de votre equipe.</p>
             </div>
@@ -386,6 +387,25 @@ const DEFAULT_EXCHANGE_RATES = [
   { source: "EUR (€)", cible: "CDF (FC)", taux: 2500 },
   { source: "EUR (€)", cible: "USD ($)", taux: 1.08 },
 ];
+const EXCHANGE_API_URL = process.env.EXCHANGE_RATE_API_URL || "https://open.er-api.com/v6/latest/USD";
+
+const fetchDailyExchangeRates = async () => {
+  const response = await axios.get(EXCHANGE_API_URL, { timeout: 12000 });
+  const payload = response.data || {};
+  const rates = payload.rates || {};
+  const usdToCdf = Number(rates.CDF);
+  const usdToEur = Number(rates.EUR);
+
+  if (!Number.isFinite(usdToCdf) || usdToCdf <= 0 || !Number.isFinite(usdToEur) || usdToEur <= 0) {
+    throw new Error("L'API de change n'a pas renvoye les taux USD/CDF/EUR attendus.");
+  }
+
+  return buildRatePairs([
+    { source: "USD ($)", cible: "CDF (FC)", taux: usdToCdf },
+    { source: "EUR (€)", cible: "CDF (FC)", taux: usdToCdf / usdToEur },
+    { source: "EUR (€)", cible: "USD ($)", taux: 1 / usdToEur },
+  ]);
+};
 
 const buildRatePairs = (rates) => {
   const explicitRates = new Map();
@@ -447,8 +467,8 @@ export const getCurrencySettings = async (req, res) => {
     return res.status(200).json({
       success: true,
       deviseReference: boutique.deviseParDefaut,
-      tvaEnabled: boutique.tvaEnabled !== false,
-      tvaRate: Number(boutique.tvaRate ?? 0.16),
+      tvaEnabled: true,
+      tvaRate: 0.16,
       supportedCurrencies: SUPPORTED_CURRENCIES,
       rates,
     });
@@ -458,6 +478,39 @@ export const getCurrencySettings = async (req, res) => {
   }
 };
 
+export const syncCurrencySettings = async (req, res) => {
+  try {
+    const boutique = await getActiveBoutiqueForSettings(req, res);
+    if (!boutique) return;
+
+    const normalizedRates = await fetchDailyExchangeRates();
+    boutique.tvaEnabled = true;
+    boutique.tvaRate = 0.16;
+    await boutique.save();
+
+    for (const rate of normalizedRates) {
+      await ExchangeRate.findOneAndUpdate(
+        { boutiqueId: boutique._id, source: rate.source, cible: rate.cible },
+        { $set: { taux: rate.taux, isActive: true } },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      );
+    }
+
+    const savedRates = await ExchangeRate.find({ boutiqueId: boutique._id, isActive: true }).sort({ source: 1, cible: 1 });
+
+    return res.status(200).json({
+      success: true,
+      message: "Taux de change du jour synchronises.",
+      deviseReference: boutique.deviseParDefaut,
+      tvaEnabled: true,
+      tvaRate: 0.16,
+      rates: savedRates,
+    });
+  } catch (error) {
+    console.error("syncCurrencySettings:", error);
+    return res.status(502).json({ success: false, message: error.message || "Impossible de synchroniser les taux de change du jour." });
+  }
+};
 export const updateCurrencySettings = async (req, res) => {
   try {
     const boutique = await getActiveBoutiqueForSettings(req, res);
@@ -465,7 +518,6 @@ export const updateCurrencySettings = async (req, res) => {
 
     const deviseReference = String(req.body.deviseReference || boutique.deviseParDefaut);
     const rates = Array.isArray(req.body.rates) ? req.body.rates : [];
-    const tvaEnabled = req.body.tvaEnabled !== undefined ? Boolean(req.body.tvaEnabled) : boutique.tvaEnabled !== false;
     const tvaRate = 0.16;
 
     if (!SUPPORTED_CURRENCIES.includes(deviseReference)) {
@@ -482,8 +534,8 @@ export const updateCurrencySettings = async (req, res) => {
     }
 
     boutique.deviseParDefaut = deviseReference;
-    boutique.tvaEnabled = tvaEnabled;
-    boutique.tvaRate = tvaEnabled ? 0.16 : 0;
+    boutique.tvaEnabled = true;
+    boutique.tvaRate = 0.16;
     await boutique.save();
 
     for (const rate of normalizedRates) {
@@ -500,8 +552,8 @@ export const updateCurrencySettings = async (req, res) => {
       success: true,
       message: "Devise et taux de change mis a jour.",
       deviseReference: boutique.deviseParDefaut,
-      tvaEnabled: boutique.tvaEnabled !== false,
-      tvaRate: Number(boutique.tvaRate ?? 0.16),
+      tvaEnabled: true,
+      tvaRate: 0.16,
       rates: savedRates,
     });
   } catch (error) {
@@ -509,6 +561,8 @@ export const updateCurrencySettings = async (req, res) => {
     return res.status(500).json({ success: false, message: "Impossible d'enregistrer les taux de change." });
   }
 };
+
+
 
 
 
