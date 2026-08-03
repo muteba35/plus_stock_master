@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useCallback, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
@@ -25,7 +25,6 @@ import {
   ChevronRight,
   ShieldCheck,
   LockKeyhole,
-  Languages,
 } from "lucide-react";
 
 // ==========================================
@@ -101,11 +100,11 @@ const ExpiredSubscriptionState = () => (
       <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center mx-auto mb-5">
         <LockKeyhole size={24} />
       </div>
-      <p className="text-[10px] font-black uppercase tracking-[0.3em] text-amber-600 mb-3">Essai terminé</p>
-      <h2 className="text-lg font-black uppercase tracking-tight text-slate-900">Votre période d'essai est arrivée à terme</h2>
+      <p className="text-[10px] font-black uppercase tracking-[0.3em] text-amber-600 mb-3">Essai terminÃ©</p>
+      <h2 className="text-lg font-black uppercase tracking-tight text-slate-900">Votre pÃ©riode d'essai est arrivÃ©e Ã  terme</h2>
       <p className="text-xs text-slate-500 font-medium mt-3 leading-relaxed">
-        Vos données restent conservées. Pour continuer à utiliser la caisse, l'inventaire, l'équipe et la finance,
-        choisissez un abonnement adapté à votre boutique.
+        Vos donnÃ©es restent conservÃ©es. Pour continuer Ã  utiliser la caisse, l'inventaire, l'Ã©quipe et la finance,
+        choisissez un abonnement adaptÃ© Ã  votre boutique.
       </p>
       <Link href="/dashboard/parametres/abonnement" className="mt-6 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-indigo-600 text-white text-xs font-black uppercase tracking-wider hover:bg-indigo-700 transition-colors">
         Choisir un abonnement
@@ -135,9 +134,9 @@ type AppLanguage = "fr" | "en";
 
 const EN_TRANSLATIONS = new Map<string, string>([
   ["Rechercher...", "Search..."],
-  ["Déconnexion", "Logout"],
-  ["Se déconnecter", "Logout"],
-  ["Paramètres", "Settings"],
+  ["DÃ©connexion", "Logout"],
+  ["Se dÃ©connecter", "Logout"],
+  ["ParamÃ¨tres", "Settings"],
   ["Afficher toutes les notifications", "View all notifications"],
   ["Centre d'alertes", "Alert center"],
   ["Alertes recentes", "Recent alerts"],
@@ -154,7 +153,7 @@ const EN_TRANSLATIONS = new Map<string, string>([
   ["Vue d'ensemble", "Overview"],
   ["Gestion Produits", "Product Management"],
   ["Categories", "Categories"],
-  ["Catégories", "Categories"],
+  ["CatÃ©gories", "Categories"],
   ["Mouvements Stock", "Stock Movements"],
   ["Alertes Rupture", "Stock Alerts"],
   ["Projection Produits", "Product Projection"],
@@ -163,13 +162,13 @@ const EN_TRANSLATIONS = new Map<string, string>([
   ["Factures", "Invoices"],
   ["Retours Clients", "Customer Returns"],
   ["Rapports Caisse", "Checkout Reports"],
-  ["Employés", "Employees"],
-  ["Départements", "Departments"],
-  ["Rôles", "Roles"],
+  ["EmployÃ©s", "Employees"],
+  ["DÃ©partements", "Departments"],
+  ["RÃ´les", "Roles"],
   ["Tableau de bord", "Dashboard"],
-  ["Bénéfices & Pertes", "Profit & Loss"],
-  ["Dépenses & Charges", "Expenses & Costs"],
-  ["Rapports d'activité", "Activity Reports"],
+  ["BÃ©nÃ©fices & Pertes", "Profit & Loss"],
+  ["DÃ©penses & Charges", "Expenses & Costs"],
+  ["Rapports d'activitÃ©", "Activity Reports"],
   ["Formules", "Formulas"],
   ["Ma Boutique", "My Store"],
   ["Abonnement", "Subscription"],
@@ -179,13 +178,14 @@ const EN_TRANSLATIONS = new Map<string, string>([
   ["Profil", "Profile"],
   ["Module premium", "Premium module"],
   ["Mettre a niveau", "Upgrade"],
-  ["Mettre à niveau", "Upgrade"],
+  ["Mettre Ã  niveau", "Upgrade"],
   ["Choisir un abonnement", "Choose a subscription"],
-  ["Essai terminé", "Trial ended"],
+  ["Essai terminÃ©", "Trial ended"],
   ["Acces restreint", "Restricted access"],
 ]);
 
 const originalTextNodes = new WeakMap<Text, string>();
+const originalAttributes = new WeakMap<Element, Record<string, string>>();
 
 const translateDashboardDom = (language: AppLanguage) => {
   if (typeof document === "undefined") return;
@@ -216,8 +216,58 @@ const translateDashboardDom = (language: AppLanguage) => {
     const nextValue = original.replace(key, translated);
     if (node.nodeValue !== nextValue) node.nodeValue = nextValue;
   });
+
+  const attrs = ["placeholder", "title", "aria-label"];
+  document.querySelectorAll<HTMLElement>("[placeholder], [title], [aria-label]").forEach((element) => {
+    let originals = originalAttributes.get(element);
+    if (!originals) {
+      originals = {};
+      originalAttributes.set(element, originals);
+    }
+
+    attrs.forEach((attr) => {
+      const current = element.getAttribute(attr);
+      if (!current || !current.trim()) return;
+      if (!originals[attr]) originals[attr] = current;
+      const original = originals[attr];
+      const key = original.trim();
+
+      if (language === "fr") {
+        if (current !== original) element.setAttribute(attr, original);
+        return;
+      }
+
+      const translated = EN_TRANSLATIONS.get(key);
+      if (!translated) return;
+      const nextValue = original.replace(key, translated);
+      if (current !== nextValue) element.setAttribute(attr, nextValue);
+    });
+  });
 };
 
+
+function FlagIcon({ language }: { language: AppLanguage }) {
+  if (language === "fr") {
+    return (
+      <span className="grid h-4 w-6 grid-cols-3 overflow-hidden rounded-[3px] border border-slate-300 shadow-sm">
+        <span className="bg-[#1f3f8b]" />
+        <span style={{ backgroundColor: "#ffffff" }} />
+        <span className="bg-[#e63946]" />
+      </span>
+    );
+  }
+
+  return (
+    <span className="relative h-4 w-6 overflow-hidden rounded-[3px] border border-slate-300 bg-[#102b7a] shadow-sm">
+      <span className="absolute left-1/2 top-0 h-full w-[3px] -translate-x-1/2 bg-white" />
+      <span className="absolute left-0 top-1/2 h-[3px] w-full -translate-y-1/2 bg-white" />
+      <span className="absolute left-1/2 top-0 h-full w-[1.5px] -translate-x-1/2 bg-[#d91f3c]" />
+      <span className="absolute left-0 top-1/2 h-[1.5px] w-full -translate-y-1/2 bg-[#d91f3c]" />
+      <span className="absolute -left-1 top-1/2 h-[2px] w-8 -rotate-[34deg] bg-white" />
+      <span className="absolute -left-1 top-1/2 h-[2px] w-8 rotate-[34deg] bg-white" />
+    </span>
+  );
+}
 const DEFAULT_PROFILE: UserProfile = {
   id: "",
   prenom: "Chargement...",
@@ -254,6 +304,7 @@ export default function DashboardLayout({
   const [notificationsSeen, setNotificationsSeen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [language, setLanguage] = useState<AppLanguage>("fr");
+  const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const [subscription, setSubscription] = useState<SubscriptionState>(fallbackSubscription);
 
   const [openSubMenus, setOpenSubMenus] = useState<Record<string, boolean>>({
@@ -293,7 +344,7 @@ export default function DashboardLayout({
     };
   }, [language, pathname]);
   // ==========================================
-  // EFFECT 1 : Gestion du montage (Asynchrone pour éviter le linter)
+  // EFFECT 1 : Gestion du montage (Asynchrone pour Ã©viter le linter)
   // ==========================================
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -308,7 +359,7 @@ export default function DashboardLayout({
   // ==========================================
   useEffect(() => {
     const loadDataFromStorage = () => {
-      // 1. Récupération des permissions
+      // 1. RÃ©cupÃ©ration des permissions
       try {
         const storedPermissions = localStorage.getItem("user_permissions");
         if (storedPermissions) {
@@ -318,7 +369,7 @@ export default function DashboardLayout({
         console.error("Erreur permissions:", error);
       }
 
-      // 2. Récupération du profil
+      // 2. RÃ©cupÃ©ration du profil
       try {
         const storedProfile = localStorage.getItem("user_profile");
 
@@ -434,7 +485,7 @@ export default function DashboardLayout({
 
   const boutique = {
     nom: user.boutique?.nom || "Ma Boutique",
-    secteur: "Commerce Général",
+    secteur: "Commerce GÃ©nÃ©ral",
   };
 
   // ==========================================
@@ -467,7 +518,10 @@ export default function DashboardLayout({
   };
 
   const toggleDarkMode = () => setDarkMode((current) => !current);
-  const toggleLanguage = () => setLanguage((current) => current === "fr" ? "en" : "fr");
+  const chooseLanguage = (nextLanguage: AppLanguage) => {
+    setLanguage(nextLanguage);
+    setShowLanguageMenu(false);
+  };
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -547,7 +601,7 @@ export default function DashboardLayout({
       subMenu: [
         { name: "Vue Globale", href: "/dashboard/inventaire", permission: "VOIR_RESUME_INVENTAIRE" },
         { name: "Gestion Produits", href: "/dashboard/inventaire/produits", permission: "VOIR_LISTE_PRODUITS" },
-        { name: "Catégories", href: "/dashboard/inventaire/categories", permission: "VOIR_CATEGORIES" },
+        { name: "CatÃ©gories", href: "/dashboard/inventaire/categories", permission: "VOIR_CATEGORIES" },
         { name: "Mouvements Stock", href: "/dashboard/inventaire/stock", permissions: ["VOIR_MOUVEMENTS_STOCK", "VOIR_MES_OPERATIONS_INVENTAIRE"], requiredPlan: "STARTER" },
         { name: "Projection Produits", href: "/dashboard/inventaire/projection", permissions: ["VOIR_PROJECTION_PRODUITS", "EXPORTER_PROJECTION_PRODUITS"], requiredPlan: "PRO" },
         { name: "Alertes Rupture", href: "/dashboard/inventaire/alertes", permission: "VOIR_ALERTES_STOCK" },
@@ -562,25 +616,25 @@ export default function DashboardLayout({
       name: "Vue d'ensemble", 
       href: "/dashboard/equipe", 
       permission: "VOIR_EQUIPE",
-      requiredPlan: "STARTER" // Permet à quiconque ayant un droit dans l'équipe d'y accéder
+      requiredPlan: "STARTER" // Permet Ã  quiconque ayant un droit dans l'Ã©quipe d'y accÃ©der
     },
     { 
-      name: "Employés", 
+      name: "EmployÃ©s", 
       href: "/dashboard/equipe/employes", 
       permission: "VOIR_EMPLOYES",
       requiredPlan: "STARTER" //
     },
     { 
-      name: "Départements", 
+      name: "DÃ©partements", 
       href: "/dashboard/equipe/departements", 
       permission: "VOIR_DEPARTEMENTS",
-      requiredPlan: "PRO" // Cohérent (Visualisation)
+      requiredPlan: "PRO" // CohÃ©rent (Visualisation)
     },
     { 
-      name: "Rôles", 
+      name: "RÃ´les", 
       href: "/dashboard/equipe/roles", 
       permission: "VOIR_ROLES",
-      requiredPlan: "PRO" // Cohérent avec la page RolesPage qu'on vient de faire
+      requiredPlan: "PRO" // CohÃ©rent avec la page RolesPage qu'on vient de faire
     },
   ],
 },
@@ -591,19 +645,19 @@ export default function DashboardLayout({
       subMenu: [
         { name: "Tableau de bord", href: "/dashboard/finances", permission: "VOIR_CHIFFRE_AFFAIRE", requiredPlan: "PRO" },
         { name: "Analyse Ventes", href: "/dashboard/finances/ventes", permission: "VOIR_HISTORIQUE_VENTES", requiredPlan: "PRO" },
-        { name: "Bénéfices & Pertes", href: "/dashboard/finances/benefices", permissions: ["VOIR_BENEFICES", "VOIR_ANALYSE_FINANCIERE"], requiredPlan: "PRO" },
-        { name: "Dépenses & Charges", href: "/dashboard/finances/charges", permissions: ["VOIR_CHARGES_FINANCE", "GERER_CHARGES_FINANCE"], requiredPlan: "PRO" },
-        { name: "Rapports d'activité", href: "/dashboard/finances/rapports", permission: "VOIR_CHIFFRE_AFFAIRE", requiredPlan: "PRO" },
+        { name: "BÃ©nÃ©fices & Pertes", href: "/dashboard/finances/benefices", permissions: ["VOIR_BENEFICES", "VOIR_ANALYSE_FINANCIERE"], requiredPlan: "PRO" },
+        { name: "DÃ©penses & Charges", href: "/dashboard/finances/charges", permissions: ["VOIR_CHARGES_FINANCE", "GERER_CHARGES_FINANCE"], requiredPlan: "PRO" },
+        { name: "Rapports d'activitÃ©", href: "/dashboard/finances/rapports", permission: "VOIR_CHIFFRE_AFFAIRE", requiredPlan: "PRO" },
         { name: "Exportations", href: "/dashboard/finances/exportations", permission: "EXPORTER_RAPPORTS", requiredPlan: "PRO" },
         { name: "Formules", href: "/dashboard/finances/formules", permission: "VOIR_FORMULES_FINANCE", requiredPlan: "PRO" },
       ],
     },
     {
-      name: "Paramètres",
+      name: "ParamÃ¨tres",
       icon: Settings,
       module: "PARAMETRES",
       subMenu: [
-        { name: "Général", href: "/dashboard/parametres", permission: "MODIFIER_INFOS_BOUTIQUE" },
+        { name: "GÃ©nÃ©ral", href: "/dashboard/parametres", permission: "MODIFIER_INFOS_BOUTIQUE" },
         { name: "Ma Boutique", href: "/dashboard/parametres/boutique", permission: "VOIR_BOUTIQUES" },
         { name: "Profil", href: "/dashboard/profil", permissions: ["MODIFIER_PROFIL_RESTREINT", "MODIFIER_PROFIL_TOTAL"] },
         { name: "Notifications", href: "/dashboard/parametres/notifications", permission: "GERER_NOTIFICATIONS", requiredPlan: "PRO" },
@@ -839,7 +893,7 @@ export default function DashboardLayout({
         <div className="p-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-slate-800/60 bg-[#141C2F]/60 shrink-0 space-y-3">
           <button
             onClick={handleLogout}
-            title={!isSidebarOpen ? "Se déconnecter" : ""}
+            title={!isSidebarOpen ? "Se dÃ©connecter" : ""}
             className={`
               w-full flex items-center rounded-xl text-xs font-black uppercase tracking-wider
               text-rose-400 bg-rose-500/5 border border-rose-500/10 hover:bg-rose-500/20 hover:border-rose-500/30
@@ -848,7 +902,7 @@ export default function DashboardLayout({
             `}
           >
             <LogOut size={18} className="shrink-0 group-hover:translate-x-1 transition-transform duration-200 text-rose-400" />
-            {(isSidebarOpen || isMobileSidebarOpen) && <span>Déconnexion</span>}
+            {(isSidebarOpen || isMobileSidebarOpen) && <span>DÃ©connexion</span>}
           </button>
         </div>
       </aside>
@@ -895,16 +949,39 @@ export default function DashboardLayout({
             >
               {darkMode ? <Sun size={20} className="text-amber-500 animate-pulse" /> : <Moon size={20} className="text-slate-600" />}
             </button>
-
-            <button
-              onClick={toggleLanguage}
-              className="h-10 px-3 flex items-center gap-2 rounded-full bg-slate-100 hover:bg-slate-200/70 text-slate-700 transition-colors shrink-0 text-[11px] font-black uppercase tracking-wider"
-              title={language === "fr" ? "Passer en anglais" : "Switch to French"}
-            >
-              <Languages size={17} />
-              {language === "fr" ? "FR" : "EN"}
-            </button>
             <div className="relative">
+              <button
+                onClick={() => setShowLanguageMenu((current) => !current)}
+                className="h-10 px-3 flex items-center gap-2 rounded-full bg-slate-100 hover:bg-slate-200/70 text-slate-700 transition-colors shrink-0 text-[11px] font-black uppercase tracking-wider"
+                title={language === "fr" ? "Changer la langue" : "Change language"}
+                aria-label={language === "fr" ? "Changer la langue" : "Change language"}
+              >
+                <FlagIcon language={language} />
+                <span>{language === "fr" ? "FR" : "EN"}</span>
+                <ChevronDown size={13} className={`transition-transform ${showLanguageMenu ? "rotate-180" : ""}`} />
+              </button>
+
+              {showLanguageMenu && (
+                <div className="absolute right-0 top-12 z-[130] w-40 overflow-hidden rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl shadow-slate-900/10">
+                  <button
+                    type="button"
+                    onClick={() => chooseLanguage("fr")}
+                    className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-[11px] font-black uppercase tracking-wider transition-colors ${language === "fr" ? "bg-indigo-50 text-indigo-700" : "text-slate-600 hover:bg-slate-50"}`}
+                  >
+                    <FlagIcon language="fr" />
+                    Français
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => chooseLanguage("en")}
+                    className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-[11px] font-black uppercase tracking-wider transition-colors ${language === "en" ? "bg-indigo-50 text-indigo-700" : "text-slate-600 hover:bg-slate-50"}`}
+                  >
+                    <FlagIcon language="en" />
+                    English
+                  </button>
+                </div>
+              )}
+            </div><div className="relative">
               <button
                 onClick={() => {
                   setShowNotifications((value) => !value);
@@ -1022,7 +1099,7 @@ export default function DashboardLayout({
                     {user.prenom} {user.nom}
                   </p>
                   <p className="text-[11px] text-slate-400 font-black tracking-wide mt-0.5 uppercase">
-                    {user.role || (user.roleId ? "Employé" : "Admin Général")}
+                    {user.role || (user.roleId ? "EmployÃ©" : "Admin GÃ©nÃ©ral")}
                   </p>
                 </div>
 
@@ -1074,7 +1151,7 @@ export default function DashboardLayout({
                       className="flex items-center space-x-2.5 px-4 py-3 text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-colors uppercase tracking-wider"
                     >
                       <Settings size={16} />
-                      <span>Paramètres</span>
+                      <span>ParamÃ¨tres</span>
                     </Link>
 
                     <div className="h-px bg-slate-100 my-1" />
@@ -1087,7 +1164,7 @@ export default function DashboardLayout({
                       className="w-full flex items-center space-x-2.5 px-4 py-3 text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors uppercase tracking-wider text-left"
                     >
                       <LogOut size={16} />
-                      <span>Se déconnecter</span>
+                      <span>Se dÃ©connecter</span>
                     </button>
                   </div>
                 </>
@@ -1104,6 +1181,17 @@ export default function DashboardLayout({
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
 
 
 
