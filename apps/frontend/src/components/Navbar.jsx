@@ -29,7 +29,7 @@ export default function Navbar() {
     <div className="fixed w-full flex justify-center z-[100] pointer-events-none px-2 sm:px-4">
       <motion.nav
         style={{ width, y, borderRadius, borderWidth, boxShadow: shadow }}
-        className="bg-white/95 backdrop-blur-md border-slate-200/60 pointer-events-auto overflow-hidden transition-colors"
+        className="bg-white/95 backdrop-blur-md border-slate-200/60 pointer-events-auto overflow-visible transition-colors"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 sm:h-20 flex items-center justify-between gap-4">
           

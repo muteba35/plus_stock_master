@@ -44,13 +44,13 @@ const TRANSLATIONS = new Map<string, string>([
 ]);
 
 const MOJIBAKE_TRANSLATIONS = new Map<string, string>([
-  ["FonctionnalitÃ©s", "Features"],
-  ["Connectez-vous pour reprendre le contrÃ´le de vos opÃ©rations.", "Sign in to take control of your operations again."],
-  ["CrÃ©er un compte", "Create an account"],
-  ["CrÃ©er votre espace", "Create your workspace"],
-  ["VÃ©rification OTP", "OTP verification"],
-  ["VÃ©rifier le code", "Verify code"],
-  ["RÃ©initialisation de mot de passe", "Password reset"],
+  ["Fonctionnalit?s", "Features"],
+  ["Connectez-vous pour reprendre le contr?le de vos op?rations.", "Sign in to take control of your operations again."],
+  ["Cr?er un compte", "Create an account"],
+  ["Cr?er votre espace", "Create your workspace"],
+  ["V?rification OTP", "OTP verification"],
+  ["V?rifier le code", "Verify code"],
+  ["R?initialisation de mot de passe", "Password reset"],
 ]);
 
 const originalTextNodes = new WeakMap<Text, string>();
@@ -183,7 +183,7 @@ export default function PreferenceControls({ compact = false }: { compact?: bool
       </button>
 
       {open && (
-        <div className="absolute right-0 top-12 z-[130] w-40 overflow-hidden rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl shadow-slate-900/10">
+        <div className="absolute right-0 top-12 z-[9999] w-40 overflow-hidden rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl shadow-slate-900/10">
           <button
             type="button"
             onClick={() => chooseLanguage("fr")}

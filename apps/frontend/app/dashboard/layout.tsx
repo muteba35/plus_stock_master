@@ -100,11 +100,11 @@ const ExpiredSubscriptionState = () => (
       <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center mx-auto mb-5">
         <LockKeyhole size={24} />
       </div>
-      <p className="text-[10px] font-black uppercase tracking-[0.3em] text-amber-600 mb-3">Essai terminÃ©</p>
-      <h2 className="text-lg font-black uppercase tracking-tight text-slate-900">Votre pÃ©riode d'essai est arrivÃ©e Ã  terme</h2>
+      <p className="text-[10px] font-black uppercase tracking-[0.3em] text-amber-600 mb-3">Essai termin?</p>
+      <h2 className="text-lg font-black uppercase tracking-tight text-slate-900">Votre p?riode d'essai est arriv?e ? terme</h2>
       <p className="text-xs text-slate-500 font-medium mt-3 leading-relaxed">
-        Vos donnÃ©es restent conservÃ©es. Pour continuer Ã  utiliser la caisse, l'inventaire, l'Ã©quipe et la finance,
-        choisissez un abonnement adaptÃ© Ã  votre boutique.
+        Vos donn?es restent conserv?es. Pour continuer ? utiliser la caisse, l'inventaire, l'?quipe et la finance,
+        choisissez un abonnement adapt? ? votre boutique.
       </p>
       <Link href="/dashboard/parametres/abonnement" className="mt-6 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-indigo-600 text-white text-xs font-black uppercase tracking-wider hover:bg-indigo-700 transition-colors">
         Choisir un abonnement
@@ -134,9 +134,9 @@ type AppLanguage = "fr" | "en";
 
 const EN_TRANSLATIONS = new Map<string, string>([
   ["Rechercher...", "Search..."],
-  ["DÃ©connexion", "Logout"],
-  ["Se dÃ©connecter", "Logout"],
-  ["ParamÃ¨tres", "Settings"],
+  ["D?connexion", "Logout"],
+  ["Se d?connecter", "Logout"],
+  ["Param?tres", "Settings"],
   ["Afficher toutes les notifications", "View all notifications"],
   ["Centre d'alertes", "Alert center"],
   ["Alertes recentes", "Recent alerts"],
@@ -153,7 +153,7 @@ const EN_TRANSLATIONS = new Map<string, string>([
   ["Vue d'ensemble", "Overview"],
   ["Gestion Produits", "Product Management"],
   ["Categories", "Categories"],
-  ["CatÃ©gories", "Categories"],
+  ["Cat?gories", "Categories"],
   ["Mouvements Stock", "Stock Movements"],
   ["Alertes Rupture", "Stock Alerts"],
   ["Projection Produits", "Product Projection"],
@@ -162,13 +162,13 @@ const EN_TRANSLATIONS = new Map<string, string>([
   ["Factures", "Invoices"],
   ["Retours Clients", "Customer Returns"],
   ["Rapports Caisse", "Checkout Reports"],
-  ["EmployÃ©s", "Employees"],
-  ["DÃ©partements", "Departments"],
-  ["RÃ´les", "Roles"],
+  ["Employ?s", "Employees"],
+  ["D?partements", "Departments"],
+  ["R?les", "Roles"],
   ["Tableau de bord", "Dashboard"],
-  ["BÃ©nÃ©fices & Pertes", "Profit & Loss"],
-  ["DÃ©penses & Charges", "Expenses & Costs"],
-  ["Rapports d'activitÃ©", "Activity Reports"],
+  ["B?n?fices & Pertes", "Profit & Loss"],
+  ["D?penses & Charges", "Expenses & Costs"],
+  ["Rapports d'activit?", "Activity Reports"],
   ["Formules", "Formulas"],
   ["Ma Boutique", "My Store"],
   ["Abonnement", "Subscription"],
@@ -178,9 +178,9 @@ const EN_TRANSLATIONS = new Map<string, string>([
   ["Profil", "Profile"],
   ["Module premium", "Premium module"],
   ["Mettre a niveau", "Upgrade"],
-  ["Mettre Ã  niveau", "Upgrade"],
+  ["Mettre ? niveau", "Upgrade"],
   ["Choisir un abonnement", "Choose a subscription"],
-  ["Essai terminÃ©", "Trial ended"],
+  ["Essai termin?", "Trial ended"],
   ["Acces restreint", "Restricted access"],
 ]);
 
@@ -344,7 +344,7 @@ export default function DashboardLayout({
     };
   }, [language, pathname]);
   // ==========================================
-  // EFFECT 1 : Gestion du montage (Asynchrone pour Ã©viter le linter)
+  // EFFECT 1 : Gestion du montage (Asynchrone pour ?viter le linter)
   // ==========================================
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -359,7 +359,7 @@ export default function DashboardLayout({
   // ==========================================
   useEffect(() => {
     const loadDataFromStorage = () => {
-      // 1. RÃ©cupÃ©ration des permissions
+      // 1. R?cup?ration des permissions
       try {
         const storedPermissions = localStorage.getItem("user_permissions");
         if (storedPermissions) {
@@ -369,7 +369,7 @@ export default function DashboardLayout({
         console.error("Erreur permissions:", error);
       }
 
-      // 2. RÃ©cupÃ©ration du profil
+      // 2. R?cup?ration du profil
       try {
         const storedProfile = localStorage.getItem("user_profile");
 
@@ -485,7 +485,7 @@ export default function DashboardLayout({
 
   const boutique = {
     nom: user.boutique?.nom || "Ma Boutique",
-    secteur: "Commerce GÃ©nÃ©ral",
+    secteur: "Commerce G?n?ral",
   };
 
   // ==========================================
@@ -601,7 +601,7 @@ export default function DashboardLayout({
       subMenu: [
         { name: "Vue Globale", href: "/dashboard/inventaire", permission: "VOIR_RESUME_INVENTAIRE" },
         { name: "Gestion Produits", href: "/dashboard/inventaire/produits", permission: "VOIR_LISTE_PRODUITS" },
-        { name: "CatÃ©gories", href: "/dashboard/inventaire/categories", permission: "VOIR_CATEGORIES" },
+        { name: "Cat?gories", href: "/dashboard/inventaire/categories", permission: "VOIR_CATEGORIES" },
         { name: "Mouvements Stock", href: "/dashboard/inventaire/stock", permissions: ["VOIR_MOUVEMENTS_STOCK", "VOIR_MES_OPERATIONS_INVENTAIRE"], requiredPlan: "STARTER" },
         { name: "Projection Produits", href: "/dashboard/inventaire/projection", permissions: ["VOIR_PROJECTION_PRODUITS", "EXPORTER_PROJECTION_PRODUITS"], requiredPlan: "PRO" },
         { name: "Alertes Rupture", href: "/dashboard/inventaire/alertes", permission: "VOIR_ALERTES_STOCK" },
@@ -616,25 +616,25 @@ export default function DashboardLayout({
       name: "Vue d'ensemble", 
       href: "/dashboard/equipe", 
       permission: "VOIR_EQUIPE",
-      requiredPlan: "STARTER" // Permet Ã  quiconque ayant un droit dans l'Ã©quipe d'y accÃ©der
+      requiredPlan: "STARTER" // Permet ? quiconque ayant un droit dans l'?quipe d'y acc?der
     },
     { 
-      name: "EmployÃ©s", 
+      name: "Employ?s", 
       href: "/dashboard/equipe/employes", 
       permission: "VOIR_EMPLOYES",
       requiredPlan: "STARTER" //
     },
     { 
-      name: "DÃ©partements", 
+      name: "D?partements", 
       href: "/dashboard/equipe/departements", 
       permission: "VOIR_DEPARTEMENTS",
-      requiredPlan: "PRO" // CohÃ©rent (Visualisation)
+      requiredPlan: "PRO" // Coh?rent (Visualisation)
     },
     { 
-      name: "RÃ´les", 
+      name: "R?les", 
       href: "/dashboard/equipe/roles", 
       permission: "VOIR_ROLES",
-      requiredPlan: "PRO" // CohÃ©rent avec la page RolesPage qu'on vient de faire
+      requiredPlan: "PRO" // Coh?rent avec la page RolesPage qu'on vient de faire
     },
   ],
 },
@@ -645,19 +645,19 @@ export default function DashboardLayout({
       subMenu: [
         { name: "Tableau de bord", href: "/dashboard/finances", permission: "VOIR_CHIFFRE_AFFAIRE", requiredPlan: "PRO" },
         { name: "Analyse Ventes", href: "/dashboard/finances/ventes", permission: "VOIR_HISTORIQUE_VENTES", requiredPlan: "PRO" },
-        { name: "BÃ©nÃ©fices & Pertes", href: "/dashboard/finances/benefices", permissions: ["VOIR_BENEFICES", "VOIR_ANALYSE_FINANCIERE"], requiredPlan: "PRO" },
-        { name: "DÃ©penses & Charges", href: "/dashboard/finances/charges", permissions: ["VOIR_CHARGES_FINANCE", "GERER_CHARGES_FINANCE"], requiredPlan: "PRO" },
-        { name: "Rapports d'activitÃ©", href: "/dashboard/finances/rapports", permission: "VOIR_CHIFFRE_AFFAIRE", requiredPlan: "PRO" },
+        { name: "B?n?fices & Pertes", href: "/dashboard/finances/benefices", permissions: ["VOIR_BENEFICES", "VOIR_ANALYSE_FINANCIERE"], requiredPlan: "PRO" },
+        { name: "D?penses & Charges", href: "/dashboard/finances/charges", permissions: ["VOIR_CHARGES_FINANCE", "GERER_CHARGES_FINANCE"], requiredPlan: "PRO" },
+        { name: "Rapports d'activit?", href: "/dashboard/finances/rapports", permission: "VOIR_CHIFFRE_AFFAIRE", requiredPlan: "PRO" },
         { name: "Exportations", href: "/dashboard/finances/exportations", permission: "EXPORTER_RAPPORTS", requiredPlan: "PRO" },
         { name: "Formules", href: "/dashboard/finances/formules", permission: "VOIR_FORMULES_FINANCE", requiredPlan: "PRO" },
       ],
     },
     {
-      name: "ParamÃ¨tres",
+      name: "Param?tres",
       icon: Settings,
       module: "PARAMETRES",
       subMenu: [
-        { name: "GÃ©nÃ©ral", href: "/dashboard/parametres", permission: "MODIFIER_INFOS_BOUTIQUE" },
+        { name: "G?n?ral", href: "/dashboard/parametres", permission: "MODIFIER_INFOS_BOUTIQUE" },
         { name: "Ma Boutique", href: "/dashboard/parametres/boutique", permission: "VOIR_BOUTIQUES" },
         { name: "Profil", href: "/dashboard/profil", permissions: ["MODIFIER_PROFIL_RESTREINT", "MODIFIER_PROFIL_TOTAL"] },
         { name: "Notifications", href: "/dashboard/parametres/notifications", permission: "GERER_NOTIFICATIONS", requiredPlan: "PRO" },
@@ -893,7 +893,7 @@ export default function DashboardLayout({
         <div className="p-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-slate-800/60 bg-[#141C2F]/60 shrink-0 space-y-3">
           <button
             onClick={handleLogout}
-            title={!isSidebarOpen ? "Se dÃ©connecter" : ""}
+            title={!isSidebarOpen ? "Se d?connecter" : ""}
             className={`
               w-full flex items-center rounded-xl text-xs font-black uppercase tracking-wider
               text-rose-400 bg-rose-500/5 border border-rose-500/10 hover:bg-rose-500/20 hover:border-rose-500/30
@@ -902,7 +902,7 @@ export default function DashboardLayout({
             `}
           >
             <LogOut size={18} className="shrink-0 group-hover:translate-x-1 transition-transform duration-200 text-rose-400" />
-            {(isSidebarOpen || isMobileSidebarOpen) && <span>DÃ©connexion</span>}
+            {(isSidebarOpen || isMobileSidebarOpen) && <span>D?connexion</span>}
           </button>
         </div>
       </aside>
@@ -962,7 +962,7 @@ export default function DashboardLayout({
               </button>
 
               {showLanguageMenu && (
-                <div className="absolute right-0 top-12 z-[130] w-40 overflow-hidden rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl shadow-slate-900/10">
+                <div className="absolute right-0 top-12 z-[9999] w-40 overflow-hidden rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl shadow-slate-900/10">
                   <button
                     type="button"
                     onClick={() => chooseLanguage("fr")}
@@ -1099,7 +1099,7 @@ export default function DashboardLayout({
                     {user.prenom} {user.nom}
                   </p>
                   <p className="text-[11px] text-slate-400 font-black tracking-wide mt-0.5 uppercase">
-                    {user.role || (user.roleId ? "EmployÃ©" : "Admin GÃ©nÃ©ral")}
+                    {user.role || (user.roleId ? "Employ?" : "Admin G?n?ral")}
                   </p>
                 </div>
 
@@ -1151,7 +1151,7 @@ export default function DashboardLayout({
                       className="flex items-center space-x-2.5 px-4 py-3 text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-colors uppercase tracking-wider"
                     >
                       <Settings size={16} />
-                      <span>ParamÃ¨tres</span>
+                      <span>Param?tres</span>
                     </Link>
 
                     <div className="h-px bg-slate-100 my-1" />
@@ -1164,7 +1164,7 @@ export default function DashboardLayout({
                       className="w-full flex items-center space-x-2.5 px-4 py-3 text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors uppercase tracking-wider text-left"
                     >
                       <LogOut size={16} />
-                      <span>Se dÃ©connecter</span>
+                      <span>Se d?connecter</span>
                     </button>
                   </div>
                 </>
