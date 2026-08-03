@@ -5,6 +5,7 @@ import { Menu, X, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import PreferenceControls from "./PreferenceControls";
 
 export default function AuthNavbar() {
   const { scrollY } = useScroll();
@@ -72,6 +73,7 @@ export default function AuthNavbar() {
 
           {/* --- ACTION BOUTON RETOUR --- */}
           <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+            <PreferenceControls compact />
             <button 
               onClick={() => router.back()}
               className="group flex items-center gap-2 px-3.5 py-2 sm:px-6 sm:py-3 bg-slate-900 text-[9px] sm:text-[11px] uppercase font-black text-white rounded-xl hover:bg-indigo-600 shadow-lg shadow-slate-900/20 transition-all"

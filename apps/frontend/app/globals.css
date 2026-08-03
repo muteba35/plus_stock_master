@@ -1,4 +1,4 @@
-@import "tailwindcss";
+﻿@import "tailwindcss";
 
 :root {
   --background: #ffffff;
@@ -24,3 +24,94 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Movoora global dark mode */
+html.dark {
+  --background: #0b1120;
+  --foreground: #e5e7eb;
+  color-scheme: dark;
+}
+
+html.dark body {
+  background: #0b1120;
+  color: #e5e7eb;
+}
+
+html.dark .bg-white,
+html.dark [class*="bg-white"] {
+  background-color: #111827 !important;
+}
+
+html.dark .bg-\[\#f9fafd\],
+html.dark [class*="bg-[#f9fafd]"] {
+  background-color: #0b1120 !important;
+}
+
+html.dark .bg-slate-50,
+html.dark [class*="bg-slate-50"] {
+  background-color: #172033 !important;
+}
+
+html.dark .bg-slate-100,
+html.dark [class*="bg-slate-100"] {
+  background-color: #1f2937 !important;
+}
+
+html.dark .border-slate-100,
+html.dark .border-slate-200,
+html.dark .border-slate-200\/80,
+html.dark [class*="border-slate-100"],
+html.dark [class*="border-slate-200"] {
+  border-color: rgba(71, 85, 105, 0.7) !important;
+}
+
+html.dark .text-slate-950,
+html.dark .text-slate-900,
+html.dark .text-slate-800,
+html.dark .text-slate-700,
+html.dark [class*="text-slate-950"],
+html.dark [class*="text-slate-900"],
+html.dark [class*="text-slate-800"],
+html.dark [class*="text-slate-700"] {
+  color: #f8fafc !important;
+}
+
+html.dark .text-slate-600,
+html.dark .text-slate-500,
+html.dark .text-slate-400,
+html.dark [class*="text-slate-600"],
+html.dark [class*="text-slate-500"],
+html.dark [class*="text-slate-400"] {
+  color: #cbd5e1 !important;
+}
+
+html.dark input,
+html.dark select,
+html.dark textarea {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  border-color: rgba(71, 85, 105, 0.8) !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+html.dark table thead,
+html.dark [class*="bg-slate-50"] thead {
+  background-color: #1f2937 !important;
+}
+
+html.dark tbody tr:hover,
+html.dark .hover\:bg-slate-50\/50:hover,
+html.dark .hover\:bg-slate-50\/60:hover {
+  background-color: rgba(30, 41, 59, 0.75) !important;
+}
+
+html.dark .shadow-sm,
+html.dark .shadow-md,
+html.dark .shadow-xl {
+  box-shadow: 0 18px 50px -24px rgba(0, 0, 0, 0.75) !important;
+}
+

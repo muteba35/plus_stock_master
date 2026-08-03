@@ -25,6 +25,7 @@ import {
   ChevronRight,
   ShieldCheck,
   LockKeyhole,
+  Languages,
 } from "lucide-react";
 
 // ==========================================
@@ -130,6 +131,93 @@ const EmptyPermissionState = () => (
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://plus-stock-master.onrender.com/api";
 
+type AppLanguage = "fr" | "en";
+
+const EN_TRANSLATIONS = new Map<string, string>([
+  ["Rechercher...", "Search..."],
+  ["Déconnexion", "Logout"],
+  ["Se déconnecter", "Logout"],
+  ["Paramètres", "Settings"],
+  ["Afficher toutes les notifications", "View all notifications"],
+  ["Centre d'alertes", "Alert center"],
+  ["Alertes recentes", "Recent alerts"],
+  ["Priorites recentes", "Recent priorities"],
+  ["Actualiser", "Refresh"],
+  ["Chargement...", "Loading..."],
+  ["Aucune alerte importante", "No important alert"],
+  ["La boutique ne signale rien de critique pour le moment.", "The store is not reporting anything critical for now."],
+  ["Tableau de bord", "Dashboard"],
+  ["Inventaire", "Inventory"],
+  ["Caisse", "Checkout"],
+  ["Mon Equipe", "My Team"],
+  ["Finances", "Finance"],
+  ["Vue d'ensemble", "Overview"],
+  ["Gestion Produits", "Product Management"],
+  ["Categories", "Categories"],
+  ["Catégories", "Categories"],
+  ["Mouvements Stock", "Stock Movements"],
+  ["Alertes Rupture", "Stock Alerts"],
+  ["Projection Produits", "Product Projection"],
+  ["Accueil Caisse", "Checkout Home"],
+  ["Historique Ventes", "Sales History"],
+  ["Factures", "Invoices"],
+  ["Retours Clients", "Customer Returns"],
+  ["Rapports Caisse", "Checkout Reports"],
+  ["Employés", "Employees"],
+  ["Départements", "Departments"],
+  ["Rôles", "Roles"],
+  ["Tableau de bord", "Dashboard"],
+  ["Bénéfices & Pertes", "Profit & Loss"],
+  ["Dépenses & Charges", "Expenses & Costs"],
+  ["Rapports d'activité", "Activity Reports"],
+  ["Formules", "Formulas"],
+  ["Ma Boutique", "My Store"],
+  ["Abonnement", "Subscription"],
+  ["Notifications", "Notifications"],
+  ["Journal d'audit", "Audit Log"],
+  ["Aide", "Help"],
+  ["Profil", "Profile"],
+  ["Module premium", "Premium module"],
+  ["Mettre a niveau", "Upgrade"],
+  ["Mettre à niveau", "Upgrade"],
+  ["Choisir un abonnement", "Choose a subscription"],
+  ["Essai terminé", "Trial ended"],
+  ["Acces restreint", "Restricted access"],
+]);
+
+const originalTextNodes = new WeakMap<Text, string>();
+
+const translateDashboardDom = (language: AppLanguage) => {
+  if (typeof document === "undefined") return;
+  const root = document.body;
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode: (node) => {
+      const parent = node.parentElement;
+      if (!parent) return NodeFilter.FILTER_REJECT;
+      if (["SCRIPT", "STYLE", "TEXTAREA", "INPUT", "OPTION"].includes(parent.tagName)) return NodeFilter.FILTER_REJECT;
+      if (!node.nodeValue || !node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    },
+  });
+
+  const nodes: Text[] = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode as Text);
+
+  nodes.forEach((node) => {
+    if (!originalTextNodes.has(node)) originalTextNodes.set(node, node.nodeValue || "");
+    const original = originalTextNodes.get(node) || "";
+    const key = original.trim();
+    if (language === "fr") {
+      if (node.nodeValue !== original) node.nodeValue = original;
+      return;
+    }
+    const translated = EN_TRANSLATIONS.get(key);
+    if (!translated) return;
+    const nextValue = original.replace(key, translated);
+    if (node.nodeValue !== nextValue) node.nodeValue = nextValue;
+  });
+};
+
 const DEFAULT_PROFILE: UserProfile = {
   id: "",
   prenom: "Chargement...",
@@ -165,6 +253,7 @@ export default function DashboardLayout({
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
   const [notificationsSeen, setNotificationsSeen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+  const [language, setLanguage] = useState<AppLanguage>("fr");
   const [subscription, setSubscription] = useState<SubscriptionState>(fallbackSubscription);
 
   const [openSubMenus, setOpenSubMenus] = useState<Record<string, boolean>>({
@@ -175,6 +264,34 @@ export default function DashboardLayout({
     Parametres: false,
   });
 
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("movoora_theme");
+    const prefersDark = window.matchMedia?.("(prefers-color-scheme: dark)").matches;
+    const shouldUseDark = savedTheme ? savedTheme === "dark" : Boolean(prefersDark);
+    setDarkMode(shouldUseDark);
+
+    const savedLanguage = localStorage.getItem("movoora_language");
+    setLanguage(savedLanguage === "en" ? "en" : "fr");
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", darkMode);
+    localStorage.setItem("movoora_theme", darkMode ? "dark" : "light");
+  }, [darkMode]);
+
+  useEffect(() => {
+    localStorage.setItem("movoora_language", language);
+    document.documentElement.lang = language;
+    const apply = () => translateDashboardDom(language);
+    const timer = window.setTimeout(apply, 0);
+    const observer = new MutationObserver(() => window.setTimeout(apply, 0));
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => {
+      window.clearTimeout(timer);
+      observer.disconnect();
+    };
+  }, [language, pathname]);
   // ==========================================
   // EFFECT 1 : Gestion du montage (Asynchrone pour éviter le linter)
   // ==========================================
@@ -349,15 +466,8 @@ export default function DashboardLayout({
     }));
   };
 
-  const toggleDarkMode = () => {
-    if (darkMode) {
-      document.documentElement.classList.remove("dark");
-      setDarkMode(false);
-    } else {
-      document.documentElement.classList.add("dark");
-      setDarkMode(true);
-    }
-  };
+  const toggleDarkMode = () => setDarkMode((current) => !current);
+  const toggleLanguage = () => setLanguage((current) => current === "fr" ? "en" : "fr");
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -781,10 +891,19 @@ export default function DashboardLayout({
             <button
               onClick={toggleDarkMode}
               className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200/70 text-slate-600 transition-colors shrink-0"
+              title={darkMode ? "Mode clair" : "Mode sombre"}
             >
               {darkMode ? <Sun size={20} className="text-amber-500 animate-pulse" /> : <Moon size={20} className="text-slate-600" />}
             </button>
 
+            <button
+              onClick={toggleLanguage}
+              className="h-10 px-3 flex items-center gap-2 rounded-full bg-slate-100 hover:bg-slate-200/70 text-slate-700 transition-colors shrink-0 text-[11px] font-black uppercase tracking-wider"
+              title={language === "fr" ? "Passer en anglais" : "Switch to French"}
+            >
+              <Languages size={17} />
+              {language === "fr" ? "FR" : "EN"}
+            </button>
             <div className="relative">
               <button
                 onClick={() => {

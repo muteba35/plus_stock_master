@@ -4,6 +4,7 @@ import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion"
 import { Menu, X, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import PreferenceControls from "./PreferenceControls";
 
 export default function Navbar() {
   const { scrollY } = useScroll();
@@ -75,6 +76,7 @@ export default function Navbar() {
 
           {/* --- ACTIONS DROITE --- */}
           <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+            <PreferenceControls compact />
          
             <Link 
               href="/login" 
