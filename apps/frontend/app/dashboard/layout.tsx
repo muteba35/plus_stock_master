@@ -76,37 +76,43 @@ interface NavigationItem {
 }
 
 const LockedSubscriptionState = ({ requiredPlan, feature }: { requiredPlan: PlanCode; feature: string }) => (
-  <div className="min-h-full bg-[#f9fafd] rounded-3xl border border-slate-200/80 flex items-center justify-center p-8">
-    <div className="max-w-lg text-center bg-white border border-slate-200 rounded-3xl p-8 shadow-sm">
-      <div className="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center mx-auto mb-5">
-        <LockKeyhole size={24} />
+  <div className="min-h-full bg-[#f9fafd] rounded-3xl border border-slate-200/80 flex items-center justify-center p-6">
+    <div className="relative w-full max-w-2xl overflow-hidden rounded-[2rem] border border-indigo-100 bg-white p-8 text-center shadow-[0_24px_80px_-32px_rgba(79,70,229,0.45)]">
+      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-indigo-500 via-sky-400 to-indigo-700" />
+      <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-xl shadow-indigo-600/20">
+        <LockKeyhole size={27} />
       </div>
-      <p className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-600 mb-3">Module premium</p>
-      <h2 className="text-lg font-black uppercase tracking-tight text-slate-900">{feature}</h2>
-      <p className="text-xs text-slate-500 font-medium mt-3 leading-relaxed">
-        Ce module est disponible dans l'offre {planNames[requiredPlan]}. Mettez votre boutique a niveau pour le debloquer.
+      <p className="mb-3 text-[10px] font-black uppercase tracking-[0.32em] text-indigo-600">Module premium</p>
+      <h2 className="text-xl font-black uppercase tracking-tight text-slate-950">{feature}</h2>
+      <p className="mx-auto mt-3 max-w-md text-sm font-semibold leading-relaxed text-slate-500">
+        Ce module est disponible dans l'offre <span className="font-black text-slate-900">{planNames[requiredPlan]}</span>. Mettez votre boutique ? niveau pour le d?bloquer.
       </p>
-      <Link href="/dashboard/parametres/abonnement" className="mt-6 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-indigo-600 text-white text-xs font-black uppercase tracking-wider hover:bg-indigo-700 transition-colors">
-        Mettre a niveau
-        <ChevronRight size={15} />
-      </Link>
+      <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
+        <Link href="/dashboard/parametres/abonnement" className="inline-flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-6 py-3 text-xs font-black uppercase tracking-wider text-white shadow-lg shadow-indigo-600/20 transition-colors hover:bg-indigo-700">
+          Mettre ? niveau
+          <ChevronRight size={15} />
+        </Link>
+        <span className="rounded-full bg-slate-50 px-4 py-2 text-[10px] font-black uppercase tracking-wider text-slate-500">
+          Plan requis : {planNames[requiredPlan]}
+        </span>
+      </div>
     </div>
   </div>
 );
 
 const ExpiredSubscriptionState = () => (
-  <div className="min-h-full bg-[#f9fafd] rounded-3xl border border-slate-200/80 flex items-center justify-center p-8">
-    <div className="max-w-xl text-center bg-white border border-slate-200 rounded-3xl p-8 shadow-sm">
-      <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center mx-auto mb-5">
-        <LockKeyhole size={24} />
+  <div className="min-h-full bg-[#f9fafd] rounded-3xl border border-slate-200/80 flex items-center justify-center p-6">
+    <div className="relative w-full max-w-2xl overflow-hidden rounded-[2rem] border border-amber-100 bg-white p-8 text-center shadow-[0_24px_80px_-32px_rgba(245,158,11,0.45)]">
+      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500" />
+      <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-xl shadow-amber-500/20">
+        <LockKeyhole size={27} />
       </div>
-      <p className="text-[10px] font-black uppercase tracking-[0.3em] text-amber-600 mb-3">Essai termin?</p>
-      <h2 className="text-lg font-black uppercase tracking-tight text-slate-900">Votre p?riode d'essai est arriv?e ? terme</h2>
-      <p className="text-xs text-slate-500 font-medium mt-3 leading-relaxed">
-        Vos donn?es restent conserv?es. Pour continuer ? utiliser la caisse, l'inventaire, l'?quipe et la finance,
-        choisissez un abonnement adapt? ? votre boutique.
+      <p className="mb-3 text-[10px] font-black uppercase tracking-[0.32em] text-amber-600">Essai termin?</p>
+      <h2 className="text-xl font-black uppercase tracking-tight text-slate-950">Votre période d'essai est arrivée à terme</h2>
+      <p className="mx-auto mt-3 max-w-lg text-sm font-semibold leading-relaxed text-slate-500">
+        Vos données restent conservées. Pour continuer à utiliser la caisse, l'inventaire, l'équipe et la finance, choisissez un abonnement adapté à votre boutique.
       </p>
-      <Link href="/dashboard/parametres/abonnement" className="mt-6 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-indigo-600 text-white text-xs font-black uppercase tracking-wider hover:bg-indigo-700 transition-colors">
+      <Link href="/dashboard/parametres/abonnement" className="mt-7 inline-flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-6 py-3 text-xs font-black uppercase tracking-wider text-white shadow-lg shadow-indigo-600/20 transition-colors hover:bg-indigo-700">
         Choisir un abonnement
         <ChevronRight size={15} />
       </Link>
@@ -132,119 +138,6 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://plus-stock-master.on
 
 type AppLanguage = "fr" | "en";
 
-const EN_TRANSLATIONS = new Map<string, string>([
-  ["Rechercher...", "Search..."],
-  ["D?connexion", "Logout"],
-  ["Se d?connecter", "Logout"],
-  ["Param?tres", "Settings"],
-  ["Afficher toutes les notifications", "View all notifications"],
-  ["Centre d'alertes", "Alert center"],
-  ["Alertes recentes", "Recent alerts"],
-  ["Priorites recentes", "Recent priorities"],
-  ["Actualiser", "Refresh"],
-  ["Chargement...", "Loading..."],
-  ["Aucune alerte importante", "No important alert"],
-  ["La boutique ne signale rien de critique pour le moment.", "The store is not reporting anything critical for now."],
-  ["Tableau de bord", "Dashboard"],
-  ["Inventaire", "Inventory"],
-  ["Caisse", "Checkout"],
-  ["Mon Equipe", "My Team"],
-  ["Finances", "Finance"],
-  ["Vue d'ensemble", "Overview"],
-  ["Gestion Produits", "Product Management"],
-  ["Categories", "Categories"],
-  ["Cat?gories", "Categories"],
-  ["Mouvements Stock", "Stock Movements"],
-  ["Alertes Rupture", "Stock Alerts"],
-  ["Projection Produits", "Product Projection"],
-  ["Accueil Caisse", "Checkout Home"],
-  ["Historique Ventes", "Sales History"],
-  ["Factures", "Invoices"],
-  ["Retours Clients", "Customer Returns"],
-  ["Rapports Caisse", "Checkout Reports"],
-  ["Employ?s", "Employees"],
-  ["D?partements", "Departments"],
-  ["R?les", "Roles"],
-  ["Tableau de bord", "Dashboard"],
-  ["B?n?fices & Pertes", "Profit & Loss"],
-  ["D?penses & Charges", "Expenses & Costs"],
-  ["Rapports d'activit?", "Activity Reports"],
-  ["Formules", "Formulas"],
-  ["Ma Boutique", "My Store"],
-  ["Abonnement", "Subscription"],
-  ["Notifications", "Notifications"],
-  ["Journal d'audit", "Audit Log"],
-  ["Aide", "Help"],
-  ["Profil", "Profile"],
-  ["Module premium", "Premium module"],
-  ["Mettre a niveau", "Upgrade"],
-  ["Mettre ? niveau", "Upgrade"],
-  ["Choisir un abonnement", "Choose a subscription"],
-  ["Essai termin?", "Trial ended"],
-  ["Acces restreint", "Restricted access"],
-]);
-
-const originalTextNodes = new WeakMap<Text, string>();
-const originalAttributes = new WeakMap<Element, Record<string, string>>();
-
-const translateDashboardDom = (language: AppLanguage) => {
-  if (typeof document === "undefined") return;
-  const root = document.body;
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
-    acceptNode: (node) => {
-      const parent = node.parentElement;
-      if (!parent) return NodeFilter.FILTER_REJECT;
-      if (["SCRIPT", "STYLE", "TEXTAREA", "INPUT", "OPTION"].includes(parent.tagName)) return NodeFilter.FILTER_REJECT;
-      if (!node.nodeValue || !node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
-      return NodeFilter.FILTER_ACCEPT;
-    },
-  });
-
-  const nodes: Text[] = [];
-  while (walker.nextNode()) nodes.push(walker.currentNode as Text);
-
-  nodes.forEach((node) => {
-    if (!originalTextNodes.has(node)) originalTextNodes.set(node, node.nodeValue || "");
-    const original = originalTextNodes.get(node) || "";
-    const key = original.trim();
-    if (language === "fr") {
-      if (node.nodeValue !== original) node.nodeValue = original;
-      return;
-    }
-    const translated = EN_TRANSLATIONS.get(key);
-    if (!translated) return;
-    const nextValue = original.replace(key, translated);
-    if (node.nodeValue !== nextValue) node.nodeValue = nextValue;
-  });
-
-  const attrs = ["placeholder", "title", "aria-label"];
-  document.querySelectorAll<HTMLElement>("[placeholder], [title], [aria-label]").forEach((element) => {
-    let originals = originalAttributes.get(element);
-    if (!originals) {
-      originals = {};
-      originalAttributes.set(element, originals);
-    }
-
-    attrs.forEach((attr) => {
-      const current = element.getAttribute(attr);
-      if (!current || !current.trim()) return;
-      if (!originals[attr]) originals[attr] = current;
-      const original = originals[attr];
-      const key = original.trim();
-
-      if (language === "fr") {
-        if (current !== original) element.setAttribute(attr, original);
-        return;
-      }
-
-      const translated = EN_TRANSLATIONS.get(key);
-      if (!translated) return;
-      const nextValue = original.replace(key, translated);
-      if (current !== nextValue) element.setAttribute(attr, nextValue);
-    });
-  });
-};
-
 
 function FlagIcon({ language }: { language: AppLanguage }) {
   if (language === "fr") {
@@ -268,6 +161,7 @@ function FlagIcon({ language }: { language: AppLanguage }) {
     </span>
   );
 }
+
 const DEFAULT_PROFILE: UserProfile = {
   id: "",
   prenom: "Chargement...",
@@ -334,14 +228,7 @@ export default function DashboardLayout({
   useEffect(() => {
     localStorage.setItem("movoora_language", language);
     document.documentElement.lang = language;
-    const apply = () => translateDashboardDom(language);
-    const timer = window.setTimeout(apply, 0);
-    const observer = new MutationObserver(() => window.setTimeout(apply, 0));
-    observer.observe(document.body, { childList: true, subtree: true });
-    return () => {
-      window.clearTimeout(timer);
-      observer.disconnect();
-    };
+    window.dispatchEvent(new CustomEvent("movoora-language-change", { detail: language }));
   }, [language, pathname]);
   // ==========================================
   // EFFECT 1 : Gestion du montage (Asynchrone pour ?viter le linter)
@@ -1181,6 +1068,7 @@ export default function DashboardLayout({
     </div>
   );
 }
+
 
 
 
