@@ -1,9 +1,8 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { ChevronDown } from "lucide-react";
-
-type AppLanguage = "fr" | "en";
+import { languageChangeEvent, languageStorageKey, type AppLanguage } from "../i18n/catalog";
 
 function FlagIcon({ language }: { language: AppLanguage }) {
   if (language === "fr") {
@@ -33,7 +32,7 @@ export default function PreferenceControls({ compact = false }: { compact?: bool
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    const savedLanguage = localStorage.getItem("movoora_language");
+    const savedLanguage = localStorage.getItem(languageStorageKey);
     setLanguage(savedLanguage === "en" ? "en" : "fr");
 
     const handleLanguageChange = (event: Event) => {
@@ -41,14 +40,14 @@ export default function PreferenceControls({ compact = false }: { compact?: bool
       setLanguage(custom.detail === "en" ? "en" : "fr");
     };
 
-    window.addEventListener("movoora-language-change", handleLanguageChange as EventListener);
-    return () => window.removeEventListener("movoora-language-change", handleLanguageChange as EventListener);
+    window.addEventListener(languageChangeEvent, handleLanguageChange as EventListener);
+    return () => window.removeEventListener(languageChangeEvent, handleLanguageChange as EventListener);
   }, []);
 
   const chooseLanguage = (nextLanguage: AppLanguage) => {
-    localStorage.setItem("movoora_language", nextLanguage);
+    localStorage.setItem(languageStorageKey, nextLanguage);
     setLanguage(nextLanguage);
-    window.dispatchEvent(new CustomEvent("movoora-language-change", { detail: nextLanguage }));
+    window.dispatchEvent(new CustomEvent(languageChangeEvent, { detail: nextLanguage }));
     setOpen(false);
   };
 
@@ -63,7 +62,7 @@ export default function PreferenceControls({ compact = false }: { compact?: bool
   ].join(" ");
 
   return (
-    <div className="relative">
+    <div className="relative" data-no-translate>
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}

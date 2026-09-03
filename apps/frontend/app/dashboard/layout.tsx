@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useCallback, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
@@ -85,11 +85,11 @@ const LockedSubscriptionState = ({ requiredPlan, feature }: { requiredPlan: Plan
       <p className="mb-3 text-[10px] font-black uppercase tracking-[0.32em] text-indigo-600">Module premium</p>
       <h2 className="text-xl font-black uppercase tracking-tight text-slate-950">{feature}</h2>
       <p className="mx-auto mt-3 max-w-md text-sm font-semibold leading-relaxed text-slate-500">
-        Ce module est disponible dans l'offre <span className="font-black text-slate-900">{planNames[requiredPlan]}</span>. Mettez votre boutique ? niveau pour le d?bloquer.
+        Ce module est disponible dans l'offre <span className="font-black text-slate-900">{planNames[requiredPlan]}</span>. Mettez votre boutique à niveau pour le débloquer.
       </p>
       <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
         <Link href="/dashboard/parametres/abonnement" className="inline-flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-6 py-3 text-xs font-black uppercase tracking-wider text-white shadow-lg shadow-indigo-600/20 transition-colors hover:bg-indigo-700">
-          Mettre ? niveau
+          Mettre à niveau
           <ChevronRight size={15} />
         </Link>
         <span className="rounded-full bg-slate-50 px-4 py-2 text-[10px] font-black uppercase tracking-wider text-slate-500">
@@ -107,7 +107,7 @@ const ExpiredSubscriptionState = () => (
       <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-xl shadow-amber-500/20">
         <LockKeyhole size={27} />
       </div>
-      <p className="mb-3 text-[10px] font-black uppercase tracking-[0.32em] text-amber-600">Essai termin?</p>
+      <p className="mb-3 text-[10px] font-black uppercase tracking-[0.32em] text-amber-600">Essai terminé</p>
       <h2 className="text-xl font-black uppercase tracking-tight text-slate-950">Votre période d'essai est arrivée à terme</h2>
       <p className="mx-auto mt-3 max-w-lg text-sm font-semibold leading-relaxed text-slate-500">
         Vos données restent conservées. Pour continuer à utiliser la caisse, l'inventaire, l'équipe et la finance, choisissez un abonnement adapté à votre boutique.
@@ -126,7 +126,7 @@ const EmptyPermissionState = () => (
       <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-500 border border-slate-200 flex items-center justify-center mx-auto mb-4">
         <ShieldCheck size={22} />
       </div>
-      <h2 className="text-sm font-black uppercase tracking-wider text-slate-900">Acces restreint</h2>
+      <h2 className="text-sm font-black uppercase tracking-wider text-slate-900">Accès restreint</h2>
       <p className="text-xs text-slate-500 font-medium mt-2 leading-relaxed">
         Aucune permission active ne permet d&apos;afficher cette interface. Contactez l&apos;administrateur de la boutique.
       </p>
@@ -231,7 +231,7 @@ export default function DashboardLayout({
     window.dispatchEvent(new CustomEvent("movoora-language-change", { detail: language }));
   }, [language, pathname]);
   // ==========================================
-  // EFFECT 1 : Gestion du montage (Asynchrone pour ?viter le linter)
+  // EFFECT 1 : Gestion du montage (Asynchrone pour éviter le linter)
   // ==========================================
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -246,7 +246,7 @@ export default function DashboardLayout({
   // ==========================================
   useEffect(() => {
     const loadDataFromStorage = () => {
-      // 1. R?cup?ration des permissions
+      // 1. Récupération des permissions
       try {
         const storedPermissions = localStorage.getItem("user_permissions");
         if (storedPermissions) {
@@ -256,7 +256,7 @@ export default function DashboardLayout({
         console.error("Erreur permissions:", error);
       }
 
-      // 2. R?cup?ration du profil
+      // 2. Récupération du profil
       try {
         const storedProfile = localStorage.getItem("user_profile");
 
@@ -311,7 +311,7 @@ export default function DashboardLayout({
         const data = await response.json();
 
         if (response.status === 428 && data.mustChangePassword) {
-          router.replace("/first-login");
+          router.replace("/first-login"); 
           return;
         }
 
@@ -372,7 +372,7 @@ export default function DashboardLayout({
 
   const boutique = {
     nom: user.boutique?.nom || "Ma Boutique",
-    secteur: "Commerce G?n?ral",
+    secteur: "Commerce Général",
   };
 
   // ==========================================
@@ -488,7 +488,7 @@ export default function DashboardLayout({
       subMenu: [
         { name: "Vue Globale", href: "/dashboard/inventaire", permission: "VOIR_RESUME_INVENTAIRE" },
         { name: "Gestion Produits", href: "/dashboard/inventaire/produits", permission: "VOIR_LISTE_PRODUITS" },
-        { name: "Cat?gories", href: "/dashboard/inventaire/categories", permission: "VOIR_CATEGORIES" },
+        { name: "Catégories", href: "/dashboard/inventaire/categories", permission: "VOIR_CATEGORIES" },
         { name: "Mouvements Stock", href: "/dashboard/inventaire/stock", permissions: ["VOIR_MOUVEMENTS_STOCK", "VOIR_MES_OPERATIONS_INVENTAIRE"], requiredPlan: "STARTER" },
         { name: "Projection Produits", href: "/dashboard/inventaire/projection", permissions: ["VOIR_PROJECTION_PRODUITS", "EXPORTER_PROJECTION_PRODUITS"], requiredPlan: "PRO" },
         { name: "Alertes Rupture", href: "/dashboard/inventaire/alertes", permission: "VOIR_ALERTES_STOCK" },
@@ -503,25 +503,25 @@ export default function DashboardLayout({
       name: "Vue d'ensemble", 
       href: "/dashboard/equipe", 
       permission: "VOIR_EQUIPE",
-      requiredPlan: "STARTER" // Permet ? quiconque ayant un droit dans l'?quipe d'y acc?der
+      requiredPlan: "STARTER" // Permet ? quiconque ayant un droit dans l'équipe d'y accéder
     },
     { 
-      name: "Employ?s", 
+      name: "Employés", 
       href: "/dashboard/equipe/employes", 
       permission: "VOIR_EMPLOYES",
       requiredPlan: "STARTER" //
     },
     { 
-      name: "D?partements", 
+      name: "Départements", 
       href: "/dashboard/equipe/departements", 
       permission: "VOIR_DEPARTEMENTS",
-      requiredPlan: "PRO" // Coh?rent (Visualisation)
+      requiredPlan: "PRO" // Cohérent (Visualisation)
     },
     { 
-      name: "R?les", 
+      name: "Rôles", 
       href: "/dashboard/equipe/roles", 
       permission: "VOIR_ROLES",
-      requiredPlan: "PRO" // Coh?rent avec la page RolesPage qu'on vient de faire
+      requiredPlan: "PRO" // Cohérent avec la page RolesPage qu'on vient de faire
     },
   ],
 },
@@ -532,19 +532,19 @@ export default function DashboardLayout({
       subMenu: [
         { name: "Tableau de bord", href: "/dashboard/finances", permission: "VOIR_CHIFFRE_AFFAIRE", requiredPlan: "PRO" },
         { name: "Analyse Ventes", href: "/dashboard/finances/ventes", permission: "VOIR_HISTORIQUE_VENTES", requiredPlan: "PRO" },
-        { name: "B?n?fices & Pertes", href: "/dashboard/finances/benefices", permissions: ["VOIR_BENEFICES", "VOIR_ANALYSE_FINANCIERE"], requiredPlan: "PRO" },
-        { name: "D?penses & Charges", href: "/dashboard/finances/charges", permissions: ["VOIR_CHARGES_FINANCE", "GERER_CHARGES_FINANCE"], requiredPlan: "PRO" },
-        { name: "Rapports d'activit?", href: "/dashboard/finances/rapports", permission: "VOIR_CHIFFRE_AFFAIRE", requiredPlan: "PRO" },
+        { name: "Bénéfices & Pertes", href: "/dashboard/finances/benefices", permissions: ["VOIR_BENEFICES", "VOIR_ANALYSE_FINANCIERE"], requiredPlan: "PRO" },
+        { name: "Dépenses & Charges", href: "/dashboard/finances/charges", permissions: ["VOIR_CHARGES_FINANCE", "GERER_CHARGES_FINANCE"], requiredPlan: "PRO" },
+        { name: "Rapports d'activité", href: "/dashboard/finances/rapports", permission: "VOIR_CHIFFRE_AFFAIRE", requiredPlan: "PRO" },
         { name: "Exportations", href: "/dashboard/finances/exportations", permission: "EXPORTER_RAPPORTS", requiredPlan: "PRO" },
         { name: "Formules", href: "/dashboard/finances/formules", permission: "VOIR_FORMULES_FINANCE", requiredPlan: "PRO" },
       ],
     },
     {
-      name: "Param?tres",
+      name: "Paramètres",
       icon: Settings,
       module: "PARAMETRES",
       subMenu: [
-        { name: "G?n?ral", href: "/dashboard/parametres", permission: "MODIFIER_INFOS_BOUTIQUE" },
+        { name: "Général", href: "/dashboard/parametres", permission: "MODIFIER_INFOS_BOUTIQUE" },
         { name: "Ma Boutique", href: "/dashboard/parametres/boutique", permission: "VOIR_BOUTIQUES" },
         { name: "Profil", href: "/dashboard/profil", permissions: ["MODIFIER_PROFIL_RESTREINT", "MODIFIER_PROFIL_TOTAL"] },
         { name: "Notifications", href: "/dashboard/parametres/notifications", permission: "GERER_NOTIFICATIONS", requiredPlan: "PRO" },
@@ -780,7 +780,7 @@ export default function DashboardLayout({
         <div className="p-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-slate-800/60 bg-[#141C2F]/60 shrink-0 space-y-3">
           <button
             onClick={handleLogout}
-            title={!isSidebarOpen ? "Se d?connecter" : ""}
+            title={!isSidebarOpen ? "Se déconnecter" : ""}
             className={`
               w-full flex items-center rounded-xl text-xs font-black uppercase tracking-wider
               text-rose-400 bg-rose-500/5 border border-rose-500/10 hover:bg-rose-500/20 hover:border-rose-500/30
@@ -789,7 +789,7 @@ export default function DashboardLayout({
             `}
           >
             <LogOut size={18} className="shrink-0 group-hover:translate-x-1 transition-transform duration-200 text-rose-400" />
-            {(isSidebarOpen || isMobileSidebarOpen) && <span>D?connexion</span>}
+            {(isSidebarOpen || isMobileSidebarOpen) && <span>Déconnexion</span>}
           </button>
         </div>
       </aside>
@@ -986,7 +986,7 @@ export default function DashboardLayout({
                     {user.prenom} {user.nom}
                   </p>
                   <p className="text-[11px] text-slate-400 font-black tracking-wide mt-0.5 uppercase">
-                    {user.role || (user.roleId ? "Employ?" : "Admin G?n?ral")}
+                    {user.role || (user.roleId ? "Employé" : "Admin Général")}
                   </p>
                 </div>
 
@@ -1038,7 +1038,7 @@ export default function DashboardLayout({
                       className="flex items-center space-x-2.5 px-4 py-3 text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-colors uppercase tracking-wider"
                     >
                       <Settings size={16} />
-                      <span>Param?tres</span>
+                      <span>Paramètres</span>
                     </Link>
 
                     <div className="h-px bg-slate-100 my-1" />
@@ -1051,7 +1051,7 @@ export default function DashboardLayout({
                       className="w-full flex items-center space-x-2.5 px-4 py-3 text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors uppercase tracking-wider text-left"
                     >
                       <LogOut size={16} />
-                      <span>Se d?connecter</span>
+                      <span>Se déconnecter</span>
                     </button>
                   </div>
                 </>
@@ -1068,6 +1068,7 @@ export default function DashboardLayout({
     </div>
   );
 }
+
 
 
 
