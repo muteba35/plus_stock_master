@@ -2,12 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { ChevronDown } from "lucide-react";
-import { languageChangeEvent, languageStorageKey, type AppLanguage } from "../i18n/catalog";
+import {
+  getStoredLanguage,
+  languageChangeEvent,
+  setStoredLanguage,
+  supportedLanguages,
+  type AppLanguage,
+} from "../i18n/catalog";
 
 function FlagIcon({ language }: { language: AppLanguage }) {
   if (language === "fr") {
     return (
-      <span className="grid h-4 w-6 grid-cols-3 overflow-hidden rounded-[3px] border border-slate-300 shadow-sm">
+      <span className="grid h-4 w-6 grid-cols-3 overflow-hidden rounded-[3px] border border-slate-300 shadow-sm" aria-hidden="true">
         <span className="bg-[#1f3f8b]" />
         <span style={{ backgroundColor: "#ffffff" }} />
         <span className="bg-[#e63946]" />
@@ -16,7 +22,7 @@ function FlagIcon({ language }: { language: AppLanguage }) {
   }
 
   return (
-    <span className="relative h-4 w-6 overflow-hidden rounded-[3px] border border-slate-300 bg-[#102b7a] shadow-sm">
+    <span className="relative h-4 w-6 overflow-hidden rounded-[3px] border border-slate-300 bg-[#102b7a] shadow-sm" aria-hidden="true">
       <span className="absolute left-1/2 top-0 h-full w-[3px] -translate-x-1/2 bg-white" />
       <span className="absolute left-0 top-1/2 h-[3px] w-full -translate-y-1/2 bg-white" />
       <span className="absolute left-1/2 top-0 h-full w-[1.5px] -translate-x-1/2 bg-[#d91f3c]" />
@@ -32,8 +38,7 @@ export default function PreferenceControls({ compact = false }: { compact?: bool
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    const savedLanguage = localStorage.getItem(languageStorageKey);
-    setLanguage(savedLanguage === "en" ? "en" : "fr");
+    const timer = window.setTimeout(() => setLanguage(getStoredLanguage()), 0);
 
     const handleLanguageChange = (event: Event) => {
       const custom = event as CustomEvent<AppLanguage>;
@@ -41,16 +46,19 @@ export default function PreferenceControls({ compact = false }: { compact?: bool
     };
 
     window.addEventListener(languageChangeEvent, handleLanguageChange as EventListener);
-    return () => window.removeEventListener(languageChangeEvent, handleLanguageChange as EventListener);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener(languageChangeEvent, handleLanguageChange as EventListener);
+    };
   }, []);
 
   const chooseLanguage = (nextLanguage: AppLanguage) => {
-    localStorage.setItem(languageStorageKey, nextLanguage);
     setLanguage(nextLanguage);
-    window.dispatchEvent(new CustomEvent(languageChangeEvent, { detail: nextLanguage }));
+    setStoredLanguage(nextLanguage);
     setOpen(false);
   };
 
+  const currentLanguage = supportedLanguages.find((item) => item.code === language) || supportedLanguages[0];
   const buttonClass = [
     "h-9 sm:h-10 rounded-full bg-slate-100 hover:bg-slate-200/70 text-slate-700 transition-colors shrink-0 border border-slate-200/70 px-2.5 sm:px-3 inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider",
     compact ? "" : "min-w-[76px]",
@@ -71,20 +79,18 @@ export default function PreferenceControls({ compact = false }: { compact?: bool
         aria-label={language === "fr" ? "Changer la langue" : "Change language"}
       >
         <FlagIcon language={language} />
-        <span>{language === "fr" ? "FR" : "EN"}</span>
+        <span>{currentLanguage.label}</span>
         <ChevronDown size={13} className={open ? "rotate-180 transition-transform" : "transition-transform"} />
       </button>
 
       {open && (
         <div className="absolute right-0 top-12 z-[9999] w-40 overflow-hidden rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl shadow-slate-900/10">
-          <button type="button" onClick={() => chooseLanguage("fr")} className={optionClass("fr")}>
-            <FlagIcon language="fr" />
-            Français
-          </button>
-          <button type="button" onClick={() => chooseLanguage("en")} className={optionClass("en")}>
-            <FlagIcon language="en" />
-            English
-          </button>
+          {supportedLanguages.map((item) => (
+            <button key={item.code} type="button" onClick={() => chooseLanguage(item.code)} className={optionClass(item.code)}>
+              <FlagIcon language={item.code} />
+              {item.name}
+            </button>
+          ))}
         </div>
       )}
     </div>

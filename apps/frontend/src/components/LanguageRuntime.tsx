@@ -1,25 +1,30 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { languageChangeEvent, languageStorageKey, translateValue, type AppLanguage } from "../i18n/catalog";
+import {
+  getStoredLanguage,
+  languageChangeEvent,
+  languageStorageKey,
+  translateValue,
+  type AppLanguage,
+} from "../i18n/catalog";
 
 const originalTextNodes = new WeakMap<Text, string>();
 const originalAttributes = new WeakMap<Element, Record<string, string>>();
+const originalInputValues = new WeakMap<HTMLInputElement, string>();
+
+const skippedTextParents = new Set(["SCRIPT", "STYLE", "TEXTAREA", "INPUT", "CODE", "PRE"]);
 
 const shouldSkipTextNode = (node: Node) => {
   const parent = node.parentElement;
   if (!parent) return true;
-  if (["SCRIPT", "STYLE", "TEXTAREA", "INPUT", "OPTION", "CODE", "PRE"].includes(parent.tagName)) return true;
+  if (skippedTextParents.has(parent.tagName)) return true;
   if (!node.nodeValue || !node.nodeValue.trim()) return true;
   if (parent.closest("[data-no-translate]")) return true;
   return false;
 };
 
-const applyLanguage = (language: AppLanguage) => {
-  if (typeof document === "undefined" || !document.body) return;
-
-  document.documentElement.lang = language;
-
+const translateTextNodes = (language: AppLanguage) => {
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
     acceptNode: (node) => shouldSkipTextNode(node) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT,
   });
@@ -33,9 +38,11 @@ const applyLanguage = (language: AppLanguage) => {
     const next = translateValue(original, language);
     if (node.nodeValue !== next) node.nodeValue = next;
   });
+};
 
-  const attrs = ["placeholder", "title", "aria-label"];
-  document.querySelectorAll<HTMLElement>("[placeholder], [title], [aria-label]").forEach((element) => {
+const translateAttributes = (language: AppLanguage) => {
+  const attrs = ["placeholder", "title", "aria-label", "alt"];
+  document.querySelectorAll<HTMLElement>("[placeholder], [title], [aria-label], [alt]").forEach((element) => {
     if (element.closest("[data-no-translate]")) return;
 
     let originals = originalAttributes.get(element);
@@ -48,19 +55,38 @@ const applyLanguage = (language: AppLanguage) => {
       const current = element.getAttribute(attr);
       if (!current || !current.trim()) return;
       if (!originals[attr]) originals[attr] = current;
-      const original = originals[attr];
-      const next = translateValue(original, language);
+      const next = translateValue(originals[attr], language);
       if (current !== next) element.setAttribute(attr, next);
     });
   });
+};
+
+const translateButtonInputValues = (language: AppLanguage) => {
+  document.querySelectorAll<HTMLInputElement>('input[type="button"], input[type="submit"], input[type="reset"]').forEach((input) => {
+    if (input.closest("[data-no-translate]")) return;
+    if (!input.value || !input.value.trim()) return;
+    if (!originalInputValues.has(input)) originalInputValues.set(input, input.value);
+    const next = translateValue(originalInputValues.get(input) || "", language);
+    if (input.value !== next) input.value = next;
+  });
+};
+
+const applyLanguage = (language: AppLanguage) => {
+  if (typeof document === "undefined" || !document.body) return;
+
+  document.documentElement.lang = language;
+  document.documentElement.dataset.language = language;
+
+  translateTextNodes(language);
+  translateAttributes(language);
+  translateButtonInputValues(language);
 };
 
 export default function LanguageRuntime() {
   const [language, setLanguage] = useState<AppLanguage>("fr");
 
   useEffect(() => {
-    const saved = localStorage.getItem(languageStorageKey);
-    setLanguage(saved === "en" ? "en" : "fr");
+    const timer = window.setTimeout(() => setLanguage(getStoredLanguage()), 0);
 
     const handleLanguageChange = (event: Event) => {
       const custom = event as CustomEvent<AppLanguage>;
@@ -68,7 +94,12 @@ export default function LanguageRuntime() {
     };
 
     window.addEventListener(languageChangeEvent, handleLanguageChange as EventListener);
-    return () => window.removeEventListener(languageChangeEvent, handleLanguageChange as EventListener);
+    window.addEventListener("storage", handleLanguageChange as EventListener);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener(languageChangeEvent, handleLanguageChange as EventListener);
+      window.removeEventListener("storage", handleLanguageChange as EventListener);
+    };
   }, []);
 
   useEffect(() => {

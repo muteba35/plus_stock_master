@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { canUsePlan, fallbackSubscription, getRequiredPlanForPath, planNames, type PlanCode, type SubscriptionState } from "../../src/lib/subscriptionPlans";
+import { getStoredLanguage, languageChangeEvent, setStoredLanguage, supportedLanguages, type AppLanguage } from "../../src/i18n/catalog";
 
 import {
   LayoutDashboard,
@@ -136,7 +137,6 @@ const EmptyPermissionState = () => (
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://plus-stock-master.onrender.com/api";
 
-type AppLanguage = "fr" | "en";
 
 
 function FlagIcon({ language }: { language: AppLanguage }) {
@@ -216,8 +216,16 @@ export default function DashboardLayout({
     const shouldUseDark = savedTheme ? savedTheme === "dark" : Boolean(prefersDark);
     setDarkMode(shouldUseDark);
 
-    const savedLanguage = localStorage.getItem("movoora_language");
-    setLanguage(savedLanguage === "en" ? "en" : "fr");
+    const languageTimer = window.setTimeout(() => setLanguage(getStoredLanguage()), 0);
+    const handleLanguageChange = (event: Event) => {
+      const custom = event as CustomEvent<AppLanguage>;
+      setLanguage(custom.detail === "en" ? "en" : "fr");
+    };
+    window.addEventListener(languageChangeEvent, handleLanguageChange as EventListener);
+    return () => {
+      window.clearTimeout(languageTimer);
+      window.removeEventListener(languageChangeEvent, handleLanguageChange as EventListener);
+    };
   }, []);
 
   useEffect(() => {
@@ -226,9 +234,7 @@ export default function DashboardLayout({
   }, [darkMode]);
 
   useEffect(() => {
-    localStorage.setItem("movoora_language", language);
     document.documentElement.lang = language;
-    window.dispatchEvent(new CustomEvent("movoora-language-change", { detail: language }));
   }, [language, pathname]);
   // ==========================================
   // EFFECT 1 : Gestion du montage (Asynchrone pour éviter le linter)
@@ -407,6 +413,7 @@ export default function DashboardLayout({
   const toggleDarkMode = () => setDarkMode((current) => !current);
   const chooseLanguage = (nextLanguage: AppLanguage) => {
     setLanguage(nextLanguage);
+    setStoredLanguage(nextLanguage);
     setShowLanguageMenu(false);
   };
 
@@ -844,31 +851,27 @@ export default function DashboardLayout({
                 aria-label={language === "fr" ? "Changer la langue" : "Change language"}
               >
                 <FlagIcon language={language} />
-                <span>{language === "fr" ? "FR" : "EN"}</span>
+                <span>{supportedLanguages.find((item) => item.code === language)?.label || "FR"}</span>
                 <ChevronDown size={13} className={`transition-transform ${showLanguageMenu ? "rotate-180" : ""}`} />
               </button>
 
               {showLanguageMenu && (
                 <div className="absolute right-0 top-12 z-[9999] w-40 overflow-hidden rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl shadow-slate-900/10">
-                  <button
-                    type="button"
-                    onClick={() => chooseLanguage("fr")}
-                    className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-[11px] font-black uppercase tracking-wider transition-colors ${language === "fr" ? "bg-indigo-50 text-indigo-700" : "text-slate-600 hover:bg-slate-50"}`}
-                  >
-                    <FlagIcon language="fr" />
-                    Français
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => chooseLanguage("en")}
-                    className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-[11px] font-black uppercase tracking-wider transition-colors ${language === "en" ? "bg-indigo-50 text-indigo-700" : "text-slate-600 hover:bg-slate-50"}`}
-                  >
-                    <FlagIcon language="en" />
-                    English
-                  </button>
+                  {supportedLanguages.map((item) => (
+                    <button
+                      key={item.code}
+                      type="button"
+                      onClick={() => chooseLanguage(item.code)}
+                      className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-[11px] font-black uppercase tracking-wider transition-colors ${language === item.code ? "bg-indigo-50 text-indigo-700" : "text-slate-600 hover:bg-slate-50"}`}
+                    >
+                      <FlagIcon language={item.code} />
+                      {item.name}
+                    </button>
+                  ))}
                 </div>
               )}
-            </div><div className="relative">
+            </div>
+            <div className="relative">
               <button
                 onClick={() => {
                   setShowNotifications((value) => !value);
@@ -1068,25 +1071,4 @@ export default function DashboardLayout({
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
