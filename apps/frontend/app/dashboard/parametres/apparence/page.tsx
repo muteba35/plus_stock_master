@@ -86,7 +86,7 @@ export default function AppearancePage() {
         </section>
         <section className="space-y-5 rounded-3xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
           <h2 className="flex items-center gap-2 font-black"><ImagePlus size={19}/>{translate("Logo de la boutique")}</h2>
-          <div className="flex h-40 items-center justify-center rounded-2xl border border-dashed bg-slate-50 p-6 dark:bg-slate-800"><img src={form.logo || "/movoora-logo.svg"} alt={translate("Aperçu du logo")} className="max-h-full max-w-full object-contain"/></div>
+          <div className="flex h-40 items-center justify-center rounded-2xl border border-dashed bg-slate-50 p-6 dark:bg-slate-800"><img src={form.logo || "/movoora-logo.svg?v=2"} alt={translate("Aperçu du logo")} className="max-h-full max-w-full object-contain"/></div>
           <p className="text-xs text-slate-500">{translate("PNG, JPEG ou WebP, 500 Ko maximum.")}</p>
           <div className="flex flex-wrap gap-2"><label className={`rounded-xl bg-indigo-600 px-4 py-2 text-xs font-black text-white ${!canEdit ? "pointer-events-none opacity-50" : "cursor-pointer"}`}><input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={chooseLogo}/>{translate("Choisir une image")}</label><button disabled={!canEdit || !form.logo} onClick={() => preview({ ...form, logo: "" })} className="flex items-center gap-2 rounded-xl border px-4 py-2 text-xs font-black disabled:opacity-40"><Trash2 size={14}/>{translate("Supprimer le logo")}</button></div>
         </section>

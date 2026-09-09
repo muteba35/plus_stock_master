@@ -281,7 +281,7 @@ export default function LandingPage() {
             {/* Colonne 1: Branding */}
             <div className="space-y-6">
               <div className="flex items-center gap-2 group cursor-pointer">
-                <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center"><img src="/movoora-mark.svg" alt="Movoora" className="w-5 h-5" /></div>
+                <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center"><img src="/movoora-mark.svg?v=2" alt="Movoora" className="bg-white rounded-sm p-0.5 w-5 h-5" /></div>
                 <span className="text-xl font-black uppercase tracking-tighter">Movoora</span>
               </div>
               <p className="text-slate-500 text-xs font-bold uppercase leading-relaxed tracking-tight">

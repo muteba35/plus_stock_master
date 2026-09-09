@@ -1,5 +1,10 @@
 import nodemailer from "nodemailer";
 import { Resend } from "resend";
+import { readFileSync } from "node:fs";
+
+const brandImage = readFileSync(new URL("../assets/movoora-mark.png", import.meta.url));
+const brandContentId = "movoora-brand";
+export const emailBrand = '<img src="cid:movoora-brand" width="44" height="44" alt="Movoora" style="display:inline-block;vertical-align:middle;margin-right:12px;background:#ffffff;border-radius:8px;padding:6px;">Movoora';
 
 const getDefaultEmailTemplate = ({ title, alertColor, iconUrl, bodyMessage, showButton, frontendUrl }) => `
   <div style="background-color: #F4F7FA; padding: 50px 15px; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
@@ -8,7 +13,7 @@ const getDefaultEmailTemplate = ({ title, alertColor, iconUrl, bodyMessage, show
 
       <div style="background-color: #0F172A; padding: 35px 20px; text-align: center;">
         <h1 style="color: #ffffff; margin: 0; font-size: 18px; letter-spacing: 4px; font-weight: 800; text-transform: uppercase;">
-          STOCK<span style="color: #818CF8;">MASTER</span>
+          ${emailBrand}
           <span style="font-size: 9px; color: #94A3B8; vertical-align: middle; border: 1px solid #334155; padding: 2px 6px; border-radius: 4px; margin-left: 5px;">PRO</span>
         </h1>
       </div>
@@ -111,7 +116,7 @@ const getSecurityAlertTemplate = ({ type, attemptsLeft = 0, frontendUrl }) => {
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                   <tr>
                     <td>
-                      <div style="font-size:18px; font-weight:900; letter-spacing:3px; color:#FFFFFF;">STOCK<span style="color:#818CF8;">MASTER</span></div>
+                      <div style="font-size:18px; font-weight:900; letter-spacing:0; color:#FFFFFF;">${emailBrand}</div>
                       <div style="margin-top:6px; font-size:10px; font-weight:800; letter-spacing:2px; color:#94A3B8; text-transform:uppercase;">Centre de securite</div>
                     </td>
                     <td align="right">
@@ -252,10 +257,11 @@ export const sendEmail = async (options) => {
     if (process.env.RESEND_API_KEY) {
       const resend = new Resend(process.env.RESEND_API_KEY);
       const info = await resend.emails.send({
-        from: process.env.EMAIL_FROM || "Movoora <onboarding@resend.dev>",
+        from: (process.env.EMAIL_FROM || "Movoora <onboarding@resend.dev>").replace(/^(?:"?)(?:StockMaster|Boutiqo|Boutico)(?:[^<]*)(?=<)/i, "Movoora "),
         to: options.email,
         subject: options.subject || "Notification Movoora",
         html: htmlContent,
+        attachments: [{ filename: "movoora-mark.png", content: brandImage.toString("base64"), contentId: brandContentId }],
       });
 
       console.log(`Email Resend envoye a ${options.email}`);
@@ -268,6 +274,7 @@ export const sendEmail = async (options) => {
       to: options.email,
       subject: options.subject || "Notification Movoora",
       html: htmlContent,
+      attachments: [{ filename: "movoora-mark.png", content: brandImage, cid: brandContentId }],
     });
 
     console.log(`Email SMTP envoye a ${options.email}`);

@@ -668,7 +668,7 @@ export default function DashboardLayout({
           <div className="p-6 border-b border-slate-800/60 bg-[#141C2F] h-20 flex items-center justify-between shrink-0">
             <div className="flex items-center space-x-3 overflow-hidden">
               <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-600/20 shrink-0">
-                <img src={boutiqueLogo || "/movoora-mark.svg"} alt="Movoora" className="w-5 h-5 object-contain" />
+                <img src={boutiqueLogo || "/movoora-mark.svg?v=2"} alt="Movoora" className="bg-white rounded-sm p-0.5 w-5 h-5 object-contain" />
               </div>
 
               {(isSidebarOpen || isMobileSidebarOpen) && (

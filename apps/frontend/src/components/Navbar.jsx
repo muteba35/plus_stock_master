@@ -48,7 +48,7 @@ export default function Navbar() {
             <Link href="/" className="flex items-center gap-2 group">
               {/* Icône redimensionnée : petite sur mobile, normale sur desktop */}
               <div className="w-8 h-8 sm:w-10 sm:h-10 bg-indigo-600 rounded-lg sm:rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-600/20 group-hover:rotate-3 transition-transform">
-                <img src="/movoora-mark.svg" alt="Movoora" className="w-5 h-5 sm:w-6 sm:h-6" />
+                <img src="/movoora-mark.svg?v=2" alt="Movoora" className="bg-white rounded-sm p-0.5 w-5 h-5 sm:w-6 sm:h-6" />
               </div>
               
               {/* Texte Typo Moderne : Taille fluide */}

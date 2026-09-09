@@ -3,7 +3,7 @@ import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import axios from "axios";
 import { AuditLog, Boutique, Categorie, Departement, ExchangeRate, FinanceCharge, InventaireAudit, MouvementStock, Notification, NotificationPreference, Permission, Produit, RetourClient, Role, RolePermission, Utilisateur, Vente } from "../models/Utilisateur.js";
-import { sendEmail } from "../utils/sendEmail.js";
+import { sendEmail, emailBrand } from "../utils/sendEmail.js";
 
 const normalizeBoutique = (boutique, activeId) => ({
   id: boutique._id,
@@ -305,6 +305,7 @@ export const requestBoutiqueDeletionCode = async (req, res) => {
         <div style="font-family:Arial,sans-serif;background:#f8fafc;padding:24px;color:#172033">
           <div style="max-width:560px;margin:auto;background:#ffffff;border:1px solid #e2e8f0;border-radius:18px;overflow:hidden">
             <div style="padding:22px 24px;background:#111827;color:#fff">
+              <div style="margin-bottom:18px;font-size:20px;font-weight:700">${emailBrand}</div>
               <h1 style="margin:0;font-size:18px">Validation de suppression</h1>
               <p style="margin:6px 0 0;color:#cbd5e1;font-size:13px">Boutique concernee : ${boutique.nom}</p>
             </div>

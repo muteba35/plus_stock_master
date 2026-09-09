@@ -3,7 +3,7 @@ import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import { ensureBoutiqueSubscription } from "./subscription.controller.js";
 import { Utilisateur, Boutique } from "../models/Utilisateur.js"; 
-import { sendEmail, sendSecurityAlertEmail } from "../utils/sendEmail.js";
+import { sendEmail, sendSecurityAlertEmail, emailBrand } from "../utils/sendEmail.js";
 import { Permission, RolePermission } from "../models/Utilisateur.js";
 
 const strongPasswordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,128}$/;
@@ -141,7 +141,7 @@ export const register = async (req, res) => {
           <tr>
             <td style="background-color: #090e1a; padding: 40px 20px; text-align: center;">
               <h1 style="color: #ffffff; margin: 0; font-size: 26px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase;">
-                STOCK<span style="color: #6366f1;">MASTER</span>
+                ${emailBrand}
               </h1>
               <p style="color: #94a3b8; font-size: 10px; margin: 8px 0 0; text-transform: uppercase; letter-spacing: 3px; font-weight: bold;">Édition Professionnelle</p>
             </td>
@@ -245,7 +245,7 @@ const renderOtpEmail = (prenom, otp) => {
       <tr>
         <td style="background-color: #090e1a; padding: 45px 20px; text-align: center;">
           <h1 style="color: #ffffff; margin: 0; font-size: 26px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase;">
-            STOCK<span style="color: #6366f1;">MASTER</span>
+            ${emailBrand}
           </h1>
           <p style="color: #94a3b8; font-size: 10px; margin: 8px 0 0; text-transform: uppercase; letter-spacing: 3px; font-weight: bold;">Édition Professionnelle</p>
         </td>
@@ -587,7 +587,7 @@ export const resendVerification = async (req, res) => {
       <tr>
         <td style="background-color: #090e1a; padding: 45px 20px; text-align: center;">
           <h1 style="color: #ffffff; margin: 0; font-size: 26px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase;">
-            STOCK<span style="color: #6366f1;">MASTER</span>
+            ${emailBrand}
           </h1>
           <p style="color: #94a3b8; font-size: 10px; margin: 8px 0 0; text-transform: uppercase; letter-spacing: 3px; font-weight: bold;">Édition Professionnelle</p>
         </td>
@@ -837,7 +837,7 @@ export const resendOTP = async (req, res) => {
           <tr>
             <td style="background-color: #090e1a; padding: 45px 20px; text-align: center;">
               <h1 style="color: #ffffff; margin: 0; font-size: 26px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase;">
-                STOCK<span style="color: #6366f1;">MASTER</span>
+                ${emailBrand}
               </h1>
               <p style="color: #94a3b8; font-size: 10px; margin: 8px 0 0; text-transform: uppercase; letter-spacing: 3px; font-weight: bold;">Édition Professionnelle</p>
             </td>
@@ -951,7 +951,7 @@ export const forgotPassword = async (req, res) => {
           <tr>
             <td style="background-color: #090e1a; padding: 45px 20px; text-align: center;">
               <h1 style="color: #ffffff; margin: 0; font-size: 26px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase;">
-                STOCK<span style="color: #6366f1;">MASTER</span>
+                ${emailBrand}
               </h1>
               <p style="color: #94a3b8; font-size: 10px; margin: 8px 0 0; text-transform: uppercase; letter-spacing: 3px; font-weight: bold;">Édition Professionnelle</p>
             </td>
@@ -1149,7 +1149,7 @@ export const resendForgotPassword = async (req, res) => {
             <tr>
               <td style="background-color: #090e1a; padding: 40px 20px; text-align: center;">
                 <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase;">
-                  STOCK<span style="color: #6366f1;">MASTER</span>
+                  ${emailBrand}
                 </h1>
                 <p style="color: #94a3b8; font-size: 9px; margin: 8px 0 0; text-transform: uppercase; letter-spacing: 2px; font-weight: bold;">Security Infrastructure</p>
               </td>
