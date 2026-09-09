@@ -11,6 +11,7 @@ const normalizeBoutique = (boutique, activeId) => ({
   secteurActivite: boutique.secteurActivite,
   deviseParDefaut: boutique.deviseParDefaut,
   tailleBusiness: boutique.tailleBusiness,
+  appearance: boutique.appearance || {},
   plan: boutique.plan,
   statutPaiement: boutique.statutPaiement,
   trialExpiresAt: boutique.trialExpiresAt,
@@ -216,6 +217,62 @@ export const updateBoutique = async (req, res) => {
   } catch (error) {
     console.error("Erreur updateBoutique:", error);
     return res.status(500).json({ message: "Erreur lors de la modification de la boutique." });
+  }
+};
+
+export const updateBoutiqueAppearance = async (req, res) => {
+  try {
+    const context = await resolveBoutiqueContext(req, res);
+    if (!context) return;
+    const boutique = await Boutique.findOne({
+      _id: req.params.id,
+      userId: context.ownerId,
+      isDeleted: false,
+    });
+    if (!boutique) return res.status(404).json({ message: "Boutique introuvable pour ce compte." });
+
+    const fonts = ["Inter", "Roboto", "Poppins", "Montserrat", "Open Sans"];
+    const sizes = ["small", "normal", "large", "xlarge"];
+    const themes = ["light", "dark", "system"];
+    const colorPattern = /^#[0-9A-Fa-f]{6}$/;
+    const current = boutique.appearance?.toObject?.() || boutique.appearance || {};
+    const next = { ...current };
+    const body = req.body || {};
+    if (body.fontFamily !== undefined) {
+      if (!fonts.includes(body.fontFamily)) return res.status(400).json({ message: "Police non autorisee." });
+      next.fontFamily = body.fontFamily;
+    }
+    if (body.textSize !== undefined) {
+      if (!sizes.includes(body.textSize)) return res.status(400).json({ message: "Taille de texte non autorisee." });
+      next.textSize = body.textSize;
+    }
+    if (body.theme !== undefined) {
+      if (!themes.includes(body.theme)) return res.status(400).json({ message: "Theme non autorise." });
+      next.theme = body.theme;
+    }
+    for (const key of ["primaryColor", "secondaryColor", "accentColor"]) {
+      if (body[key] !== undefined) {
+        if (!colorPattern.test(body[key])) return res.status(400).json({ message: "Couleur invalide." });
+        next[key] = body[key].toUpperCase();
+      }
+    }
+    if (body.logo !== undefined) {
+      const logo = String(body.logo || "");
+      if (logo && (!/^data:image\/(png|jpeg|webp);base64,/i.test(logo) || logo.length > 900000)) {
+        return res.status(400).json({ message: "Logo invalide. Utilisez PNG, JPEG ou WebP (500 Ko maximum)." });
+      }
+      next.logo = logo;
+    }
+    boutique.appearance = next;
+    await boutique.save();
+    return res.status(200).json({
+      success: true,
+      message: "Apparence mise a jour.",
+      boutique: normalizeBoutique(boutique, context.activeBoutiqueId),
+    });
+  } catch (error) {
+    console.error("Erreur updateBoutiqueAppearance:", error);
+    return res.status(500).json({ message: "Erreur lors de la mise a jour de l'apparence." });
   }
 };
 

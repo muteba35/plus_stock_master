@@ -7,6 +7,7 @@ import {
   requestBoutiqueDeletionCode,
   setActiveBoutique,
   updateBoutique,
+  updateBoutiqueAppearance,
   getCurrencySettings,
   syncCurrencySettings,
   updateCurrencySettings,
@@ -85,6 +86,7 @@ router.route("/")
   .post(checkPermission("CREER_BOUTIQUE"), createBoutiqueLimiter, enforceBoutiqueLimit, boutiqueValidation.create, createBoutique);
 
 router.post("/:id/delete-code", checkPermission("SUPPRIMER_BOUTIQUE"), requestDeletionCodeLimiter, requestBoutiqueDeletionCode);
+router.patch("/:id/appearance", checkPermission("MODIFIER_PERSONNALISATION"), updateBoutiqueAppearance);
 
 router.route("/:id")
   .put(checkPermission("MODIFIER_BOUTIQUE"), boutiqueValidation.update, updateBoutique)

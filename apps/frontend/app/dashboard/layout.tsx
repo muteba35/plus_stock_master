@@ -77,6 +77,16 @@ interface NavigationItem {
   subMenu?: SubMenuItem[];
 }
 
+interface BoutiqueAppearance {
+  fontFamily?: string;
+  textSize?: "small" | "normal" | "large" | "xlarge";
+  theme?: "light" | "dark" | "system";
+  primaryColor?: string;
+  secondaryColor?: string;
+  accentColor?: string;
+  logo?: string;
+}
+
 const LockedSubscriptionState = ({ requiredPlan, feature }: { requiredPlan: PlanCode; feature: string }) => (
   <div className="min-h-full bg-[#f9fafd] rounded-3xl border border-slate-200/80 flex items-center justify-center p-6">
     <div className="relative w-full max-w-2xl overflow-hidden rounded-[2rem] border border-indigo-100 bg-white p-8 text-center shadow-[0_24px_80px_-32px_rgba(79,70,229,0.45)]">
@@ -201,6 +211,7 @@ export default function DashboardLayout({
   const [darkMode, setDarkMode] = useState(false);
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const [subscription, setSubscription] = useState<SubscriptionState>(fallbackSubscription);
+  const [boutiqueLogo, setBoutiqueLogo] = useState("");
 
   const [openSubMenus, setOpenSubMenus] = useState<Record<string, boolean>>({
     Caisse: false,
@@ -223,6 +234,44 @@ export default function DashboardLayout({
     document.documentElement.classList.toggle("dark", darkMode);
     localStorage.setItem("movoora_theme", darkMode ? "dark" : "light");
   }, [darkMode]);
+
+  const applyAppearance = useCallback((appearance: BoutiqueAppearance = {}) => {
+    const root = document.documentElement;
+    const font = appearance.fontFamily || "Inter";
+    const size = { small: "14px", normal: "16px", large: "17px", xlarge: "18px" }[appearance.textSize || "normal"];
+    root.style.setProperty("--movoora-font", `"${font}", Inter, Arial, sans-serif`);
+    root.style.setProperty("--movoora-base-size", size);
+    root.style.setProperty("--movoora-primary", appearance.primaryColor || "#4F46E5");
+    root.style.setProperty("--movoora-secondary", appearance.secondaryColor || "#0F172A");
+    root.style.setProperty("--movoora-accent", appearance.accentColor || "#10B981");
+    document.body.style.fontFamily = `var(--movoora-font)`;
+    document.body.style.fontSize = "var(--movoora-base-size)";
+    if (appearance.theme) {
+      const useDark = appearance.theme === "dark" || (appearance.theme === "system" && window.matchMedia?.("(prefers-color-scheme: dark)").matches);
+      setDarkMode(Boolean(useDark));
+    }
+    setBoutiqueLogo(appearance.logo || "");
+  }, []);
+
+  useEffect(() => {
+    const receiveAppearance = (event: Event) => applyAppearance((event as CustomEvent<BoutiqueAppearance>).detail || {});
+    window.addEventListener("movooraAppearancePreview", receiveAppearance);
+    window.addEventListener("movooraAppearanceSaved", receiveAppearance);
+    const token = localStorage.getItem("token");
+    if (token) {
+      fetch(`${API_URL}/boutiques`, { headers: { Authorization: `Bearer ${token}` } })
+        .then((response) => response.ok ? response.json() : null)
+        .then((data) => {
+          const active = data?.boutiques?.find((item: { isActive?: boolean }) => item.isActive) || data?.boutiques?.[0];
+          if (active?.appearance) applyAppearance(active.appearance);
+        })
+        .catch(() => undefined);
+    }
+    return () => {
+      window.removeEventListener("movooraAppearancePreview", receiveAppearance);
+      window.removeEventListener("movooraAppearanceSaved", receiveAppearance);
+    };
+  }, [applyAppearance]);
 
   // ==========================================
   // EFFECT 1 : Gestion du montage (Asynchrone pour éviter le linter)
@@ -539,6 +588,7 @@ export default function DashboardLayout({
       module: "PARAMETRES",
       subMenu: [
         { name: "Général", href: "/dashboard/parametres", permission: "MODIFIER_INFOS_BOUTIQUE" },
+        { name: "Apparence et personnalisation", href: "/dashboard/parametres/apparence", permission: "MODIFIER_PERSONNALISATION" },
         { name: "Ma Boutique", href: "/dashboard/parametres/boutique", permission: "VOIR_BOUTIQUES" },
         { name: "Profil", href: "/dashboard/profil", permissions: ["MODIFIER_PROFIL_RESTREINT", "MODIFIER_PROFIL_TOTAL"] },
         { name: "Notifications", href: "/dashboard/parametres/notifications", permission: "GERER_NOTIFICATIONS", requiredPlan: "PRO" },
@@ -618,7 +668,7 @@ export default function DashboardLayout({
           <div className="p-6 border-b border-slate-800/60 bg-[#141C2F] h-20 flex items-center justify-between shrink-0">
             <div className="flex items-center space-x-3 overflow-hidden">
               <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-600/20 shrink-0">
-                <img src="/movoora-mark.svg" alt="Movoora" className="w-5 h-5" />
+                <img src={boutiqueLogo || "/movoora-mark.svg"} alt="Movoora" className="w-5 h-5 object-contain" />
               </div>
 
               {(isSidebarOpen || isMobileSidebarOpen) && (

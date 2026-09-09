@@ -984,6 +984,16 @@ const boutiqueSchema = new mongoose.Schema(
 
     },
 
+    appearance: {
+      fontFamily: { type: String, enum: ["Inter", "Roboto", "Poppins", "Montserrat", "Open Sans"], default: "Inter" },
+      textSize: { type: String, enum: ["small", "normal", "large", "xlarge"], default: "normal" },
+      theme: { type: String, enum: ["light", "dark", "system"], default: "system" },
+      primaryColor: { type: String, match: /^#[0-9A-Fa-f]{6}$/, default: "#4F46E5" },
+      secondaryColor: { type: String, match: /^#[0-9A-Fa-f]{6}$/, default: "#0F172A" },
+      accentColor: { type: String, match: /^#[0-9A-Fa-f]{6}$/, default: "#10B981" },
+      logo: { type: String, default: "", maxlength: 900000 },
+    },
+
 
     plan: { type: String, enum: ["Free", "Moyenne", "Premium"], default: "Free" },
 
