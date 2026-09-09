@@ -3,20 +3,22 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowRight, Check, Eye, EyeOff, KeyRound, Loader2, Lock, Package2, ShieldCheck, X } from "lucide-react";
+import { ArrowRight, Check, Eye, EyeOff, KeyRound, Loader2, Lock, ShieldCheck, X } from "lucide-react";
 import AuthNavbar from "../../src/components/AuthNavbar";
+import { useLanguage } from "../../src/components/LanguageRuntime";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://plus-stock-master.onrender.com/api";
 
 const PASSWORD_RULES = [
-  { label: "8 caracteres minimum", test: (value: string) => value.length >= 8 },
+  { label: "8 caractères minimum", test: (value: string) => value.length >= 8 },
   { label: "Une lettre majuscule", test: (value: string) => /[A-Z]/.test(value) },
   { label: "Un chiffre", test: (value: string) => /[0-9]/.test(value) },
-  { label: "Un caractere special", test: (value: string) => /[^A-Za-z0-9]/.test(value) },
+  { label: "Un caractère spécial", test: (value: string) => /[^A-Za-z0-9]/.test(value) },
 ];
 
 export default function FirstLoginPage() {
   const router = useRouter();
+  const { translate } = useLanguage();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -45,7 +47,7 @@ export default function FirstLoginPage() {
       return;
     }
     if (!rulesValid) {
-      setError("Le nouveau mot de passe ne respecte pas toutes les regles de securite.");
+      setError("Le nouveau mot de passe ne respecte pas toutes les règles de sécurité.");
       return;
     }
     if (!passwordsMatch) {
@@ -72,7 +74,7 @@ export default function FirstLoginPage() {
 
       const profile = JSON.parse(localStorage.getItem("user_profile") || "{}");
       localStorage.setItem("user_profile", JSON.stringify({ ...profile, mustChangePassword: false }));
-      setSuccess("Mot de passe configure avec succes. Redirection...");
+      setSuccess("Mot de passe configuré avec succès. Redirection...");
       window.dispatchEvent(new Event("userProfileUpdated"));
       window.setTimeout(() => router.replace("/dashboard"), 1000);
     } catch (submitError) {
@@ -97,18 +99,18 @@ export default function FirstLoginPage() {
             </div>
             <h1 className="mt-5 text-xl font-black uppercase">Stock<span className="text-indigo-400">Master</span></h1>
             <p className="mt-8 text-xs leading-6 text-slate-400">
-              Protegez votre compte avant votre premier acces au tableau de bord.
+              {translate("Protégez votre compte avant votre premier accès au tableau de bord.")}
             </p>
             <div className="mt-8 flex items-center gap-2 text-[10px] font-bold uppercase text-indigo-300">
-              <ShieldCheck size={14} /> Configuration obligatoire
+              <ShieldCheck size={14} /> {translate("Configuration obligatoire")}
             </div>
           </div>
 
           <div className="p-6 sm:p-10">
             <div className="mb-7">
-              <h2 className="text-xl font-black uppercase text-slate-950">Premiere connexion</h2>
+              <h2 className="text-xl font-black uppercase text-slate-950">{translate("Première connexion")}</h2>
               <p className="mt-2 text-xs font-medium text-slate-500">
-                Remplacez le code temporaire transmis par votre responsable.
+                {translate("Remplacez le code temporaire transmis par votre responsable.")}
               </p>
             </div>
 
@@ -122,14 +124,14 @@ export default function FirstLoginPage() {
                     error ? "border-rose-100 bg-rose-50 text-rose-600" : "border-emerald-100 bg-emerald-50 text-emerald-600"
                   }`}
                 >
-                  {error || success}
+                  {translate(error || success)}
                 </motion.div>
               )}
             </AnimatePresence>
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <PasswordField
-                label="Code temporaire actuel"
+                label={translate("Code temporaire actuel")}
                 value={currentPassword}
                 visible={visible.current}
                 icon={KeyRound}
@@ -137,7 +139,7 @@ export default function FirstLoginPage() {
                 onToggle={() => setVisible((state) => ({ ...state, current: !state.current }))}
               />
               <PasswordField
-                label="Nouveau mot de passe"
+                label={translate("Nouveau mot de passe")}
                 value={newPassword}
                 visible={visible.next}
                 icon={Lock}
@@ -152,7 +154,7 @@ export default function FirstLoginPage() {
                     return (
                       <div key={rule.label} className={`flex items-center gap-2 text-[10px] font-bold ${valid ? "text-emerald-600" : "text-slate-400"}`}>
                         {valid ? <Check size={12} /> : <X size={12} />}
-                        {rule.label}
+                        {translate(rule.label)}
                       </div>
                     );
                   })}
@@ -160,7 +162,7 @@ export default function FirstLoginPage() {
               )}
 
               <PasswordField
-                label="Confirmer le nouveau mot de passe"
+                label={translate("Confirmer le nouveau mot de passe")}
                 value={confirmPassword}
                 visible={visible.confirm}
                 icon={Lock}
@@ -170,7 +172,7 @@ export default function FirstLoginPage() {
 
               {confirmPassword && (
                 <p className={`text-[10px] font-bold ${passwordsMatch ? "text-emerald-600" : "text-rose-500"}`}>
-                  {passwordsMatch ? "Les mots de passe correspondent." : "Les mots de passe ne correspondent pas."}
+                  {translate(passwordsMatch ? "Les mots de passe correspondent." : "Les mots de passe ne correspondent pas.")}
                 </p>
               )}
 
@@ -180,7 +182,7 @@ export default function FirstLoginPage() {
                 className="w-full h-12 rounded-xl bg-[#090E1A] text-white text-xs font-black uppercase flex items-center justify-center gap-2 hover:bg-indigo-600 transition-colors disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
-                {isSubmitting ? "Enregistrement..." : "Valider mon nouvel acces"}
+                {translate(isSubmitting ? "Enregistrement..." : "Valider mon nouvel accès")}
               </button>
             </form>
           </div>

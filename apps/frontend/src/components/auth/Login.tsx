@@ -2,7 +2,6 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Package2,
   Mail,
   Lock,
   Eye,
@@ -17,6 +16,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AuthNavbar from "../AuthNavbar";
+import { useLanguage } from "../LanguageRuntime";
 
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -29,6 +29,7 @@ function cn(...inputs: ClassValue[]) {
 
 export default function Login() {
   const router = useRouter();
+  const { translate } = useLanguage();
 
   const [formData, setFormData] = useState({
     email: "",
@@ -189,7 +190,7 @@ export default function Login() {
               </h1>
 
               <p className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.4em] mt-1">
-                Pro Edition
+                {translate("Pro Edition")}
               </p>
 
               <div className="flex items-center gap-3 w-full my-8">
@@ -199,7 +200,7 @@ export default function Login() {
               </div>
 
               <p className="text-slate-500 text-[11px] font-medium leading-relaxed max-w-[200px] opacity-80 italic">
-                Accédez à votre tableau de bord
+                {translate("Accédez à votre tableau de bord")}
                 <span className="text-slate-300">
                   {" "}Movoora
                 </span>
@@ -207,7 +208,7 @@ export default function Login() {
             </div>
 
             <div className="absolute bottom-8 text-slate-800 text-[8px] font-black uppercase tracking-[0.2em]">
-              RDC • Connexion Sécurisée
+              {translate("RDC • Connexion Sécurisée")}
             </div>
           </div>
 
@@ -253,7 +254,7 @@ export default function Login() {
                         <CheckCircle2 size={14} />
                       )}
 
-                      <span>{message.text}</span>
+                      <span>{translate(message.text)}</span>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -267,7 +268,7 @@ export default function Login() {
               >
 
                 <InputGroup
-                  label="Email Professionnel"
+                  label={translate("Email Professionnel")}
                   type="email"
                   icon={Mail}
                   placeholder="votre@email.cd"

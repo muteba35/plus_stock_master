@@ -2,15 +2,17 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mail, ArrowRight, Loader2, CheckCircle2, Package2, RefreshCw } from "lucide-react";
+import { Mail, ArrowRight, Loader2, CheckCircle2, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import AuthNavbar from "../AuthNavbar";
 import axios, { AxiosError } from "axios";
 import toast, { Toaster } from 'react-hot-toast';
+import { useLanguage } from "../LanguageRuntime";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://plus-stock-master.onrender.com/api";
 
 export default function ForgotPassword() {
+  const { translate } = useLanguage();
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSent, setIsSent] = useState(false);
@@ -28,12 +30,12 @@ export default function ForgotPassword() {
 
       if (data.status === "success") {
         setIsSent(true);
-        toast.success("Lien envoyé avec succès !");
+        toast.success(translate("Lien envoyé avec succès !"));
       }
     } catch (error) {
       const err = error as AxiosError<{message: string}>;
       const message = err.response?.data?.message || "Une erreur est survenue.";
-      toast.error(message);
+      toast.error(translate(message));
     } finally {
       setIsLoading(false);
     }
@@ -41,16 +43,16 @@ export default function ForgotPassword() {
 
   // Fonction de renvoi
   const handleResend = async () => {
-    if (!email) return toast.error("Veuillez saisir votre email d'abord.");
+    if (!email) return toast.error(translate("Veuillez saisir votre email d'abord."));
     
     setIsResending(true);
     try {
       await axios.post(`${API_URL}/auth/resend-forgot-password`, { email });
-      toast.success("Nouveau lien de récupération envoyé !");
+      toast.success(translate("Nouveau lien de récupération envoyé !"));
     } catch (error) {
       const err = error as AxiosError<{message: string}>;
       const message = err.response?.data?.message || "Impossible de renvoyer le lien.";
-      toast.error(message);
+      toast.error(translate(message));
     } finally {
       setIsResending(false);
     }

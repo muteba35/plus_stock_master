@@ -1,14 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ChevronDown } from "lucide-react";
-import {
-  getStoredLanguage,
-  languageChangeEvent,
-  setStoredLanguage,
-  supportedLanguages,
-  type AppLanguage,
-} from "../i18n/catalog";
+import { supportedLanguages, type AppLanguage } from "../i18n/catalog";
+import { useLanguage } from "./LanguageRuntime";
 
 function FlagIcon({ language }: { language: AppLanguage }) {
   if (language === "fr") {
@@ -34,27 +29,11 @@ function FlagIcon({ language }: { language: AppLanguage }) {
 }
 
 export default function PreferenceControls({ compact = false }: { compact?: boolean }) {
-  const [language, setLanguage] = useState<AppLanguage>("fr");
+  const { language, setLanguage, t } = useLanguage();
   const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => setLanguage(getStoredLanguage()), 0);
-
-    const handleLanguageChange = (event: Event) => {
-      const custom = event as CustomEvent<AppLanguage>;
-      setLanguage(custom.detail === "en" ? "en" : "fr");
-    };
-
-    window.addEventListener(languageChangeEvent, handleLanguageChange as EventListener);
-    return () => {
-      window.clearTimeout(timer);
-      window.removeEventListener(languageChangeEvent, handleLanguageChange as EventListener);
-    };
-  }, []);
 
   const chooseLanguage = (nextLanguage: AppLanguage) => {
     setLanguage(nextLanguage);
-    setStoredLanguage(nextLanguage);
     setOpen(false);
   };
 
@@ -75,8 +54,8 @@ export default function PreferenceControls({ compact = false }: { compact?: bool
         type="button"
         onClick={() => setOpen((current) => !current)}
         className={buttonClass}
-        title={language === "fr" ? "Changer la langue" : "Change language"}
-        aria-label={language === "fr" ? "Changer la langue" : "Change language"}
+        title={t("language.change")}
+        aria-label={t("language.change")}
       >
         <FlagIcon language={language} />
         <span>{currentLanguage.label}</span>
@@ -88,7 +67,7 @@ export default function PreferenceControls({ compact = false }: { compact?: bool
           {supportedLanguages.map((item) => (
             <button key={item.code} type="button" onClick={() => chooseLanguage(item.code)} className={optionClass(item.code)}>
               <FlagIcon language={item.code} />
-              {item.name}
+              {t(item.code === "fr" ? "language.french" : "language.english")}
             </button>
           ))}
         </div>

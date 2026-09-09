@@ -3,9 +3,10 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mail, Loader2, Package2, RefreshCw, CheckCircle2, XCircle, ArrowRight } from "lucide-react";
+import { Mail, Loader2, RefreshCw, CheckCircle2, XCircle, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import AuthNavbar from "../AuthNavbar";
+import { useLanguage } from "../LanguageRuntime";
 
 const COOLDOWN_SECONDS = 120; // 2 minutes
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://plus-stock-master.onrender.com/api";
@@ -14,6 +15,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://plus-stock-master.on
 function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { translate } = useLanguage();
   
   const status = searchParams.get("status"); 
 
@@ -66,7 +68,7 @@ function VerifyEmailContent() {
       } else {
         setMessage({ type: "error", text: data.message || "Erreur lors du renvoi." });
       }
-    } catch (err) {
+    } catch {
       setMessage({ type: "error", text: "Erreur réseau. Vérifiez votre connexion." });
     } finally {
       setLoading(false);
@@ -102,10 +104,10 @@ function VerifyEmailContent() {
               <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center text-green-500 mx-auto mb-6">
                 <CheckCircle2 size={40} />
               </div>
-              <h2 className="text-3xl font-black text-slate-950 uppercase tracking-tighter mb-4">Compte Activé !</h2>
-              <p className="text-slate-500 text-sm mb-10">Votre identité a été confirmée. Redirection vers la connexion en cours...</p>
+              <h2 className="text-3xl font-black text-slate-950 uppercase tracking-tighter mb-4">{translate("Compte Activé !")}</h2>
+              <p className="text-slate-500 text-sm mb-10">{translate("Votre identité a été confirmée. Redirection vers la connexion en cours...")}</p>
               <Link href="/login" className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-2">
-                Accéder à mon compte <ArrowRight size={14} />
+                {translate("Accéder à mon compte")} <ArrowRight size={14} />
               </Link>
             </motion.div>
           ) : 
@@ -115,8 +117,8 @@ function VerifyEmailContent() {
               <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center text-red-500 mx-auto mb-6">
                 <XCircle size={40} />
               </div>
-              <h2 className="text-3xl font-black text-slate-950 uppercase tracking-tighter mb-4">Lien Invalide</h2>
-              <p className="text-slate-500 text-sm mb-10">Ce lien a expiré ou est corrompu. Veuillez en demander un nouveau ci-dessous.</p>
+              <h2 className="text-3xl font-black text-slate-950 uppercase tracking-tighter mb-4">{translate("Lien Invalide")}</h2>
+              <p className="text-slate-500 text-sm mb-10">{translate("Ce lien a expiré ou est corrompu. Veuillez en demander un nouveau ci-dessous.")}</p>
               
               <button 
                 onClick={handleResend}
@@ -124,7 +126,7 @@ function VerifyEmailContent() {
                 className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {loading ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
-                {cooldown > 0 ? `Réessayer dans ${cooldown}s` : "Générer un nouveau lien"}
+                {cooldown > 0 ? <>{translate("Réessayer dans")} {cooldown}s</> : translate("Générer un nouveau lien")}
               </button>
             </motion.div>
           ) : 
@@ -136,9 +138,9 @@ function VerifyEmailContent() {
                   <Mail size={40} strokeWidth={1.5} />
                 </motion.div>
               </div>
-              <h2 className="text-3xl font-black text-slate-950 uppercase tracking-tighter mb-4">Vérifiez vos mails</h2>
+              <h2 className="text-3xl font-black text-slate-950 uppercase tracking-tighter mb-4">{translate("Vérifiez vos mails")}</h2>
               <p className="text-slate-500 text-sm font-medium leading-relaxed mb-10">
-                Nous avons envoyé un lien de confirmation à votre adresse. Cliquez dessus pour activer votre accès.
+                {translate("Nous avons envoyé un lien de confirmation à votre adresse. Cliquez dessus pour activer votre accès.")}
               </p>
 
               <button 
@@ -152,10 +154,10 @@ function VerifyEmailContent() {
                   <RefreshCw size={16} className={cooldown > 0 ? "animate-spin" : ""} />
                 )}
                 {loading 
-                   ? "Envoi en cours..." 
+                   ? translate("Envoi en cours...")
                    : cooldown > 0 
-                   ? `Réessayer dans ${cooldown}s` 
-                   : "Renvoyer l'email de vérification"}
+                   ? <>{translate("Réessayer dans")} {cooldown}s</>
+                   : translate("Renvoyer l'email de vérification")}
               </button>
             </motion.div>
           )}
@@ -175,14 +177,14 @@ function VerifyEmailContent() {
             ) : (
               <XCircle size={14} strokeWidth={3} />
             )}
-            {message.text}
+            {translate(message.text)}
           </motion.p>
         )}
       </header>
 
        <footer className="mt-10 pt-8 border-t border-slate-50 text-center">
         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-          Une erreur d`adresse ? <Link href="/register" className="text-indigo-600 hover:underline">Modifier</Link>
+          {translate("Une erreur d’adresse ?")} <Link href="/register" className="text-indigo-600 hover:underline">{translate("Modifier")}</Link>
         </p>
       </footer>
     </div>

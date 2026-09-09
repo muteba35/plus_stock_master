@@ -1,0 +1,5 @@
+{
+  "language": { "change": "Change language", "french": "French", "english": "English" },
+  "actions": { "save": "Save", "cancel": "Cancel", "close": "Close", "confirm": "Confirm", "search": "Search", "back": "Back" },
+  "states": { "loading": "Loading...", "noResults": "No results", "error": "An error occurred" }
+}

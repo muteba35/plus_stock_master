@@ -3,6 +3,7 @@
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import Navbar from "../src/components/Navbar";
 import Hero from "../src/components/Hero";
+import { useLanguage } from "../src/components/LanguageRuntime";
 import { useEffect, useState } from "react";
 import { 
   CheckCircle2, Smartphone, Facebook, Linkedin, Instagram, ArrowUp,
@@ -26,6 +27,7 @@ const slideIn = (direction: "left" | "right") => ({
 });
 
 export default function LandingPage() {
+  const { translate } = useLanguage();
   const { scrollYProgress } = useScroll();
   const [showScrollTop, setShowScrollTop] = useState(false);
   
@@ -65,8 +67,8 @@ export default function LandingPage() {
               <div className="w-11 h-11 bg-indigo-600 text-white rounded-xl flex items-center justify-center mb-5 group-hover:rotate-12 transition-all shadow-lg">
                 {s.icon}
               </div>
-              <h3 className="text-lg font-bold mb-2 text-slate-900 group-hover:text-indigo-600 transition-colors">{s.t}</h3>
-              <p className="text-xs text-slate-500 font-medium leading-relaxed uppercase tracking-tight">{s.d}</p>
+              <h3 className="text-lg font-bold mb-2 text-slate-900 group-hover:text-indigo-600 transition-colors">{translate(s.t)}</h3>
+              <p className="text-xs text-slate-500 font-medium leading-relaxed uppercase tracking-tight">{translate(s.d)}</p>
             </motion.div>
           ))}
         </div>
@@ -158,8 +160,8 @@ export default function LandingPage() {
               className="group p-6 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-sm hover:border-indigo-500 transition-all duration-300"
             >
               <div className="w-10 h-10 bg-indigo-600 text-white rounded-lg flex items-center justify-center mb-4 shadow-lg">{s.icon}</div>
-              <h3 className="text-sm font-bold uppercase mb-2 text-white group-hover:text-indigo-400 transition-colors">{s.t}</h3>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">{s.d}</p>
+              <h3 className="text-sm font-bold uppercase mb-2 text-white group-hover:text-indigo-400 transition-colors">{translate(s.t)}</h3>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">{translate(s.d)}</p>
             </motion.div>
           ))}
         </div>
@@ -175,16 +177,16 @@ export default function LandingPage() {
             Des offres pour chaque <span className="text-indigo-600">niveau de croissance.</span>
           </p>
           <p className="text-slate-400 text-xs font-bold uppercase tracking-tight max-w-2xl mx-auto">
-            Commencez avec l'essai gratuit, puis debloquez les modules avances selon la taille de votre boutique.
+            {translate("Commencez avec l'essai gratuit, puis debloquez les modules avances selon la taille de votre boutique.")}
           </p>
         </motion.div>
 
         <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-5">
           {[
-            { name: "Essai gratuit", price: "0$", desc: "Tester Movoora", features: ["1 boutique", "2 utilisateurs", "50 produits", "Caisse simple", "7 a 14 jours"] },
-            { name: "Starter", price: "15$", desc: "Stock + caisse", features: ["1 boutique", "3 utilisateurs", "Produits & categories", "Mouvements stock", "Exports limites"] },
-            { name: "Pro", price: "39$", desc: "Equipe + rapports", features: ["3 boutiques", "10 utilisateurs", "Finance complete", "Audit global", "Exports complets"], popular: true },
-            { name: "Business", price: "99$", desc: "Reseaux & croissance", features: ["Boutiques hautes limites", "Utilisateurs hautes limites", "Rapports consolides", "Support prioritaire", "API future"] }
+            { name: "Essai gratuit", price: "0$", desc: "Tester Movoora", features: ["1 boutique", "2 utilisateurs", "50 produits", "Caisse simple", "7 à 14 jours"] },
+            { name: "Starter", price: "15$", desc: "Stock + caisse", features: ["1 boutique", "3 utilisateurs", "Produits & catégories", "Mouvements stock", "Exports limites"] },
+            { name: "Pro", price: "39$", desc: "Équipe + rapports", features: ["3 boutiques", "10 utilisateurs", "Finance complète", "Audit global", "Exports complets"], popular: true },
+            { name: "Business", price: "99$", desc: "Réseaux & croissance", features: ["Boutiques hautes limites", "Utilisateurs hautes limites", "Rapports consolidés", "Support prioritaire", "API future"] }
           ].map((plan, i) => (
             <motion.div
               key={plan.name} {...reveal} transition={{delay: i*0.1}}
@@ -193,27 +195,27 @@ export default function LandingPage() {
             >
               {plan.popular && (
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-indigo-600 text-white text-[8px] font-black uppercase px-4 py-1 rounded-full tracking-[0.2em]">
-                  Recommande
+                  Recommandé
                 </div>
               )}
               <div className="mb-7">
-                <h3 className="text-white text-sm font-black uppercase mb-2">{plan.name}</h3>
+                <h3 className="text-white text-sm font-black uppercase mb-2">{translate(plan.name)}</h3>
                 <div className="flex items-baseline gap-1 mb-2">
                   <span className="text-3xl font-black text-white">{plan.price}</span>
                   <span className="text-slate-500 text-xs font-bold">/mois</span>
                 </div>
-                <p className="text-slate-400 text-[10px] font-bold uppercase tracking-tight">{plan.desc}</p>
+                <p className="text-slate-400 text-[10px] font-bold uppercase tracking-tight">{translate(plan.desc)}</p>
               </div>
               <div className="space-y-3 mb-8 flex-grow">
                 {plan.features.map((f) => (
                   <div key={f} className="flex items-center gap-3">
                     <Check size={12} className="text-indigo-500" />
-                    <span className="text-slate-300 text-[10px] font-bold uppercase tracking-tight">{f}</span>
+                    <span className="text-slate-300 text-[10px] font-bold uppercase tracking-tight">{translate(f)}</span>
                   </div>
                 ))}
               </div>
               <button className={`w-full py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all ${plan.popular ? 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-lg shadow-indigo-600/20' : 'bg-white/10 text-white hover:bg-white/20'}`}>
-                Voir l'offre
+                {translate("Voir l'offre")}
               </button>
             </motion.div>
           ))}
@@ -306,7 +308,7 @@ export default function LandingPage() {
                   { n: 'A propos', h: '#apropos' }
                 ].map((item) => (
                   <li key={item.n}>
-                    <a href={item.h} className="text-slate-500 hover:text-indigo-400 text-[10px] font-bold uppercase transition-colors tracking-widest">{item.n}</a>
+                    <a href={item.h} className="text-slate-500 hover:text-indigo-400 text-[10px] font-bold uppercase transition-colors tracking-widest">{translate(item.n)}</a>
                   </li>
                 ))}
               </ul>
@@ -316,9 +318,9 @@ export default function LandingPage() {
             <div>
               <h4 className="text-white text-[10px] font-black uppercase tracking-[0.3em] mb-6">Assistance</h4>
               <ul className="space-y-4">
-                {['Centre d\'aide', 'Documentation', 'Status Serveur', 'Contact'].map((item) => (
+                {['Centre d\'aide', 'Documentation', 'Statut du serveur', 'Contact'].map((item) => (
                   <li key={item}>
-                    <a href="#" className="text-slate-500 hover:text-indigo-400 text-[10px] font-bold uppercase transition-colors tracking-widest">{item}</a>
+                    <a href="#" className="text-slate-500 hover:text-indigo-400 text-[10px] font-bold uppercase transition-colors tracking-widest">{translate(item)}</a>
                   </li>
                 ))}
               </ul>

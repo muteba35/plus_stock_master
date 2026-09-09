@@ -5,8 +5,10 @@ import { Menu, X, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import PreferenceControls from "./PreferenceControls";
+import { useLanguage } from "./LanguageRuntime";
 
 export default function Navbar() {
+  const { translate } = useLanguage();
   const { scrollY } = useScroll();
   const [open, setOpen] = useState(false);
 
@@ -55,7 +57,7 @@ export default function Navbar() {
                   MOVO<span className="text-indigo-600">ORA</span>
                 </span>
                 <span className="text-[6px] sm:text-[8px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-0.5 ml-0.5">
-                  Commerce Platform
+                  {translate("Commerce Platform")}
                 </span>
               </div>
             </Link>
@@ -69,7 +71,7 @@ export default function Navbar() {
                 href={item.href}
                 className="px-4 py-2 text-[10px] lg:text-[11px] font-black text-slate-500 hover:text-indigo-600 hover:bg-white rounded-xl transition-all uppercase tracking-widest"
               >
-                {item.name}
+                {translate(item.name)}
               </a>
             ))}
           </div>
@@ -82,8 +84,8 @@ export default function Navbar() {
               href="/login" 
               className="group flex items-center gap-1.5 px-3.5 py-2 sm:px-6 sm:py-3 bg-indigo-600 text-[9px] sm:text-[11px] uppercase font-black text-white rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-600/25 transition-all"
             >
-              <span className="hidden xs:inline">Essai Gratuit</span>
-              <span className="xs:hidden">Essai</span>
+              <span className="hidden xs:inline">{translate("Essai Gratuit")}</span>
+              <span className="xs:hidden">{translate("Essai")}</span>
               <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
@@ -107,7 +109,7 @@ export default function Navbar() {
                     onClick={() => setOpen(false)}
                     className="text-xs font-black uppercase text-slate-600 hover:text-indigo-600 py-2 border-b border-slate-50 flex items-center justify-between"
                   >
-                    {item.name}
+                    {translate(item.name)}
                     <ArrowRight size={16} className="text-indigo-500" />
                   </a>
                 ))}

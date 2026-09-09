@@ -6,8 +6,10 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import PreferenceControls from "./PreferenceControls";
+import { useLanguage } from "./LanguageRuntime";
 
 export default function AuthNavbar() {
+  const { translate } = useLanguage();
   const { scrollY } = useScroll();
   const [open, setOpen] = useState(false);
   const router = useRouter();
@@ -52,7 +54,7 @@ export default function AuthNavbar() {
                   MOVO<span className="text-indigo-600">ORA</span>
                 </span>
                 <span className="text-[6px] sm:text-[8px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-0.5 ml-0.5">
-                  Commerce Platform
+                  {translate("Commerce Platform")}
                 </span>
               </div>
             </Link>
@@ -66,7 +68,7 @@ export default function AuthNavbar() {
                 href={item.href}
                 className="px-4 py-2 text-[10px] lg:text-[11px] font-black text-slate-500 hover:text-indigo-600 hover:bg-white rounded-xl transition-all uppercase tracking-widest"
               >
-                {item.name}
+                {translate(item.name)}
               </Link>
             ))}
           </div>
@@ -80,8 +82,8 @@ export default function AuthNavbar() {
             >
               {/* Icône ArrowLeft à gauche */}
               <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
-              <span className="hidden xs:inline">Retour</span>
-              <span className="xs:hidden">Retour</span>
+              <span className="hidden xs:inline">{translate("Retour")}</span>
+              <span className="xs:hidden">{translate("Retour")}</span>
             </button>
           </div>
         </div>
@@ -103,7 +105,7 @@ export default function AuthNavbar() {
                     onClick={() => setOpen(false)}
                     className="text-xs font-black uppercase text-slate-600 hover:text-indigo-600 py-2 border-b border-slate-50 flex items-center justify-between"
                   >
-                    {item.name}
+                    {translate(item.name)}
                     <ArrowLeft size={16} className="text-indigo-500 rotate-180" />
                   </Link>
                 ))}

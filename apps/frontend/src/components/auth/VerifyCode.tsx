@@ -6,18 +6,19 @@ import {
   ArrowRight,
   Loader2,
   RefreshCw,
-  Package2,
   AlertCircle,
   CheckCircle2,
   ShieldCheck,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import AuthNavbar from "../AuthNavbar";
+import { useLanguage } from "../LanguageRuntime";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://plus-stock-master.onrender.com/api";
 
 export default function VerifyCode() {
   const router = useRouter();
+  const { translate } = useLanguage();
 
   const [otp, setOtp] = useState<string[]>(["", "", "", "", "", ""]);
   const [isLoading, setIsLoading] = useState(false);
@@ -301,15 +302,15 @@ export default function VerifyCode() {
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-indigo-50 text-indigo-700 text-[10px] font-black uppercase tracking-[0.2em] mb-5">
               <ShieldCheck size={14} />
-              Authentification sécurisée
+              {translate("Authentification sécurisée")}
             </div>
 
             <h2 className="text-3xl font-black tracking-tight text-slate-950 uppercase">
-              Vérification OTP
+              {translate("Vérification OTP")}
             </h2>
 
             <p className="text-slate-500 text-sm mt-4 leading-relaxed">
-              Entrez le code envoyé à
+              {translate("Entrez le code envoyé à")}
               <br />
               <span className="font-bold text-indigo-600 break-all">
                 {email}
@@ -329,7 +330,7 @@ export default function VerifyCode() {
                   className="flex items-start gap-2.5 text-xs font-semibold py-3 px-4 rounded-2xl bg-red-50 text-red-600 border border-red-100/50 w-full text-center justify-center leading-relaxed"
                 >
                   <AlertCircle size={16} className="shrink-0 mt-0.5" />
-                  <span>{error}</span>
+                  <span>{translate(error)}</span>
                 </motion.div>
               )}
 
@@ -342,7 +343,7 @@ export default function VerifyCode() {
                   className="flex items-center gap-2.5 text-xs font-bold py-3 px-4 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100/50 w-full text-center justify-center"
                 >
                   <CheckCircle2 size={16} className="shrink-0" />
-                  <span>{successMessage}</span>
+                  <span>{translate(successMessage)}</span>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -381,7 +382,7 @@ export default function VerifyCode() {
                 <Loader2 size={18} className="animate-spin" />
               ) : (
                 <>
-                  Vérifier le code
+                  {translate("Vérifier le code")}
                   <ArrowRight size={16} />
                 </>
               )}
@@ -391,7 +392,7 @@ export default function VerifyCode() {
           {/* Resend Actions */}
           <div className="mt-10 pt-8 border-t border-slate-100 text-center">
             <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-4">
-              {"Vous n'avez pas reçu le code ?"}
+              {translate("Vous n'avez pas reçu le code ?")}
             </p>
 
             <button
@@ -409,7 +410,7 @@ export default function VerifyCode() {
                 />
               )}
 
-              {timer > 0 ? `Attendre ${timer}s` : "Renvoyer un code"}
+              {timer > 0 ? <>{translate("Attendre")} {timer}s</> : translate("Renvoyer un code")}
             </button>
 
             <AnimatePresence>
@@ -421,7 +422,7 @@ export default function VerifyCode() {
                   className="mt-4 flex items-center justify-center gap-2 text-emerald-600 text-[10px] font-black uppercase tracking-[0.15em]"
                 >
                   <CheckCircle2 size={13} />
-                  Nouveau code envoyé
+                  {translate("Nouveau code envoyé")}
                 </motion.div>
               )}
             </AnimatePresence>

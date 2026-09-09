@@ -6,7 +6,15 @@ import { Utilisateur, Boutique } from "../models/Utilisateur.js";
 import { sendEmail, sendSecurityAlertEmail } from "../utils/sendEmail.js";
 import { Permission, RolePermission } from "../models/Utilisateur.js";
 
+const strongPasswordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,128}$/;
+const generateOtp = () => crypto.randomInt(100000, 1000000).toString();
+
 export const register = async (req, res) => {
+  let createdUser = null;
+  let createdBoutique = null;
+  let resumedUser = false;
+  let activationEmailSent = true;
+
   try {
     const {
       prenom, nom, postnom, email, telephone,
@@ -31,15 +39,42 @@ export const register = async (req, res) => {
     if (password !== confirmPassword) {
       return res.status(400).json({ status: "error", message: "Les mots de passe ne correspondent pas." });
     }
+    if (!strongPasswordRegex.test(password)) {
+      return res.status(400).json({
+        status: "error",
+        message: "Le mot de passe doit contenir au moins 8 caractères, une majuscule, un chiffre et un caractère spécial.",
+      });
+    }
 
     // --- 2. VÉRIFICATION DES DOUBLONS ---
     const cleanEmail = email.toLowerCase().trim();
     const cleanPhone = telephone.trim();
     const cleanBoutique = nomBoutique.trim();
 
-    const userExists = await Utilisateur.findOne({ $or: [{ email: cleanEmail }, { telephone: cleanPhone }] });
-    if (userExists) {
-      return res.status(400).json({ status: "error", message: "Email ou téléphone déjà utilisé." });
+    const [emailOwner, phoneOwner] = await Promise.all([
+      Utilisateur.findOne({ email: cleanEmail }).select("+password +activationToken +activationTokenExpires"),
+      Utilisateur.findOne({ telephone: cleanPhone }).select("+password +activationToken +activationTokenExpires"),
+    ]);
+
+    if (phoneOwner && (!emailOwner || phoneOwner._id.toString() !== emailOwner._id.toString())) {
+      return res.status(409).json({ status: "error", code: "PHONE_ALREADY_USED", message: "Ce numéro de téléphone est déjà utilisé." });
+    }
+
+    let nouvelUtilisateur = null;
+    if (emailOwner) {
+      const existingBoutique = await Boutique.findOne({ userId: emailOwner._id, isDeleted: { $ne: true } });
+      const canResume = !existingBoutique && !emailOwner.boutiqueActive && !emailOwner.isActive && !emailOwner.emailVerifiedAt;
+
+      if (!canResume) {
+        return res.status(409).json({ status: "error", code: "EMAIL_ALREADY_USED", message: "Cette adresse email est déjà utilisée." });
+      }
+
+      if (emailOwner.telephone && emailOwner.telephone !== cleanPhone) {
+        return res.status(409).json({ status: "error", code: "EMAIL_ALREADY_USED", message: "Cette adresse email est déjà utilisée avec un autre numéro." });
+      }
+
+      nouvelUtilisateur = emailOwner;
+      resumedUser = true;
     }
 
     const boutiqueExists = await Boutique.findOne({ nom: cleanBoutique });
@@ -54,20 +89,33 @@ export const register = async (req, res) => {
     const tokenExpires = Date.now() + 24 * 60 * 60 * 1000;
 
     // --- 4. CRÉATION DE L'UTILISATEUR ---
-    const nouvelUtilisateur = new Utilisateur({
-      prenom,
-      nom,
-      postnom: postnom || "",
-      email: cleanEmail,
-      telephone: cleanPhone,
-      password: hashedPassword,
-      passwordHistory: [],
-      roleId: null, 
-      activationToken: verificationToken,
-      activationTokenExpires: tokenExpires
-    });
+    if (nouvelUtilisateur) {
+      Object.assign(nouvelUtilisateur, {
+        prenom,
+        nom,
+        postnom: postnom || "",
+        telephone: cleanPhone,
+        password: hashedPassword,
+        activationToken: verificationToken,
+        activationTokenExpires: tokenExpires,
+      });
+    } else {
+      nouvelUtilisateur = new Utilisateur({
+        prenom,
+        nom,
+        postnom: postnom || "",
+        email: cleanEmail,
+        telephone: cleanPhone,
+        password: hashedPassword,
+        passwordHistory: [],
+        roleId: null,
+        activationToken: verificationToken,
+        activationTokenExpires: tokenExpires,
+      });
+    }
 
     const userSaved = await nouvelUtilisateur.save();
+    if (!resumedUser) createdUser = userSaved;
 
     // --- 5. CRÉATION DE LA BOUTIQUE LIÉE ---
     const nouvelleBoutique = new Boutique({
@@ -79,6 +127,7 @@ export const register = async (req, res) => {
     });
 
     const boutiqueSaved = await nouvelleBoutique.save();
+    createdBoutique = boutiqueSaved;
 
     // Assignation de la boutique active
     userSaved.boutiqueActive = boutiqueSaved._id;
@@ -138,15 +187,42 @@ export const register = async (req, res) => {
       });
     } catch (mailError) {
       console.error("Erreur SMTP :", mailError.message);
+      activationEmailSent = false;
     }
 
-    return res.status(201).json({ 
-      success: true, 
-      message: "Compte et Boutique créés ! Vérifiez vos emails pour l'activer." 
+    return res.status(resumedUser ? 200 : 201).json({
+      success: true,
+      resumed: resumedUser,
+      emailSent: activationEmailSent,
+      email: cleanEmail,
+      message: !activationEmailSent
+        ? "Compte créé, mais l'email d'activation n'a pas pu être envoyé. Utilisez le bouton de renvoi dans quelques instants."
+        : resumedUser
+        ? "Inscription incomplète reprise. Vérifiez vos emails pour activer votre compte."
+        : "Compte et Boutique créés ! Vérifiez vos emails pour l'activer."
     });
 
   } catch (error) {
     console.error("Erreur Register:", error);
+
+    // Compense toute création partielle lorsque MongoDB ne permet pas les transactions.
+    try {
+      if (createdBoutique?._id) await Boutique.deleteOne({ _id: createdBoutique._id });
+      if (createdUser?._id) await Utilisateur.deleteOne({ _id: createdUser._id, boutiqueActive: { $exists: false } });
+    } catch (rollbackError) {
+      console.error("Erreur rollback Register:", rollbackError);
+    }
+
+    if (error?.code === 11000) {
+      const duplicateField = Object.keys(error.keyPattern || error.keyValue || {})[0];
+      if (duplicateField === "email") {
+        return res.status(409).json({ status: "error", code: "EMAIL_ALREADY_USED", message: "Cette adresse email est déjà utilisée." });
+      }
+      if (duplicateField === "telephone") {
+        return res.status(409).json({ status: "error", code: "PHONE_ALREADY_USED", message: "Ce numéro de téléphone est déjà utilisé." });
+      }
+    }
+
     return res.status(500).json({ status: "error", message: "Erreur technique lors de l'enregistrement." });
   }
 };
@@ -367,7 +443,7 @@ export const login = async (req, res) => {
       });
     }
     // Configuration de l'OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = generateOtp();
     user.otpCode = otp;
     user.otpExpires = Date.now() + 3 * 60 * 1000; // Valable 3 minutes
     user.loginAttempts = 0;
@@ -384,6 +460,14 @@ export const login = async (req, res) => {
       });
     } catch (mailError) {
       console.error("Erreur SMTP lors de l'envoi de l'OTP :", mailError.message);
+      user.otpCode = undefined;
+      user.otpExpires = undefined;
+      await user.save();
+      return res.status(503).json({
+        success: false,
+        code: "OTP_EMAIL_UNAVAILABLE",
+        message: "Le code de sécurité n'a pas pu être envoyé. Veuillez réessayer dans quelques instants.",
+      });
     }
 
     // Réponse structurée pour le front-end Next.js
@@ -414,15 +498,14 @@ export const verifyEmail = async (req, res) => {
     // Récupération flexible : fonctionne que le token soit dans l'URL (:token) ou en paramètre de requête (?token=)
     const token = req.params.token || req.query.token;
 
-    console.log("[Verify-Email] Token reçu :", token);
-
     if (!token) {
       console.log("[Verify-Email] Aucun token fourni");
       return res.redirect(`${frontendUrl}/verify-email?status=invalid`);
     }
 
     // 1. Chercher l'utilisateur possédant ce token
-    const user = await Utilisateur.findOne({ activationToken: token });
+    const user = await Utilisateur.findOne({ activationToken: token })
+      .select("+activationToken +activationTokenExpires");
 
     if (!user) {
       console.log("[Verify-Email] Aucun utilisateur trouvé pour ce token");
@@ -587,7 +670,8 @@ export const verifyOTP = async (req, res) => {
     }
 
     // 2. Récupération de l'utilisateur
-    const user = await Utilisateur.findOne({ email })
+    const cleanEmail = email.toLowerCase().trim();
+    const user = await Utilisateur.findOne({ email: cleanEmail })
       .select("+otpCode +otpExpires +loginAttempts +isPermanentlyBlocked")
       .populate("boutiqueActive");
 
@@ -712,7 +796,8 @@ export const resendOTP = async (req, res) => {
     }
 
     // 1. Récupération avec les infos de sécurité (Ajout de isPermanentlyBlocked pour bloquer le spam)
-    const user = await Utilisateur.findOne({ email }).select("+prenom +otpExpires +isPermanentlyBlocked");
+    const cleanEmail = email.toLowerCase().trim();
+    const user = await Utilisateur.findOne({ email: cleanEmail }).select("+prenom +otpExpires +isPermanentlyBlocked");
     
     if (!user) {
       return res.status(404).json({ message: "Utilisateur non trouvé" });
@@ -734,7 +819,7 @@ export const resendOTP = async (req, res) => {
     }
 
     // 3. Générer le nouveau code (6 chiffres)
-    const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    const newOtp = generateOtp();
 
     // 4. Mettre à jour l'utilisateur (Validité de 3 minutes pour tolérance réseau)
     user.otpCode = newOtp;
@@ -952,8 +1037,7 @@ export const resetPassword = async (req, res) => {
     }
 
     // 2. Validation de la force du mot de passe
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-    if (!passwordRegex.test(password)) {
+    if (!strongPasswordRegex.test(password)) {
       return res.status(400).json({ 
         status: "error", 
         message: "Le mot de passe doit contenir au moins 8 caractères, une majuscule, un chiffre et un caractère spécial." 

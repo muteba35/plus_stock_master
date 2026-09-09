@@ -1,11 +1,12 @@
 "use client";
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Lock, ArrowRight, Loader2, CheckCircle2, Package2, Eye, EyeOff, Check, X } from "lucide-react";
+import { Lock, ArrowRight, Loader2, CheckCircle2, Eye, EyeOff, Check, X } from "lucide-react";
 import AuthNavbar from "../AuthNavbar";
 import axios, { AxiosError } from "axios";
 import toast, { Toaster } from 'react-hot-toast';
 import { useParams, useRouter } from "next/navigation";
+import { useLanguage } from "../LanguageRuntime";
 
 // --- CONSTANTES DES RÈGLES ---
 const PASSWORD_REQUIREMENTS = [
@@ -36,6 +37,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://plus-stock-master.on
 export default function ResetPassword() {
   const params = useParams();
   const router = useRouter();
+  const { translate } = useLanguage();
   
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -50,11 +52,11 @@ export default function ResetPassword() {
 
     const allRequirementsMet = PASSWORD_REQUIREMENTS.every(req => req.test(password));
     if (!allRequirementsMet) {
-      return toast.error("Le mot de passe ne respecte pas les critères de sécurité.");
+      return toast.error(translate("Le mot de passe ne respecte pas les critères de sécurité."));
     }
 
     if (password !== confirmPassword) {
-      return toast.error("Les mots de passe ne correspondent pas.");
+      return toast.error(translate("Les mots de passe ne correspondent pas."));
     }
 
     setIsLoading(true);
@@ -67,13 +69,13 @@ export default function ResetPassword() {
 
       if (data.status === "success") {
         setIsSuccess(true);
-        toast.success("Mot de passe mis à jour !");
+        toast.success(translate("Mot de passe mis à jour !"));
         setTimeout(() => router.push("/login"), 3000);
       }
     } catch (error) {
       const err = error as AxiosError<{message: string}>;
       const message = err.response?.data?.message || "Le lien est invalide ou a expiré.";
-      toast.error(message);
+      toast.error(translate(message));
     } finally {
       setIsLoading(false);
     }
@@ -162,7 +164,7 @@ export default function ResetPassword() {
                                   {isMet ? <Check size={10} className="text-green-600" strokeWidth={4} /> : <X size={10} className="text-red-500" strokeWidth={4} />}
                                 </div>
                                 <span className={`text-[9px] font-black uppercase tracking-tight ${isMet ? "text-green-600" : "text-red-500"}`}>
-                                  {req.label}
+                                  {translate(req.label)}
                                 </span>
                               </div>
                             );

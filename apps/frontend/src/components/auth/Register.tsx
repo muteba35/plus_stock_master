@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  Package2, Mail, Lock, User, Phone, Store, Building2, 
+  Mail, Lock, User, Phone, Store, Building2, 
   Eye, EyeOff, Loader2, LucideIcon, Check, X,
   ChevronDown, Coins, Users, AlertCircle, Ban
 } from "lucide-react";
@@ -11,6 +11,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import axios, { AxiosError } from "axios";
 import AuthNavbar from "../AuthNavbar"; 
+import { useLanguage } from "../LanguageRuntime";
 
 // --- TYPES ---
 interface InputGroupProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -51,6 +52,7 @@ const PASSWORD_REQUIREMENTS = [
 
 export default function Register() {
   const router = useRouter();
+  const { translate } = useLanguage();
   
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -122,12 +124,16 @@ export default function Register() {
       console.log("Réponse du serveur :", response.data);
 
       if (response.status === 200 || response.status === 201 || response.data.success) {
-        setIsSuccess(true); 
+        setIsSuccess(response.data.emailSent !== false);
         setIsLoading(false); 
 
         // Récupération sécurisée de l'email pour l'étape suivante
         const userEmail = response.data.user?.email || response.data.email || formData.email;
         localStorage.setItem("userEmailForVerify", userEmail);
+
+        if (response.data.emailSent === false) {
+          setError(response.data.message);
+        }
 
         setTimeout(() => {
           setIsSuccess(false); 
@@ -174,12 +180,12 @@ export default function Register() {
               
               {/* ðŸ›¡ Correction de l'apostrophe pour le build Next.js */}
               <p className="text-slate-500 text-[11px] font-medium leading-relaxed max-w-[200px] opacity-80 italic">
-                Donnez vie à votre projet. Créez votre compte <span className="text-slate-300">professionnel</span> et rejoignez {"l'élite"}.
+                {translate("Donnez vie à votre projet. Créez votre compte")} <span className="text-slate-300">{translate("professionnel")}</span> {translate("et rejoignez l'élite.")}
               </p>
             </div>
 
             <div className="absolute bottom-8 text-slate-800 text-[8px] font-black uppercase tracking-[0.2em]">
-              RDC • Connexion Sécurisée
+              {translate("RDC • Connexion Sécurisée")}
             </div>
           </div>
 
@@ -219,7 +225,7 @@ export default function Register() {
                   >
                     <AlertCircle size={18} className="shrink-0" style={{ color: "#dc2626" }} />
                     <span className="text-xs font-black uppercase tracking-tight" style={{ color: "#dc2626" }}>
-                      {error}
+                      {translate(error)}
                     </span>
                   </motion.div>
                 )}
@@ -227,17 +233,17 @@ export default function Register() {
               
               <form className="space-y-4" onSubmit={handleRegister}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <InputGroup label="Prénom" name="prenom" icon={User} placeholder="Jean" required onChange={handleChange} />
-                  <InputGroup label="Nom" name="nom" icon={User} placeholder="Mubarak" required onChange={handleChange} />
+                  <InputGroup label={translate("Prénom")} name="prenom" icon={User} placeholder="Jean" required onChange={handleChange} />
+                  <InputGroup label={translate("Nom")} name="nom" icon={User} placeholder="Mubarak" required onChange={handleChange} />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <InputGroup label="Email Pro" name="email" type="email" icon={Mail} placeholder="jean@boutique.cd" required onChange={handleChange} />
-                  <InputGroup label="Téléphone" name="telephone" type="tel" maxLength={9} icon={Phone} placeholder="099123456" onChange={handleChange} />
+                  <InputGroup label={translate("Email Pro")} name="email" type="email" icon={Mail} placeholder="jean@boutique.cd" required onChange={handleChange} />
+                  <InputGroup label={translate("Téléphone")} name="telephone" type="tel" maxLength={9} icon={Phone} placeholder="099123456" onChange={handleChange} />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <InputGroup label="Boutique" name="nomBoutique" icon={Store} placeholder="Nom" required onChange={handleChange} />
+                  <InputGroup label={translate("Boutique")} name="nomBoutique" icon={Store} placeholder={translate("Nom")} required onChange={handleChange} />
                   
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[10px] font-black uppercase text-slate-400 italic ml-1">Business</label>
@@ -289,12 +295,12 @@ export default function Register() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="relative group flex flex-col">
-                    <InputGroup label="Mot de passe" name="password" type={showPassword ? "text" : "password"} icon={Lock} placeholder="••••••••" required onChange={handleChange} />
+                    <InputGroup label={translate("Mot de passe")} name="password" type={showPassword ? "text" : "password"} icon={Lock} placeholder="••••••••" required onChange={handleChange} />
                     <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3.5 bottom-3 text-slate-400 hover:text-indigo-600 transition-colors">
                       {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
-                  <InputGroup label="Confirmer" name="confirmPassword" type="password" icon={Lock} placeholder="••••••••" required onChange={handleChange} />
+                  <InputGroup label={translate("Confirmer le mot de passe")} name="confirmPassword" type="password" icon={Lock} placeholder="••••••••" required onChange={handleChange} />
                 </div>
 
                 <AnimatePresence>
@@ -318,7 +324,7 @@ export default function Register() {
                                 )}
                               </div>
                               <span className={`text-[9px] font-black uppercase tracking-tight transition-colors duration-300 ${isMet ? "text-green-600" : "text-red-500"}`}>
-                                {req.label}
+                                {translate(req.label)}
                               </span>
                             </div>
                           );
@@ -407,7 +413,7 @@ export default function Register() {
               <div className="p-5 border-b border-slate-100 bg-slate-50 flex items-start justify-between gap-4">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">Movoora</p>
-                  <h2 className="text-lg font-black text-slate-950 mt-1">Conditions générales d'inscription</h2>
+                  <h2 className="text-lg font-black text-slate-950 mt-1">{translate("Conditions générales d'inscription")}</h2>
                   <p className="text-xs text-slate-500 mt-1">Résumé des règles acceptées lors de la création du compte.</p>
                 </div>
                 <button type="button" onClick={() => setShowTermsModal(false)} className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-white">
