@@ -35,7 +35,7 @@ export default function VerifyCode() {
   useEffect(() => {
     const timeout = setTimeout(() => {
       const savedEmail = localStorage.getItem("temp_login_email");
-      if (!savedEmail) {
+      if (!savedEmail || !sessionStorage.getItem("login_challenge")) {
         router.push("/login");
         return;
       }
@@ -129,6 +129,7 @@ export default function VerifyCode() {
           },
           body: JSON.stringify({
             email,
+            loginChallenge: sessionStorage.getItem("login_challenge"),
             otp: fullOtp,
           }),
         }
@@ -138,6 +139,11 @@ export default function VerifyCode() {
 
       // Interception des erreurs (code faux, expiré ou vrai blocage après 3 essais)
       if (!response.ok) {
+        if (response.status === 401) {
+          sessionStorage.removeItem("login_challenge");
+          router.replace("/login");
+          return;
+        }
         const serverMessage = data.message || "Code invalide ou expiré";
         const normalizedMessage = serverMessage.toLowerCase();
         const isHardBlocked =
@@ -201,6 +207,7 @@ export default function VerifyCode() {
         localStorage.getItem("temp_must_change_password") === "true";
 
       localStorage.removeItem("temp_login_email");
+      sessionStorage.removeItem("login_challenge");
       localStorage.removeItem("temp_user_info");
       localStorage.removeItem("temp_must_change_password");
 
@@ -229,13 +236,18 @@ export default function VerifyCode() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ email }),
+          body: JSON.stringify({ email, loginChallenge: sessionStorage.getItem("login_challenge") }),
         }
       );
 
       const data = await response.json();
 
       if (!response.ok) {
+        if (response.status === 401) {
+          sessionStorage.removeItem("login_challenge");
+          router.replace("/login");
+          return;
+        }
         throw new Error(data.message || "Impossible de renvoyer le code.");
       }
 

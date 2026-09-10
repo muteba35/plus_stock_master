@@ -25,10 +25,13 @@ const getOwnerPermissions = async () => {
 };
 
 const createSessionPayload = async (userId, boutiqueId, permissionsOverride = null) => {
+  const sessionUser = await Utilisateur.findById(userId).select("sessionVersion");
+  if (!sessionUser) throw new Error("Utilisateur introuvable.");
   const permissions = Array.isArray(permissionsOverride) ? permissionsOverride : await getOwnerPermissions();
   const token = jwt.sign(
     {
       id: userId,
+      sessionVersion: sessionUser.sessionVersion || null,
       boutiqueId,
       permissions,
     },

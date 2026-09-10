@@ -72,6 +72,8 @@ export default function FirstLoginPage() {
         throw new Error(data.error || data.message || "Impossible de modifier le mot de passe.");
       }
 
+      localStorage.setItem("token", data.token);
+      document.cookie = `stockmaster_token=${data.token}; path=/; max-age=604800; SameSite=Lax${location.protocol === "https:" ? "; Secure" : ""}`;
       const profile = JSON.parse(localStorage.getItem("user_profile") || "{}");
       localStorage.setItem("user_profile", JSON.stringify({ ...profile, mustChangePassword: false }));
       setSuccess("Mot de passe configuré avec succès. Redirection...");

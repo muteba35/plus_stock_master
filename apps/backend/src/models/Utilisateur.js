@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { invalidatePasswordSessions } from "../utils/authSecurity.js";
 
 
 
@@ -859,6 +860,9 @@ const utilisateurSchema = new mongoose.Schema(
     emailVerifiedAt: { type: Date, default: null },
 
 
+    sessionVersion: { type: String, default: null },
+    loginChallengeHash: { type: String, select: false },
+    loginChallengeExpires: { type: Date, select: false },
     otpCode: { type: String, select: false },
 
 
@@ -1164,6 +1168,7 @@ const RetourClient = mongoose.model("RetourClient", retourClientSchema);
 
 const InventaireAudit = mongoose.model("InventaireAudit", inventaireAuditSchema);
 
+utilisateurSchema.pre("save", invalidatePasswordSessions);
 const Utilisateur = mongoose.model("Utilisateur", utilisateurSchema);
 
 const Boutique = mongoose.model("Boutique", boutiqueSchema);

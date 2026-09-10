@@ -352,8 +352,8 @@ export default function LandingPage() {
               © 2026 Movoora. Tous droits réservés.
             </p>
             <div className="flex gap-6">
-              <a href="#" className="text-slate-600 hover:text-white text-[9px] font-bold uppercase tracking-[0.2em] transition-colors">Confidentialité</a>
-              <a href="#" className="text-slate-600 hover:text-white text-[9px] font-bold uppercase tracking-[0.2em] transition-colors">Conditions</a>
+              <a href="/confidentialite" className="text-slate-600 hover:text-white text-[9px] font-bold uppercase tracking-[0.2em] transition-colors">Confidentialité</a>
+              <a href="/conditions" className="text-slate-600 hover:text-white text-[9px] font-bold uppercase tracking-[0.2em] transition-colors">Conditions</a>
             </div>
           </div>
         </div>

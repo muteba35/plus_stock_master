@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import { sessionIsCurrent } from "../utils/authSecurity.js";
 import { Utilisateur, Permission, RolePermission } from "../models/Utilisateur.js";
 
 const buildUserPermissions = async (user) => {
@@ -35,6 +36,10 @@ export const protect = async (req, res, next) => {
 
     if (!user) {
       return res.status(401).json({ message: "Session invalide. Utilisateur introuvable." });
+    }
+
+    if (!sessionIsCurrent(decoded, user)) {
+      return res.status(401).json({ message: "Session expiree apres un changement de mot de passe. Reconnectez-vous." });
     }
 
     if (!user.isActive) {

@@ -300,6 +300,8 @@ export default function ProfilePage() {
         return;
       }
 
+      localStorage.setItem("token", data.token);
+      document.cookie = `stockmaster_token=${data.token}; path=/; max-age=604800; SameSite=Lax${location.protocol === "https:" ? "; Secure" : ""}`;
       setPasswordMessage({ type: "success", text: data.message || "Mot de passe mis à jour avec succès !" });
       setCurrentPassword("");
       setNewPassword("");

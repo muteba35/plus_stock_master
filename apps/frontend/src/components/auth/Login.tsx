@@ -73,7 +73,6 @@ export default function Login() {
       );
 
       const data = await response.json();
-      console.log("LOGIN RESPONSE :", data);
 
       if (!response.ok) {
         throw new Error(
@@ -83,6 +82,7 @@ export default function Login() {
 
       // Si le premier facteur est validé et que l'OTP est envoyé
       if (data.success && data.requiresOTP) {
+        sessionStorage.setItem("login_challenge", data.loginChallenge);
 
         // 1. Stockage de l'email pour l'écran de vérification OTP
         localStorage.setItem(

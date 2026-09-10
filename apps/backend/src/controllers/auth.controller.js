@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
+import { createLoginChallenge, validLoginChallenge } from "../utils/authSecurity.js";
 import { ensureBoutiqueSubscription } from "./subscription.controller.js";
 import { Utilisateur, Boutique } from "../models/Utilisateur.js"; 
 import { sendEmail, sendSecurityAlertEmail, emailBrand } from "../utils/sendEmail.js";
@@ -316,6 +317,7 @@ const buildLoginSession = (user, permissions) => {
   const token = jwt.sign(
     {
       id: user._id,
+      sessionVersion: user.sessionVersion || null,
       boutiqueId: user.boutiqueActive._id,
       permissions,
     },
@@ -430,6 +432,8 @@ export const login = async (req, res) => {
     user.lockUntil = undefined;
 
     if (!requiresOTP) {
+      user.loginChallengeHash = undefined;
+      user.loginChallengeExpires = undefined;
       user.otpCode = undefined;
       user.otpExpires = undefined;
       await user.save();
@@ -444,6 +448,7 @@ export const login = async (req, res) => {
     }
     // Configuration de l'OTP
     const otp = generateOtp();
+    const loginChallenge = createLoginChallenge(user);
     user.otpCode = otp;
     user.otpExpires = Date.now() + 3 * 60 * 1000; // Valable 3 minutes
     user.loginAttempts = 0;
@@ -474,6 +479,7 @@ export const login = async (req, res) => {
     return res.status(200).json({ 
       success: true, 
       requiresOTP: true,
+      loginChallenge,
       message: "Code de vérification envoyé",
       email: user.email,
       hasBoutique: !!user.boutiqueActive,
@@ -672,11 +678,15 @@ export const verifyOTP = async (req, res) => {
     // 2. Récupération de l'utilisateur
     const cleanEmail = email.toLowerCase().trim();
     const user = await Utilisateur.findOne({ email: cleanEmail })
-      .select("+otpCode +otpExpires +loginAttempts +isPermanentlyBlocked")
+      .select("+otpCode +otpExpires +loginAttempts +isPermanentlyBlocked +lockUntil +loginChallengeHash +loginChallengeExpires")
       .populate("boutiqueActive");
 
     if (!user) {
       return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+
+    if (!validLoginChallenge(user, req.body.loginChallenge) || !user.isActive || (user.lockUntil && user.lockUntil > Date.now())) {
+      return res.status(401).json({ message: "Connexion expiree. Validez votre mot de passe pour continuer." });
     }
 
     // 3. Sécurité : Vérifier si le compte n'est pas bloqué de base
@@ -705,6 +715,8 @@ export const verifyOTP = async (req, res) => {
       user.loginAttempts = (user.loginAttempts || 0) + 1;
 
       if (user.loginAttempts >= 3) {
+        user.loginChallengeHash = undefined;
+        user.loginChallengeExpires = undefined;
         // L'utilisateur a échoué 3 fois : on nettoie TOUT pour le forcer à recommencer du début
         user.otpCode = undefined;
         user.otpExpires = undefined;
@@ -722,11 +734,20 @@ export const verifyOTP = async (req, res) => {
       });
     }
 
-    // 6. SI LE CODE EST BON : Réinitialisation complète
-    user.otpCode = undefined;
-    user.otpExpires = undefined;
-    user.loginAttempts = 0; 
-    await user.save();
+    // Consume the challenge atomically so concurrent requests cannot reuse it.
+    const consumed = await Utilisateur.updateOne({
+      _id: user._id,
+      loginChallengeHash: user.loginChallengeHash,
+      otpCode: user.otpCode,
+      otpExpires: { $gt: new Date() },
+      loginChallengeExpires: { $gt: new Date() },
+    }, {
+      $unset: { otpCode: 1, otpExpires: 1, loginChallengeHash: 1, loginChallengeExpires: 1 },
+      $set: { loginAttempts: 0 },
+    });
+    if (consumed.modifiedCount !== 1) {
+      return res.status(401).json({ message: "Code deja utilise ou expire. Reconnectez-vous." });
+    }
 
     // 7. APPLICATION DE LA RÈGLE D'OR (Architecture Permission-Driven)
     if (!user.boutiqueActive) {
@@ -752,7 +773,8 @@ export const verifyOTP = async (req, res) => {
     // 8. Générer le Token JWT
     const token = jwt.sign(
       { 
-        id: user._id, 
+        id: user._id,
+        sessionVersion: user.sessionVersion || null,
         boutiqueId: user.boutiqueActive._id,
         permissions: finalPermissions 
       },
@@ -764,6 +786,7 @@ export const verifyOTP = async (req, res) => {
      return res.status(200).json({
       success: true,
       token,
+      mustChangePassword: Boolean(user.mustChangePassword),
       user: {
         id: user._id,
         prenom: user.prenom,
@@ -797,10 +820,14 @@ export const resendOTP = async (req, res) => {
 
     // 1. Récupération avec les infos de sécurité (Ajout de isPermanentlyBlocked pour bloquer le spam)
     const cleanEmail = email.toLowerCase().trim();
-    const user = await Utilisateur.findOne({ email: cleanEmail }).select("+prenom +otpExpires +isPermanentlyBlocked");
+    const user = await Utilisateur.findOne({ email: cleanEmail }).select("+prenom +otpExpires +isPermanentlyBlocked +lockUntil +loginChallengeHash +loginChallengeExpires");
     
     if (!user) {
       return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+
+    if (!validLoginChallenge(user, req.body.loginChallenge) || !user.isActive || user.isBlocked || (user.lockUntil && user.lockUntil > Date.now())) {
+      return res.status(401).json({ message: "Connexion expiree. Validez votre mot de passe pour continuer." });
     }
 
     // Sécurité : Un compte banni ne doit pas pouvoir déclencher des envois de mails
@@ -1568,7 +1595,9 @@ export const updatePassword = async (req, res) => {
     user.mustChangePassword = false;
     await user.save();
 
-    res.status(200).json({ message: "Mot de passe mis à jour avec succès !" });
+    await user.populate("boutiqueActive");
+    const permissions = await resolveLoginPermissions(user);
+    res.status(200).json({ ...buildLoginSession(user, permissions), message: "Mot de passe mis à jour avec succès !" });
   } catch (error) {
     console.error("Erreur updatePassword:", error);
     res.status(500).json({ error: "Erreur serveur lors du changement de mot de passe." });

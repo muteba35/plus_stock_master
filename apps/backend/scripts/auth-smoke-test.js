@@ -69,17 +69,16 @@ try {
     method: "POST",
     body: JSON.stringify({ email: email.toUpperCase(), password }),
   });
-  expectStatus("connexion mot de passe", result.response.status, [200, 503]);
-  if (result.response.status === 503) {
-    await Utilisateur.updateOne({ email }, { otpCode: "654321", otpExpires: new Date(Date.now() + 60_000) });
-  } else if (!result.data?.requiresOTP) {
+  expectStatus("connexion mot de passe", result.response.status, [200]);
+  if (!result.data?.requiresOTP || !result.data?.loginChallenge) {
     throw new Error("connexion: OTP non demandé pour le propriétaire");
   }
+  const loginChallenge = result.data.loginChallenge;
 
   user = await Utilisateur.findOne({ email }).select("+otpCode +otpExpires");
   result = await request("/auth/verify-otp", {
     method: "POST",
-    body: JSON.stringify({ email: ` ${email.toUpperCase()} `, otp: user.otpCode }),
+    body: JSON.stringify({ email: ` ${email.toUpperCase()} `, otp: user.otpCode, loginChallenge }),
   });
   expectStatus("validation OTP", result.response.status, [200]);
   if (!result.data?.token) throw new Error("validation OTP: jeton JWT absent");
