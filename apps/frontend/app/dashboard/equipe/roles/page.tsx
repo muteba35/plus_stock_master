@@ -1,4 +1,7 @@
 "use client";
+import { dashboardUi as du, dashboardLocale } from "../../../../src/i18n/catalog";
+import { useLanguage as useDashboardLanguage } from "../../../../src/components/LanguageRuntime";
+
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Plus, Search, Eye, Edit2, Trash2, Loader2, CheckCircle2, XCircle, AlertCircle, SlidersHorizontal, AlertTriangle, FileSpreadsheet, Download, FileText } from "lucide-react";
@@ -38,6 +41,7 @@ interface APIRole {
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://plus-stock-master.onrender.com/api";
 
 export default function RolesPage() {
+  const { ui: du } = useDashboardLanguage();
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -281,12 +285,12 @@ export default function RolesPage() {
             {toast.type === "success" ? (
               <div className="p-3 text-xs font-semibold bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100 flex items-center gap-2 shadow-sm">
                 <CheckCircle2 size={14} className="text-emerald-500" />
-                {toast.message}
+                {du(toast.message)}
               </div>
             ) : (
               <div className="p-3 text-xs font-semibold bg-rose-50 text-rose-600 rounded-xl border border-rose-100 flex items-center gap-2 shadow-sm">
                 <XCircle size={14} className="text-rose-500" />
-                {toast.message}
+                {du(toast.message)}
               </div>
             )}
           </motion.div>
@@ -296,12 +300,12 @@ export default function RolesPage() {
       {/* En-tête */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">Gestion des Rôles &amp; Autorisations</h1>
-          <p className="text-xs text-slate-400 font-medium">Définissez la matrice de sécurité d`accès aux modules.</p>
+          <h1 className="text-xl font-bold text-slate-900">{du("m97ada5dc4b8c")}</h1>
+          <p className="text-xs text-slate-400 font-medium">{du("mff49713776ae")}</p>
         </div>
         
         {/* BOUTON DE CRÉATION PROTÉGÉ */}
-        {canCreate && <div className="flex flex-wrap justify-end gap-2"><button onClick={exportRolesPdf} className="flex items-center gap-2 border border-slate-200 bg-white hover:border-indigo-300 text-slate-600 text-xs font-bold px-4 py-2.5 rounded-xl"><FileText size={14} /> PDF</button><button onClick={exportRolesXlsx} className="flex items-center gap-2 border border-slate-200 bg-white hover:border-indigo-300 text-slate-600 text-xs font-bold px-4 py-2.5 rounded-xl"><Download size={14} /> Excel</button><button onClick={() => setIsImportOpen(true)} className="flex items-center gap-2 border border-slate-200 bg-white hover:border-indigo-300 text-slate-600 text-xs font-bold px-4 py-2.5 rounded-xl"><FileSpreadsheet size={14} /> Importer Excel</button><button onClick={handleOpenCreate} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-md shadow-indigo-600/10 active:scale-[0.98]"><Plus size={14} /> Créer un rôle</button></div>}
+        {canCreate && <div className="flex flex-wrap justify-end gap-2"><button onClick={exportRolesPdf} className="flex items-center gap-2 border border-slate-200 bg-white hover:border-indigo-300 text-slate-600 text-xs font-bold px-4 py-2.5 rounded-xl"><FileText size={14} /> {du("m1d393b0081b6")}</button><button onClick={exportRolesXlsx} className="flex items-center gap-2 border border-slate-200 bg-white hover:border-indigo-300 text-slate-600 text-xs font-bold px-4 py-2.5 rounded-xl"><Download size={14} /> {du("m48d53635551c")}</button><button onClick={() => setIsImportOpen(true)} className="flex items-center gap-2 border border-slate-200 bg-white hover:border-indigo-300 text-slate-600 text-xs font-bold px-4 py-2.5 rounded-xl"><FileSpreadsheet size={14} /> {du("m9f7aa20c451d")}</button><button onClick={handleOpenCreate} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-md shadow-indigo-600/10 active:scale-[0.98]"><Plus size={14} /> {du("me8723e90b0b9")}</button></div>}
       </div>
 
       {/* TABLEAU */}
@@ -311,7 +315,7 @@ export default function RolesPage() {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
             <input 
               type="text"
-              placeholder="Rechercher un role, une permission ou un module..."
+              placeholder={du("m093670afc7b4")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-12 pr-4 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 font-medium text-slate-800 bg-white" 
@@ -323,7 +327,7 @@ export default function RolesPage() {
             className={`h-9 w-9 rounded-xl border flex items-center justify-center transition-colors ${
               isFilterOpen ? "border-indigo-200 bg-indigo-50 text-indigo-600" : "border-slate-200 bg-white text-slate-500 hover:text-indigo-600"
             }`}
-            title="Filtres"
+            title={du("m6e2287796c72")}
           >
             <SlidersHorizontal size={16} />
           </button>
@@ -339,19 +343,19 @@ export default function RolesPage() {
               >
                 <div className="grid grid-cols-1 gap-3">
                   <label className="space-y-1.5">
-                    <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Statut</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">{du("mdee377cfd8cd")}</span>
                     <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setIsFilterOpen(false); }} className="w-full text-xs font-bold px-3 py-2 border border-slate-200 rounded-xl bg-white text-slate-600 focus:outline-none focus:border-indigo-500">
-                      <option value="all">Tous les statuts</option>
-                      <option value="Actif">Actifs</option>
-                      <option value="Suspendu">Suspendus</option>
+                      <option value="all">{du("md2bbf4fe69be")}</option>
+                      <option value="Actif">{du("m9eaa2a1e77de")}</option>
+                      <option value="Suspendu">{du("m2f81bc24f1eb")}</option>
                     </select>
                   </label>
                   <label className="space-y-1.5">
-                    <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Utilisateurs</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">{du("m23d3938b5ef0")}</span>
                     <select value={usageFilter} onChange={(e) => { setUsageFilter(e.target.value); setIsFilterOpen(false); }} className="w-full text-xs font-bold px-3 py-2 border border-slate-200 rounded-xl bg-white text-slate-600 focus:outline-none focus:border-indigo-500">
-                      <option value="all">Tous les roles</option>
-                      <option value="used">Avec utilisateurs</option>
-                      <option value="empty">Sans utilisateur</option>
+                      <option value="all">{du("m7819b9a2f6c7")}</option>
+                      <option value="used">{du("m570d597373d0")}</option>
+                      <option value="empty">{du("mf02d976ae0bd")}</option>
                     </select>
                   </label>
                 </div>
@@ -364,18 +368,18 @@ export default function RolesPage() {
           {loading ? (
             <div className="flex flex-col items-center justify-center p-16 gap-3 text-slate-400">
               <Loader2 className="animate-spin text-indigo-500" size={24} />
-              <span className="text-xs font-medium">Connexion à Movoora en cours...</span>
+              <span className="text-xs font-medium">{du("m64f6c3c2a813")}</span>
             </div>
           ) : (
             <table className="w-full text-left text-xs min-w-[850px]">
               <thead className="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider">
                 <tr>
-                  <th className="px-6 py-4">Rôle</th>
-                  <th className="px-6 py-4">Description</th>
-                  <th className="px-6 py-4">Permissions</th>
-                  <th className="px-6 py-4">Utilisateurs</th>
-                  <th className="px-6 py-4">Statut</th>
-                  <th className="px-6 py-4 text-right">Actions</th>
+                  <th className="px-6 py-4">{du("ma1fc967c5587")}</th>
+                  <th className="px-6 py-4">{du("m526e0087cc3f")}</th>
+                  <th className="px-6 py-4">{du("mabccc78cc93c")}</th>
+                  <th className="px-6 py-4">{du("m23d3938b5ef0")}</th>
+                  <th className="px-6 py-4">{du("mdee377cfd8cd")}</th>
+                  <th className="px-6 py-4 text-right">{du("mff8059dc6752")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -390,10 +394,9 @@ export default function RolesPage() {
                         <div className="p-3 rounded-full bg-slate-50 text-slate-400 border border-slate-100">
                           <AlertCircle size={20} />
                         </div>
-                        <p className="text-xs font-bold text-slate-700">Aucun élément trouvé</p>
+                        <p className="text-xs font-bold text-slate-700">{du("m739c6b4172c9")}</p>
                         <p className="text-[11px] text-slate-400 font-normal leading-relaxed">
-                          Aucun rôle ne correspond aux critères entrés dans la barre de recherche principale. Re-vérifiez l`orthographe.
-                        </p>
+                          {du("m5e4fcb497e4a")}{" "}</p>
                       </motion.div>
                     </td>
                   </tr>
@@ -421,10 +424,10 @@ export default function RolesPage() {
                             {role.permissions.slice(0, 2).map((p) => (
                               <span 
                                 key={p._id} 
-                                title={p.description || p.nom || p.code} // Ajout du Tooltip ici !
+                                title={du(p.description || p.nom || p.code)}
                                 className="bg-slate-50 border border-slate-200/60 text-slate-600 text-[10px] px-2 py-0.5 rounded font-medium whitespace-nowrap cursor-help"
                               >
-                                {p.nom || p.code}
+                                {du(p.nom || p.code)}
                               </span>
                             ))}
                             {role.permissions.length > 2 && (
@@ -437,7 +440,7 @@ export default function RolesPage() {
 
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="bg-slate-100 text-slate-700 px-2 py-1 rounded-md font-bold">
-                            {role.employeesCount} {role.employeesCount > 1 ? "Employés" : "Employé"}
+                            {role.employeesCount} {role.employeesCount > 1 ? du("m909bcc421d54") : du("m6a60387e44a3")}
                           </span>
                         </td>
 
@@ -445,7 +448,7 @@ export default function RolesPage() {
                           <span className={`px-2 py-1 rounded-md font-bold ${
                             role.status === "Actif" ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"
                           }`}>
-                            {role.status}
+                            {du(role.status)}
                           </span>
                         </td>
 
@@ -455,7 +458,7 @@ export default function RolesPage() {
                             <button 
                               onClick={() => handleOpenView(role)}
                               className="text-slate-400 hover:text-indigo-600 p-1.5 transition-colors"
-                              title="Consulter"
+                              title={du("m2cf9926224a3")}
                             >
                               <Eye size={15} />
                             </button>
@@ -468,7 +471,7 @@ export default function RolesPage() {
                                 className={`p-1.5 transition-colors ${
                                   isAdmin ? "text-slate-200 cursor-not-allowed" : "text-slate-400 hover:text-amber-600"
                                 }`}
-                                title="Modifier"
+                                title={du("m42e37604b638")}
                               >
                                 <Edit2 size={15} />
                               </button>
@@ -482,7 +485,7 @@ export default function RolesPage() {
                                 className={`p-1.5 transition-colors ${
                                   isAdmin ? "text-slate-200 cursor-not-allowed" : "text-slate-400 hover:text-rose-600"
                                 }`}
-                                title="Supprimer"
+                                title={du("m5e5d0216ce0b")}
                               >
                                 <Trash2 size={15} />
                               </button>
@@ -502,7 +505,7 @@ export default function RolesPage() {
 
       <ModalPortal>
       <AnimatePresence>
-        {roleToDelete && <div className="fixed inset-0 z-[200] flex items-center justify-center p-4"><motion.button type="button" aria-label="Fermer" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => !deleting && setRoleToDelete(null)} className="absolute inset-0 bg-slate-950/45 backdrop-blur-sm" /><motion.div initial={{ opacity: 0, y: 16, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8, scale: 0.98 }} className="relative z-10 w-full max-w-md bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden"><div className="p-5 border-b border-slate-100 flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center"><AlertTriangle size={19} /></div><div><h3 className="text-sm font-bold text-slate-900">Supprimer le rôle</h3><p className="text-[11px] text-slate-400 mt-0.5">Cette action est définitive.</p></div></div><div className="p-5 text-xs text-slate-600 leading-relaxed">Voulez-vous vraiment supprimer le rôle <strong className="text-slate-900">{roleToDelete.name}</strong> ? Un rôle encore affecté à des employés ne pourra pas être supprimé.</div><div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-2"><button type="button" disabled={deleting} onClick={() => setRoleToDelete(null)} className="px-4 py-2 text-xs font-bold text-slate-600 rounded-xl hover:bg-slate-200">Annuler</button><button type="button" disabled={deleting} onClick={() => void handleDeleteRole(roleToDelete.id)} className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl flex items-center gap-2 disabled:opacity-50">{deleting && <Loader2 size={14} className="animate-spin" />} Supprimer</button></div></motion.div></div>}
+        {roleToDelete && <div className="fixed inset-0 z-[200] flex items-center justify-center p-4"><motion.button type="button" aria-label={du("m711e5f2e198d")} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => !deleting && setRoleToDelete(null)} className="absolute inset-0 bg-slate-950/45 backdrop-blur-sm" /><motion.div initial={{ opacity: 0, y: 16, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8, scale: 0.98 }} className="relative z-10 w-full max-w-md bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden"><div className="p-5 border-b border-slate-100 flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center"><AlertTriangle size={19} /></div><div><h3 className="text-sm font-bold text-slate-900">{du("m12e4dee05980")}</h3><p className="text-[11px] text-slate-400 mt-0.5">{du("mad52a732c8a2")}</p></div></div><div className="p-5 text-xs text-slate-600 leading-relaxed">{du("mcade0bc66328")}{" "}<strong className="text-slate-900">{roleToDelete.name}</strong> {du("mf5cca358b212")}</div><div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-2"><button type="button" disabled={deleting} onClick={() => setRoleToDelete(null)} className="px-4 py-2 text-xs font-bold text-slate-600 rounded-xl hover:bg-slate-200">{du("m46ad3916f6a0")}</button><button type="button" disabled={deleting} onClick={() => void handleDeleteRole(roleToDelete.id)} className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl flex items-center gap-2 disabled:opacity-50">{deleting && <Loader2 size={14} className="animate-spin" />} {du("m5e5d0216ce0b")}</button></div></motion.div></div>}
       </AnimatePresence>
       </ModalPortal>
 
@@ -515,7 +518,7 @@ export default function RolesPage() {
         apiHeaders={getAuthHeaders()}
         apiUrl={API_URL}
       />
-      <TeamCsvImportModal open={isImportOpen} onClose={() => setIsImportOpen(false)} title="Importer des rôles" columns={[{ key: "nom", label: "nom", required: true }, { key: "description", label: "description", required: true }, { key: "permissions", label: "permissions", required: true }]} example={{ nom: "Gestionnaire stock", description: "Gère les produits et mouvements", permissions: "VOIR_LISTE_PRODUITS|CREER_ENTREE_STOCK" }} onImport={importRoles} />
+      <TeamCsvImportModal open={isImportOpen} onClose={() => setIsImportOpen(false)} title={du("m3efe0ac9d7d3")} columns={[{ key: "nom", label: "nom", required: true }, { key: "description", label: "description", required: true }, { key: "permissions", label: "permissions", required: true }]} example={{ nom: "Gestionnaire stock", description: "Gère les produits et mouvements", permissions: "VOIR_LISTE_PRODUITS|CREER_ENTREE_STOCK" }} onImport={importRoles} />
     </div>
   );
 }

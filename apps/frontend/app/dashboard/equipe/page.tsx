@@ -1,4 +1,7 @@
 "use client";
+import { dashboardUi as du, dashboardLocale } from "../../../src/i18n/catalog";
+import { useLanguage as useDashboardLanguage } from "../../../src/components/LanguageRuntime";
+
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -93,6 +96,7 @@ const readApiMessage = async (response: Response, fallback: string) => {
 };
 
 export default function TeamOverviewPage() {
+  const { ui: du } = useDashboardLanguage();
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [employes, setEmployes] = useState<Employe[]>([]);
@@ -340,7 +344,7 @@ export default function TeamOverviewPage() {
       <div className="flex items-center justify-center min-h-screen bg-[#f9fafd]">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="w-10 h-10 text-indigo-600 animate-spin" />
-          <p className="text-xs font-semibold text-slate-500">Chargement de la vue d&apos;ensemble...</p>
+          <p className="text-xs font-semibold text-slate-500">{du("ma97bdb3fa588")}</p>
         </div>
       </div>
     );
@@ -364,7 +368,7 @@ export default function TeamOverviewPage() {
               }`}
             >
               {toast.type === "success" ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
-              {toast.message}
+              {du(toast.message)}
             </div>
           </motion.div>
         )}
@@ -373,27 +377,25 @@ export default function TeamOverviewPage() {
       {/* EN-TETE DE LA PAGE */}
       <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight">Vue d&apos;ensemble de l&apos;Equipe</h1>
+          <h1 className="text-xl font-bold text-slate-900 tracking-tight">{du("m124cf8809a82")}</h1>
           <p className="text-xs text-slate-400 font-medium">
-            Supervisez les performances, la repartition et les activites recentes de votre personnel.
-          </p>
+            {du("m4c8d00b98264")}{" "}</p>
         </div>
         <button
           type="button"
           onClick={() => setIsModalOpen(true)}
           className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-sm"
         >
-          <UserPlus size={14} /> Ajouter un employe
-        </button>
+          <UserPlus size={14} /> {du("m277469de1103")}{" "}</button>
       </div>
 
       {/* SECTION 1 : CARTES DE STATISTIQUES (KPIs) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
           <div className="space-y-2">
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Effectif Total</p>
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{du("mde6b12bed36e")}</p>
             <h3 className="text-3xl font-black text-slate-900 tracking-tight">{stats.totalEmployees}</h3>
-            <p className="text-[11px] text-slate-400 font-medium">Employes enregistres</p>
+            <p className="text-[11px] text-slate-400 font-medium">{du("m600f6ef1ccdb")}</p>
           </div>
           <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
             <Users size={22} />
@@ -402,7 +404,7 @@ export default function TeamOverviewPage() {
 
         <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
           <div className="space-y-2">
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Actifs en Caisse</p>
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{du("m6b4cfbc28f04")}</p>
             <div className="flex items-baseline gap-2">
               <h3 className="text-3xl font-black text-slate-900 tracking-tight">{stats.activeNow}</h3>
               <span className="flex h-2 w-2 relative mb-1">
@@ -411,8 +413,7 @@ export default function TeamOverviewPage() {
               </span>
             </div>
             <p className="text-[11px] text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-md inline-block">
-              Comptes actifs
-            </p>
+              {du("m64c713990f17")}{" "}</p>
           </div>
           <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600">
             <UserCheck size={22} />
@@ -421,10 +422,10 @@ export default function TeamOverviewPage() {
 
         <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between sm:col-span-2 lg:col-span-1">
           <div className="space-y-2">
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Structures d&apos;Acces</p>
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{du("mef5b8ded0612")}</p>
             <h3 className="text-3xl font-black text-slate-900 tracking-tight">{stats.totalRoles}</h3>
             <p className="text-[11px] text-slate-400 font-medium">
-              Roles actifs / {stats.totalDepartements} departement{stats.totalDepartements > 1 ? "s" : ""}
+              {du("mbcd8f3eeaf56")}{" "}{stats.totalDepartements} {du("m2de88057160b")}{stats.totalDepartements > 1 ? du("m043a718774c5") : ""}
             </p>
           </div>
           <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600">
@@ -438,13 +439,13 @@ export default function TeamOverviewPage() {
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden flex flex-col justify-between">
           <div>
             <div className="p-5 border-b border-slate-100 bg-[#fcfdfe]">
-              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Repartition par Metier</h3>
-              <p className="text-[11px] text-slate-400 font-medium">Structure du personnel par role</p>
+              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">{du("m407277d281c5")}</h3>
+              <p className="text-[11px] text-slate-400 font-medium">{du("mdc78af012222")}</p>
             </div>
 
             <div className="p-6 space-y-5">
               {roleDistribution.length === 0 ? (
-                <p className="text-xs font-semibold text-slate-400">Aucun role configure.</p>
+                <p className="text-xs font-semibold text-slate-400">{du("m67f42bf080d7")}</p>
               ) : (
                 roleDistribution.map((item) => <DistributionRow key={item.id} item={item} />)
               )}
@@ -454,12 +455,12 @@ export default function TeamOverviewPage() {
               <div className="pt-5 border-t border-slate-100">
                 <div className="flex items-center gap-1.5 mb-4">
                   <Building2 size={14} className="text-sky-600" />
-                  <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Departements</h4>
+                  <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">{du("m3b3add2a3914")}</h4>
                 </div>
 
                 <div className="space-y-4">
                   {departementDistribution.length === 0 ? (
-                    <p className="text-xs font-semibold text-slate-400">Aucun departement configure.</p>
+                    <p className="text-xs font-semibold text-slate-400">{du("me034351a3a07")}</p>
                   ) : (
                     departementDistribution.map((item) => <DistributionRow key={item.id} item={item} compact />)
                   )}
@@ -473,7 +474,7 @@ export default function TeamOverviewPage() {
               href="/dashboard/equipe/roles"
               className="text-xs font-bold text-indigo-600 hover:text-indigo-700 inline-flex items-center gap-1 transition-all"
             >
-              Ajuster la matrice des roles <ArrowUpRight size={14} />
+              {du("mfeb317355762")}{" "}<ArrowUpRight size={14} />
             </Link>
           </div>
         </div>
@@ -482,17 +483,15 @@ export default function TeamOverviewPage() {
           <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-[#fcfdfe]">
             <div>
               <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-                <Activity size={15} className="text-indigo-600" /> Journal Operationnel
-              </h3>
-              <p className="text-[11px] text-slate-400 font-medium">Synthese dynamique calculee depuis les donnees equipe</p>
+                <Activity size={15} className="text-indigo-600" /> {du("mfd11b8a11850")}{" "}</h3>
+              <p className="text-[11px] text-slate-400 font-medium">{du("m28370dbbc4c9")}</p>
             </div>
             <span className="text-[10px] bg-slate-100 font-bold text-slate-500 px-2 py-0.5 rounded-full uppercase tracking-wider">
-              Dynamique
-            </span>
+              {du("mddc6d867e612")}{" "}</span>
           </div>
 
           <div className="divide-y divide-slate-100 max-h-[310px] overflow-y-auto">
-            {activityLogs.length === 0 && <div className="p-8 text-center text-xs font-semibold text-slate-400">Aucune donnee equipe disponible pour le journal.</div>}
+            {activityLogs.length === 0 && <div className="p-8 text-center text-xs font-semibold text-slate-400">{du("m39ed323b789f")}</div>}
             {activityLogs.map((log) => (
               <div key={log.id} className="p-4 hover:bg-slate-50/50 transition-colors flex items-start justify-between gap-4">
                 <div className="flex items-start gap-3">
@@ -508,7 +507,7 @@ export default function TeamOverviewPage() {
                       <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.2 rounded uppercase tracking-wide mr-1.5">
                         {log.role}
                       </span>
-                      {log.action}
+                      {du(log.action)}
                     </p>
                     <div className="flex items-center gap-1 text-[10px] text-slate-400 font-medium">
                       <Clock size={11} />
@@ -540,6 +539,7 @@ export default function TeamOverviewPage() {
 }
 
 function DistributionRow({ item, compact = false }: { item: DistributionItem; compact?: boolean }) {
+  const { ui: du } = useDashboardLanguage();
   return (
     <div className={compact ? "space-y-1.5" : "space-y-2"}>
       <div className="flex items-center justify-between text-xs font-bold gap-3">

@@ -1,4 +1,7 @@
 "use client";
+import { dashboardUi as du, dashboardLocale } from "../../../src/i18n/catalog";
+import { useLanguage as useDashboardLanguage } from "../../../src/components/LanguageRuntime";
+
 
 import { BrowserMultiFormatReader, type IScannerControls } from "@zxing/browser";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -54,6 +57,7 @@ const getStoredPermissions = () => {
 };
 
 export default function CashRegisterPage() {
+  const { ui: du } = useDashboardLanguage();
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartLine[]>([]);
   const [search, setSearch] = useState("");
@@ -414,13 +418,12 @@ export default function CashRegisterPage() {
   return (
     <div className="space-y-5 bg-[#f9fafd] p-3 sm:p-6 rounded-2xl sm:rounded-3xl min-h-screen text-slate-800 overflow-x-hidden">
       <CashHeader
-        title="Accueil Caisse"
-        subtitle={tvaEnabled ? "Sélectionnez les articles, appliquez la TVA et validez l'encaissement." : "Sélectionnez les articles et validez l'encaissement sans TVA."}
+        title={du("m38b8a397a65e")}
+        subtitle={tvaEnabled ? du("m8c7986b55008") : du("mdd854018814f")}
         action={
           <button onClick={() => setScannerOpen(true)} className={secondaryButton}>
             <ScanLine size={15} />
-            Scanner
-          </button>
+            {du("m71d4cf953e59")}{" "}</button>
         }
       />
 
@@ -433,16 +436,16 @@ export default function CashRegisterPage() {
           }`}
         >
           {message.toLowerCase().includes("succès") || message.startsWith("Vente") ? <CheckCircle2 size={15} /> : <XCircle size={15} />}
-          {message}
+          {du(message)}
         </div>
       )}
 
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_400px] gap-5 items-start">
         <section className="bg-white border border-slate-200/80 rounded-2xl shadow-sm overflow-hidden">
           <div className="p-4 border-b border-slate-100 grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_240px] gap-3">
-            <CashSearch value={search} onChange={setSearch} placeholder="Rechercher un produit, une catégorie, un SKU ou un code-barres..." />
+            <CashSearch value={search} onChange={setSearch} placeholder={du("m62a30e15a667")} />
             <select value={category} onChange={(event) => setCategory(event.target.value)} className={fieldClass}>
-              <option value="all">Toutes les catégories</option>
+              <option value="all">{du("m29e06e012d24")}</option>
               {categories.map((item) => (
                 <option key={item} value={item}>{item}</option>
               ))}
@@ -452,10 +455,10 @@ export default function CashRegisterPage() {
           {loading ? (
             <div className="py-20 flex flex-col items-center gap-3 text-slate-400">
               <Loader2 className="animate-spin text-indigo-500" />
-              <span className="text-xs">Chargement du catalogue...</span>
+              <span className="text-xs">{du("m3552be3ac0af")}</span>
             </div>
           ) : error ? (
-            <div className="py-16 text-center text-xs text-rose-600">{error}</div>
+            <div className="py-16 text-center text-xs text-rose-600">{du(error)}</div>
           ) : (
             <div className="p-4 grid grid-cols-2 md:grid-cols-3 2xl:grid-cols-4 gap-3">
               {filteredProducts.map((product) => (
@@ -474,12 +477,11 @@ export default function CashRegisterPage() {
                   <div className="p-3">
                     <p className="text-xs font-bold text-slate-900 truncate">{product.nom}</p>
                     <p className="text-[10px] text-slate-400 mt-1">
-                      {product.sku} · {product.stock} {product.unite}
+                      {product.sku} · {product.stock} {du(product.unite)}
                     </p>
                     <p className="text-sm font-black text-indigo-600 mt-2">
-                      {formatMoney(product.prixVente, product.devise || "USD ($)")} HT
-                      {hasCurrencyConversion(product) && getRate(product.devise || currency, currency) > 0 && (
-                        <span className="block text-[11px] text-slate-500 font-bold mt-1">→ {formatMoney(convertedProductPrice(product), currency)} HT</span>
+                      {formatMoney(product.prixVente, product.devise || "USD ($)")} {du("me4ebeb2baaed")}{" "}{hasCurrencyConversion(product) && getRate(product.devise || currency, currency) > 0 && (
+                        <span className="block text-[11px] text-slate-500 font-bold mt-1">→ {formatMoney(convertedProductPrice(product), currency)} {du("me4ebeb2baaed")}</span>
                       )}
                     </p>
                   </div>
@@ -493,18 +495,17 @@ export default function CashRegisterPage() {
           <div className="p-4 border-b border-slate-100 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <ShoppingCart size={17} className="text-indigo-600" />
-              <h2 className="text-sm font-bold">Panier</h2>
+              <h2 className="text-sm font-bold">{du("m3a4ec4cdb9b3")}</h2>
             </div>
             <span className="text-[10px] font-bold bg-slate-100 px-2 py-1 rounded-md">
-              {cart.reduce((sum, line) => sum + line.quantity, 0)} article(s)
-            </span>
+              {cart.reduce((sum, line) => sum + line.quantity, 0)} {du("ma060df41bf33")}{" "}</span>
           </div>
 
           <div className="p-4 max-h-[40vh] overflow-y-auto space-y-3">
             {cart.length === 0 ? (
               <div className="py-12 text-center">
                 <ShoppingCart size={28} className="mx-auto text-slate-200" />
-                <p className="text-xs text-slate-400 mt-3">Le panier est vide.</p>
+                <p className="text-xs text-slate-400 mt-3">{du("mea681e9bfe03")}</p>
               </div>
             ) : (
               cart.map((line) => (
@@ -512,7 +513,7 @@ export default function CashRegisterPage() {
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-bold truncate">{line.product.nom}</p>
                     <p className="text-[10px] text-slate-400 mt-1">
-                      {formatMoney(line.product.prixVente, line.product.devise || "USD ($)")} HT / unité · {formatMoney(line.product.prixVente * getRate(line.product.devise || currency, currency), currency)}
+                      {formatMoney(line.product.prixVente, line.product.devise || "USD ($)")} {du("m5b4013593700")}{" "}{formatMoney(line.product.prixVente * getRate(line.product.devise || currency, currency), currency)}
                     </p>
                   </div>
                   <div className="flex items-center border border-slate-200 rounded-lg overflow-hidden">
@@ -526,7 +527,7 @@ export default function CashRegisterPage() {
                       value={line.quantity}
                       onChange={(event) => setLineQuantity(line.product._id, event.target.value)}
                       className="w-12 h-8 text-center text-xs font-bold border-x border-slate-200 outline-none"
-                      title={`Stock disponible : ${line.product.stock}`}
+                      title={du("m0a3baa1321c2", {p0: line.product.stock})}
                     />
                     <button onClick={() => updateQuantity(line.product._id, 1)} className="w-7 h-8 flex items-center justify-center hover:bg-slate-50">
                       <Plus size={12} />
@@ -546,10 +547,10 @@ export default function CashRegisterPage() {
           <div className="p-4 border-t border-slate-100 space-y-3">
             <label className="relative block">
               <UserRound size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input value={customer} onChange={(event) => setCustomer(event.target.value)} placeholder="Client (facultatif)" className={`${fieldClass} pl-9`} />
+              <input value={customer} onChange={(event) => setCustomer(event.target.value)} placeholder={du("md520c0a04405")} className={`${fieldClass} pl-9`} />
             </label>
             <label className="flex items-center gap-3">
-              <span className="text-[11px] font-bold text-slate-500 flex-1">Remise (%)</span>
+              <span className="text-[11px] font-bold text-slate-500 flex-1">{du("m203dcf4fb0e8")}</span>
               <input
                 type="number"
                 min="0"
@@ -558,20 +559,19 @@ export default function CashRegisterPage() {
                 disabled={!canDiscount}
                 onChange={(event) => setDiscount(Number(event.target.value))}
                 className="w-20 h-9 border border-slate-200 rounded-lg px-2 text-xs text-right disabled:bg-slate-50 disabled:text-slate-300"
-                title={canDiscount ? "Remise" : "Permission APPLIQUER_REMISE requise"}
+                title={canDiscount ? du("md596fa470381") : du("m80b33cfefd93")}
               />
             </label>
             <div className="space-y-2 pt-2">
-              <div className="flex justify-between text-xs text-slate-500"><span>{tvaEnabled ? "Sous-total HT" : "Sous-total"}</span><span>{formatMoney(subtotalHT, cartCurrency)}</span></div>
-              <div className="flex justify-between text-xs text-rose-500"><span>Remise</span><span>- {formatMoney(discountAmount, cartCurrency)}</span></div>
-              {tvaEnabled && <div className="flex justify-between text-xs text-slate-500"><span>Base taxable</span><span>{formatMoney(taxableAmount, cartCurrency)}</span></div>}
-              {tvaEnabled && <div className="flex justify-between text-xs text-slate-500"><span>TVA {(activeTvaRate * 100).toFixed(0)}%</span><span>{formatMoney(tvaAmount, cartCurrency)}</span></div>}
-              <div className="flex justify-between text-lg font-black border-t border-dashed border-slate-200 pt-3"><span>{tvaEnabled ? "Total TTC" : "Total"}</span><span>{formatMoney(totalTTC, cartCurrency)}</span></div>
+              <div className="flex justify-between text-xs text-slate-500"><span>{tvaEnabled ? du("mf0d8a19e2e95") : du("m7d8047c8d40b")}</span><span>{formatMoney(subtotalHT, cartCurrency)}</span></div>
+              <div className="flex justify-between text-xs text-rose-500"><span>{du("md596fa470381")}</span><span>- {formatMoney(discountAmount, cartCurrency)}</span></div>
+              {tvaEnabled && <div className="flex justify-between text-xs text-slate-500"><span>{du("m38769e1bcc6c")}</span><span>{formatMoney(taxableAmount, cartCurrency)}</span></div>}
+              {tvaEnabled && <div className="flex justify-between text-xs text-slate-500"><span>{du("mae5f52a29195")}{" "}{(activeTvaRate * 100).toFixed(0)}%</span><span>{formatMoney(tvaAmount, cartCurrency)}</span></div>}
+              <div className="flex justify-between text-lg font-black border-t border-dashed border-slate-200 pt-3"><span>{tvaEnabled ? du("m7324c6571082") : du("mc9b3c38247f7")}</span><span>{formatMoney(totalTTC, cartCurrency)}</span></div>
             </div>
             <button disabled={!cart.length} onClick={() => setPaymentOpen(true)} className={`${primaryButton} w-full h-12`}>
               <CreditCard size={16} />
-              Encaisser
-            </button>
+              {du("me69092b5e730")}{" "}</button>
           </div>
         </aside>
       </div>
@@ -579,12 +579,12 @@ export default function CashRegisterPage() {
       <CashModal
         open={scannerOpen}
         onClose={() => setScannerOpen(false)}
-        title="Scanner un article"
-        subtitle="Ouvrez la caméra ou saisissez le code-barres/SKU."
+        title={du("m300d641101f9")}
+        subtitle={du("m37ea1f6edf12")}
         footer={
           <>
-            <button onClick={() => setScannerOpen(false)} className={secondaryButton}>Fermer</button>
-            <button onClick={handleManualScan} className={primaryButton}><ScanLine size={14} /> Ajouter</button>
+            <button onClick={() => setScannerOpen(false)} className={secondaryButton}>{du("m711e5f2e198d")}</button>
+            <button onClick={handleManualScan} className={primaryButton}><ScanLine size={14} /> {du("m00f9c5334547")}</button>
           </>
         }
       >
@@ -594,24 +594,23 @@ export default function CashRegisterPage() {
             {!cameraActive && (
               <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white/70 p-6">
                 <Camera size={30} className="mx-auto mb-3" />
-                <p className="text-xs font-bold">Caméra en attente</p>
-                <p className="text-[11px] mt-1">Le navigateur demandera l'autorisation d'accès.</p>
+                <p className="text-xs font-bold">{du("m8f230602ff7d")}</p>
+                <p className="text-[11px] mt-1">{du("m7276585a4959")}</p>
               </div>
             )}
           </div>
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-3">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Caméras détectées</p>
-                <p className="text-[11px] text-slate-400 mt-0.5">Choisissez la caméra interne ou externe à utiliser.</p>
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">{du("m5817020922e0")}</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">{du("m4a0c40061f30")}</p>
               </div>
               <button
                 type="button"
                 onClick={() => void refreshCameraDevices(true)}
                 className="h-8 px-3 rounded-lg border border-slate-200 bg-white text-[10px] font-black text-slate-600 hover:text-indigo-600"
               >
-                Détecter
-              </button>
+                {du("m8b6a80d45d60")}{" "}</button>
             </div>
 
             {cameraDevices.length > 0 ? (
@@ -627,28 +626,26 @@ export default function CashRegisterPage() {
                     >
                       <span className="flex items-center gap-2 min-w-0">
                         <Camera size={15} className="shrink-0" />
-                        <span className="truncate text-xs font-black">{device.label || `Caméra ${index + 1}`}</span>
+                        <span className="truncate text-xs font-black">{device.label || du("m69ff9b3d89f2", {p0: index + 1})}</span>
                       </span>
-                      <span className="text-[10px] font-black uppercase">{isSelected ? "Active" : "Utiliser"}</span>
+                      <span className="text-[10px] font-black uppercase">{isSelected ? du("m92340695899b") : du("m26b1dfe48e51")}</span>
                     </button>
                   );
                 })}
               </div>
             ) : (
-              <p className="text-[11px] text-slate-400 font-semibold">Aucune caméra listée pour l'instant. Cliquez sur Détecter puis autorisez l'accès caméra.</p>
+              <p className="text-[11px] text-slate-400 font-semibold">{du("m978be6b01c51")}</p>
             )}
           </div>
 
           <button type="button" onClick={() => void startCameraScanner()} className={`${secondaryButton} w-full`}>
             <Camera size={14} />
-            Ouvrir la caméra sélectionnée
-          </button>
-          {scannerStatus && <div className="p-3 rounded-xl bg-amber-50 border border-amber-100 text-xs font-semibold text-amber-700">{scannerStatus}</div>}
+            {du("me84564725fe0")}{" "}</button>
+          {scannerStatus && <div className="p-3 rounded-xl bg-amber-50 border border-amber-100 text-xs font-semibold text-amber-700">{du(scannerStatus)}</div>}
           <form onSubmit={(event) => { event.preventDefault(); handleManualScan(); }} className="space-y-2">
-            <input autoFocus value={scanCode} onChange={(event) => setScanCode(event.target.value)} placeholder="Code-barres ou SKU" className={fieldClass} />
+            <input autoFocus value={scanCode} onChange={(event) => setScanCode(event.target.value)} placeholder={du("m86a3b10e5e77")} className={fieldClass} />
             <p className="text-[11px] text-slate-400 leading-relaxed">
-              Pour tester sans vraie étiquette, tapez un SKU ou un code-barres enregistré puis cliquez sur Ajouter. La caméra lit uniquement une image de code-barres ou de QR code, pas un texte simple imprimé.
-            </p>
+              {du("m7d66e59d1424")}{" "}</p>
           </form>
         </div>
       </CashModal>
@@ -656,15 +653,14 @@ export default function CashRegisterPage() {
       <CashModal
         open={paymentOpen}
         onClose={() => !saving && setPaymentOpen(false)}
-        title="Encaissement"
-        subtitle={`${tvaEnabled ? "Total TTC" : "Total"} à payer : ${formatMoney(totalTTC, cartCurrency)}`}
+        title={du("mcd5aa27b1770")}
+        subtitle={du("m82c1fcba76fe", {p0: tvaEnabled ? "Total TTC" : "Total", p1: formatMoney(totalTTC, cartCurrency)})}
         footer={
           <>
-            <button disabled={saving} onClick={() => setPaymentOpen(false)} className={secondaryButton}>Annuler</button>
+            <button disabled={saving} onClick={() => setPaymentOpen(false)} className={secondaryButton}>{du("m46ad3916f6a0")}</button>
             <button onClick={completePayment} disabled={saving || (paymentMethod === "Espèces" && receivedAmount < totalTTC)} className={primaryButton}>
               {saving ? <Loader2 size={14} className="animate-spin" /> : <ReceiptText size={14} />}
-              Valider le paiement
-            </button>
+              {du("ma40db5d660f5")}{" "}</button>
           </>
         }
       >
@@ -673,24 +669,24 @@ export default function CashRegisterPage() {
             {[{ name: "Espèces", icon: Banknote }, { name: "Carte", icon: CreditCard }, { name: "Mobile", icon: Smartphone }].map(({ name, icon: Icon }) => (
               <button key={name} onClick={() => setPaymentMethod(name)} className={`h-20 rounded-xl border flex flex-col items-center justify-center gap-2 text-xs font-bold ${paymentMethod === name ? "border-indigo-400 bg-indigo-50 text-indigo-700" : "border-slate-200 text-slate-500"}`}>
                 <Icon size={19} />
-                {name}
+                {du(name)}
               </button>
             ))}
           </div>
           <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 space-y-2">
-            <div className="flex justify-between text-xs text-slate-500"><span>{tvaEnabled ? "Sous-total HT" : "Sous-total"}</span><strong>{formatMoney(subtotalHT, cartCurrency)}</strong></div>
-            {tvaEnabled && <div className="flex justify-between text-xs text-slate-500"><span>TVA {(activeTvaRate * 100).toFixed(0)}%</span><strong>{formatMoney(tvaAmount, cartCurrency)}</strong></div>}
-            <div className="flex justify-between text-sm text-slate-900 font-black pt-2 border-t border-slate-200"><span>{tvaEnabled ? "Total TTC" : "Total"}</span><span>{formatMoney(totalTTC, cartCurrency)}</span></div>
+            <div className="flex justify-between text-xs text-slate-500"><span>{tvaEnabled ? du("mf0d8a19e2e95") : du("m7d8047c8d40b")}</span><strong>{formatMoney(subtotalHT, cartCurrency)}</strong></div>
+            {tvaEnabled && <div className="flex justify-between text-xs text-slate-500"><span>{du("mae5f52a29195")}{" "}{(activeTvaRate * 100).toFixed(0)}%</span><strong>{formatMoney(tvaAmount, cartCurrency)}</strong></div>}
+            <div className="flex justify-between text-sm text-slate-900 font-black pt-2 border-t border-slate-200"><span>{tvaEnabled ? du("m7324c6571082") : du("mc9b3c38247f7")}</span><span>{formatMoney(totalTTC, cartCurrency)}</span></div>
           </div>
           {paymentMethod === "Espèces" && (
             <>
               <label className="block space-y-1.5">
-                <span className="text-[10px] font-bold uppercase text-slate-400">Montant reçu ({currency})</span>
+                <span className="text-[10px] font-bold uppercase text-slate-400">{du("m79a863a13405")}{currency})</span>
                 <input autoFocus type="number" min={0} value={received} onChange={(event) => setReceived(event.target.value)} className={fieldClass} />
               </label>
               <div className="p-4 bg-slate-50 rounded-xl space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-xs font-bold text-slate-500">Monnaie à rendre</span>
+                  <span className="text-xs font-bold text-slate-500">{du("mb0b5cac4dec4")}</span>
                   <strong>{formatMoney(change, currency)}</strong>
                 </div>
               </div>

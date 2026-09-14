@@ -1,4 +1,7 @@
 "use client";
+import { dashboardUi as du, dashboardLocale } from "../../../../../src/i18n/catalog";
+import { useLanguage as useDashboardLanguage } from "../../../../../src/components/LanguageRuntime";
+
 
 import React from "react";
 import { Briefcase, Edit2, Trash2 } from "lucide-react";
@@ -18,16 +21,17 @@ interface DeptTableProps {
 }
 
 export default function DeptTable({ departments, onEdit, onDelete }: DeptTableProps) {
+  const { ui: du } = useDashboardLanguage();
   return (
     <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
       <div className="overflow-x-auto w-full">
         <table className="w-full text-left text-xs min-w-[500px]">
           <thead className="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider">
             <tr>
-              <th className="px-6 py-4">Département</th>
-              <th className="px-6 py-4">Membres</th>
-              <th className="px-6 py-4">Date de création</th>
-              {(onEdit || onDelete) && <th className="px-6 py-4 text-right">Actions</th>}
+              <th className="px-6 py-4">{du("m5e4596ae9d83")}</th>
+              <th className="px-6 py-4">{du("maa52b1f704b7")}</th>
+              <th className="px-6 py-4">{du("m5401fe67d3cc")}</th>
+              {(onEdit || onDelete) && <th className="px-6 py-4 text-right">{du("mff8059dc6752")}</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -52,7 +56,7 @@ export default function DeptTable({ departments, onEdit, onDelete }: DeptTablePr
                               {dept.description}
                             </span>
                           ) : (
-                            <span className="text-[11px] text-slate-300 italic font-medium">Aucune description</span>
+                            <span className="text-[11px] text-slate-300 italic font-medium">{du("m56304d21e90b")}</span>
                           )}
                         </div>
                       </div>
@@ -65,14 +69,14 @@ export default function DeptTable({ departments, onEdit, onDelete }: DeptTablePr
                           ? "bg-indigo-50 text-indigo-700 border border-indigo-100/30" 
                           : "bg-slate-100 text-slate-500"
                       }`}>
-                        {count} {count > 1 ? "collabs." : "collab."}
+                        {count} {count > 1 ? du("m0b4eb25b8d71") : du("m59392af67e15")}
                       </span>
                     </td>
 
                     {/* Date de création (Sécurisée contre l'erreur d'hydratation Next.js) */}
                     <td suppressHydrationWarning className="px-6 py-4 text-slate-400 font-medium whitespace-nowrap">
                       {dept.createdAt 
-                        ? new Date(dept.createdAt).toLocaleDateString("fr-FR", {
+                        ? new Date(dept.createdAt).toLocaleDateString(dashboardLocale(), {
                             day: "numeric",
                             month: "short",
                             year: "numeric"
@@ -88,7 +92,7 @@ export default function DeptTable({ departments, onEdit, onDelete }: DeptTablePr
                           <button 
                             onClick={() => onEdit(dept._id)}
                             className="text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 p-1.5 mr-1 rounded-lg transition-all active:scale-95"
-                            title="Modifier le pôle d'activité"
+                            title={du("ma49feaf09b41")}
                           >
                             <Edit2 size={14} />
                           </button>
@@ -97,7 +101,7 @@ export default function DeptTable({ departments, onEdit, onDelete }: DeptTablePr
                           <button 
                             onClick={() => onDelete(dept._id)}
                             className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-1.5 rounded-lg transition-all active:scale-95"
-                            title="Supprimer ce département"
+                            title={du("m8e7092283f7c")}
                           >
                             <Trash2 size={14} />
                           </button>
@@ -112,8 +116,8 @@ export default function DeptTable({ departments, onEdit, onDelete }: DeptTablePr
               <tr>
                 <td colSpan={onEdit || onDelete ? 4 : 3} className="px-6 py-12 text-center text-slate-400 font-medium">
                   <div className="flex flex-col items-center justify-center space-y-1">
-                    <span className="text-sm font-semibold text-slate-500">Aucun département configuré</span>
-                    <p className="text-xs text-slate-400">Cliquez sur Nouveau Département pour commencer.</p>
+                    <span className="text-sm font-semibold text-slate-500">{du("m79094ae14073")}</span>
+                    <p className="text-xs text-slate-400">{du("m61ffe56e90d0")}</p>
                   </div>
                 </td>
               </tr>

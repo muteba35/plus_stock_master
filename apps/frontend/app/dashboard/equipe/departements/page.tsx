@@ -1,4 +1,7 @@
 "use client";
+import { dashboardUi as du, dashboardLocale } from "../../../../src/i18n/catalog";
+import { useLanguage as useDashboardLanguage } from "../../../../src/components/LanguageRuntime";
+
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Plus, Search, X, Building, AlertTriangle, FileText, Loader2, CheckCircle2, SlidersHorizontal, FileSpreadsheet, Download } from "lucide-react";
@@ -25,6 +28,7 @@ const backendBaseUrl = process.env.NEXT_PUBLIC_API_URL
   : "https://plus-stock-master.onrender.com/api/departements";
 
 export default function DepartementsPage() {
+  const { ui: du } = useDashboardLanguage();
   // 1. ÉTATS DES DONNÉES
   const [departments, setDepartments] = useState<Department[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -142,7 +146,7 @@ export default function DepartementsPage() {
     return matchesSearch && matchesUsage;
   });
   const exportColumns = ["Departement", "Description", "Employes", "Creation"];
-  const exportRows = filteredDepartments.map((dept) => [dept.nom, dept.description || "", dept.employeeCount || 0, dept.createdAt ? new Date(dept.createdAt).toLocaleDateString("fr-FR") : ""]);
+  const exportRows = filteredDepartments.map((dept) => [dept.nom, dept.description || "", dept.employeeCount || 0, dept.createdAt ? new Date(dept.createdAt).toLocaleDateString(dashboardLocale()) : ""]);
   const exportDepartmentsXlsx = () => exportXlsxWorkbook("departements.xlsx", [{ name: "Departements", columns: exportColumns, rows: exportRows }]);
   const exportDepartmentsPdf = () => exportPdfTable("Departements", exportColumns, exportRows);
 
@@ -250,12 +254,12 @@ export default function DepartementsPage() {
       {/* HEADER */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">Gestion des Départements</h1>
-          <p className="text-xs text-slate-400 font-medium">Configurez les pôles d`activité.</p>
+          <h1 className="text-xl font-bold text-slate-900">{du("m1979fba8aeb8")}</h1>
+          <p className="text-xs text-slate-400 font-medium">{du("maae58935f506")}</p>
         </div>
         
         {/* BOUTON D'AJOUT : Masqué si l'utilisateur n'a pas la permission de créer */}
-        {canCreate && <div className="flex flex-wrap justify-end gap-2"><button onClick={exportDepartmentsPdf} className="flex items-center gap-2 border border-slate-200 bg-white hover:border-indigo-300 text-slate-600 text-xs font-bold px-4 py-2.5 rounded-xl"><FileText size={14} /> PDF</button><button onClick={exportDepartmentsXlsx} className="flex items-center gap-2 border border-slate-200 bg-white hover:border-indigo-300 text-slate-600 text-xs font-bold px-4 py-2.5 rounded-xl"><Download size={14} /> Excel</button><button onClick={() => setIsImportOpen(true)} className="flex items-center gap-2 border border-slate-200 bg-white hover:border-indigo-300 text-slate-600 text-xs font-bold px-4 py-2.5 rounded-xl"><FileSpreadsheet size={14} /> Importer Excel</button><button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-sm active:scale-98"><Plus size={14} /> Nouveau Département</button></div>}
+        {canCreate && <div className="flex flex-wrap justify-end gap-2"><button onClick={exportDepartmentsPdf} className="flex items-center gap-2 border border-slate-200 bg-white hover:border-indigo-300 text-slate-600 text-xs font-bold px-4 py-2.5 rounded-xl"><FileText size={14} /> {du("m1d393b0081b6")}</button><button onClick={exportDepartmentsXlsx} className="flex items-center gap-2 border border-slate-200 bg-white hover:border-indigo-300 text-slate-600 text-xs font-bold px-4 py-2.5 rounded-xl"><Download size={14} /> {du("m48d53635551c")}</button><button onClick={() => setIsImportOpen(true)} className="flex items-center gap-2 border border-slate-200 bg-white hover:border-indigo-300 text-slate-600 text-xs font-bold px-4 py-2.5 rounded-xl"><FileSpreadsheet size={14} /> {du("m9f7aa20c451d")}</button><button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-sm active:scale-98"><Plus size={14} /> {du("m89ee85443942")}</button></div>}
       </div>
 
       {/* BARRE DE RECHERCHE */}
@@ -264,7 +268,7 @@ export default function DepartementsPage() {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
           <input
             type="text"
-            placeholder="Rechercher par nom, description ou effectif..."
+            placeholder={du("m6cf5a47d3df0")}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-12 pr-4 py-2.5 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 font-medium text-slate-800 bg-white transition-all"
@@ -276,7 +280,7 @@ export default function DepartementsPage() {
           className={`h-10 w-10 rounded-xl border flex items-center justify-center transition-colors ${
             isFilterOpen ? "border-indigo-200 bg-indigo-50 text-indigo-600" : "border-slate-200 bg-white text-slate-500 hover:text-indigo-600"
           }`}
-          title="Filtres"
+          title={du("m6e2287796c72")}
         >
           <SlidersHorizontal size={16} />
         </button>
@@ -291,15 +295,15 @@ export default function DepartementsPage() {
               className="absolute right-4 top-[64px] z-30 w-[min(calc(100vw-4rem),320px)] rounded-2xl border border-slate-200 bg-white p-4 shadow-xl"
             >
               <label className="space-y-1.5 block">
-                <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Utilisation</span>
+                <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">{du("m9af799d8b344")}</span>
                 <select
                   value={usageFilter}
                   onChange={(e) => { setUsageFilter(e.target.value); setIsFilterOpen(false); }}
                   className="w-full text-xs font-bold px-3 py-2.5 border border-slate-200 rounded-xl bg-white text-slate-600 focus:outline-none focus:border-indigo-500"
                 >
-                  <option value="all">Tous les departements</option>
-                  <option value="used">Avec employes</option>
-                  <option value="empty">Sans employe</option>
+                  <option value="all">{du("m48fd9001a2da")}</option>
+                  <option value="used">{du("m1336e38ccba8")}</option>
+                  <option value="empty">{du("mb19ac7f5ae04")}</option>
                 </select>
               </label>
             </motion.div>
@@ -310,7 +314,7 @@ export default function DepartementsPage() {
       {/* MESSAGES D'ERREURS SYSTÈME (GLOBAL) */}
       {globalError && (
         <div className="p-4 bg-rose-50 text-rose-600 border border-rose-100 rounded-2xl text-xs font-semibold animate-in fade-in duration-200">
-          {globalError}
+          {du(globalError)}
         </div>
       )}
 
@@ -318,7 +322,7 @@ export default function DepartementsPage() {
       {isLoading ? (
         <div className="flex flex-col items-center justify-center p-12 bg-white rounded-2xl border border-slate-200/80 shadow-sm">
           <Loader2 className="text-indigo-600 animate-spin mb-2" size={24} />
-          <p className="text-xs text-slate-400 font-medium">Récupération des données sécurisées...</p>
+          <p className="text-xs text-slate-400 font-medium">{du("m8af4b1c06dbf")}</p>
         </div>
       ) : (<div><DeptTable departments={paginatedDepartments} onEdit={canEdit ? handleEditInit : undefined} onDelete={canDelete ? handleDeleteInit : undefined} /><TeamPagination page={currentPage} totalItems={filteredDepartments.length} pageSize={pageSize} onPageChange={setPage} /></div>)}
 
@@ -326,7 +330,7 @@ export default function DepartementsPage() {
       {canCreate && (
         <DeptModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={fetchDepartments} />
       )}
-      <TeamCsvImportModal open={isImportOpen} onClose={() => setIsImportOpen(false)} title="Importer des départements" columns={[{ key: "nom", label: "nom", required: true }, { key: "description", label: "description" }]} example={{ nom: "Logistique", description: "Gestion des stocks et livraisons" }} onImport={importDepartments} />
+      <TeamCsvImportModal open={isImportOpen} onClose={() => setIsImportOpen(false)} title={du("m46f6ebae977a")} columns={[{ key: "nom", label: "nom", required: true }, { key: "description", label: "description" }]} example={{ nom: "Logistique", description: "Gestion des stocks et livraisons" }} onImport={importDepartments} />
 
       <ModalPortal>
       {/* MODAL MODIFICATION */}
@@ -344,8 +348,8 @@ export default function DepartementsPage() {
                   <Building size={16} />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Modifier le Département</h3>
-                  <p className="text-[11px] text-slate-400 font-medium mt-0.5">Mettez à jour les informations du pôle.</p>
+                  <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">{du("m0a707adbd8b6")}</h3>
+                  <p className="text-[11px] text-slate-400 font-medium mt-0.5">{du("m750cf5462b8e")}</p>
                 </div>
               </div>
               <button 
@@ -361,20 +365,20 @@ export default function DepartementsPage() {
               <div className="p-6 space-y-4">
                 {actionError && (
                   <div className="p-3 text-xs font-semibold bg-rose-50 text-rose-600 rounded-xl border border-rose-100">
-                    {actionError}
+                    {du(actionError)}
                   </div>
                 )}
 
                 {actionSuccess && (
                   <div className="p-3 text-xs font-semibold bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100 flex items-center gap-2">
                     <CheckCircle2 size={14} className="text-emerald-500" />
-                    {actionSuccess}
+                    {du(actionSuccess)}
                   </div>
                 )}
 
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
-                    <Building size={12} /> Nom du département <span className="text-rose-500">*</span>
+                    <Building size={12} /> {du("mcf8dd1612df8")}{" "}<span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -388,14 +392,13 @@ export default function DepartementsPage() {
 
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
-                    <FileText size={12} /> Description (Optionnel)
-                  </label>
+                    <FileText size={12} /> {du("mf86b5d7e7459")}{" "}</label>
                   <textarea
                     rows={3}
                     disabled={isActionLoading || !!actionSuccess}
                     value={editDescription}
                     onChange={(e) => setEditDescription(e.target.value)}
-                    placeholder="Objectifs ou périmètre..."
+                    placeholder={du("ma4c08f704d8e")}
                     className="w-full text-xs font-medium px-3.5 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 resize-none bg-white text-slate-800 disabled:opacity-60"
                   />
                 </div>
@@ -408,15 +411,14 @@ export default function DepartementsPage() {
                   disabled={isActionLoading || !!actionSuccess}
                   className="px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition-colors disabled:opacity-50"
                 >
-                  Annuler
-                </button>
+                  {du("m46ad3916f6a0")}{" "}</button>
                 <button
                   type="submit"
                   disabled={isActionLoading || !!actionSuccess}
                   className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-2 disabled:bg-indigo-400 shadow-sm"
                 >
                   {isActionLoading && <Loader2 size={12} className="animate-spin" />}
-                  {actionSuccess ? "Mis à jour !" : "Sauvegarder"}
+                  {actionSuccess ? du("mc5e5f7d4a0d7") : du("m400cdf4c4104")}
                 </button>
               </div>
             </form>
@@ -436,40 +438,38 @@ export default function DepartementsPage() {
               <div className="p-2 bg-rose-50 rounded-xl">
                 <AlertTriangle size={20} />
               </div>
-              <h3 className="text-sm font-bold text-slate-900">Confirmer la suppression</h3>
+              <h3 className="text-sm font-bold text-slate-900">{du("meb3b76d2f38a")}</h3>
             </div>
             
             {actionError && (
               <div className="p-3 mb-3 text-xs font-semibold bg-rose-50 text-rose-600 rounded-xl border border-rose-100">
-                {actionError}
+                {du(actionError)}
               </div>
             )}
 
             {actionSuccess && (
               <div className="p-3 mb-3 text-xs font-semibold bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100 flex items-center gap-2">
                 <CheckCircle2 size={14} className="text-emerald-500" />
-                {actionSuccess}
+                {du(actionSuccess)}
               </div>
             )}
 
             <p className="text-xs text-slate-500 font-medium mb-6 leading-relaxed">
-              Êtes-vous sûr de vouloir retirer ce département ? Cette action est irréversible et supprimera le pôle de votre boutique active.
-            </p>
+              {du("m0d856261455f")}{" "}</p>
             <div className="flex justify-end gap-2.5">
               <button 
                 onClick={() => setIsDeleteOpen(false)}
                 disabled={isActionLoading || !!actionSuccess}
                 className="px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-50 rounded-xl border border-slate-200 transition-all disabled:opacity-50"
               >
-                Annuler
-              </button>
+                {du("m46ad3916f6a0")}{" "}</button>
               <button 
                 onClick={handleConfirmDelete}
                 disabled={isActionLoading || !!actionSuccess}
                 className="px-4 py-2 text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-all shadow-sm flex items-center gap-1.5 disabled:opacity-50"
               >
                 {isActionLoading && <Loader2 size={12} className="animate-spin" />}
-                {actionSuccess ? "Supprimé !" : "Supprimer"}
+                {actionSuccess ? du("m0de249889abd") : du("m5e5d0216ce0b")}
               </button>
             </div>
           </div>

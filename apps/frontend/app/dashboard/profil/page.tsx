@@ -1,4 +1,7 @@
 "use client";
+import { dashboardUi as du, dashboardLocale } from "../../../src/i18n/catalog";
+import { useLanguage as useDashboardLanguage } from "../../../src/components/LanguageRuntime";
+
 
 import React, { useState, useEffect, useRef } from "react";
 import { 
@@ -65,6 +68,7 @@ const convertToBase64 = (file: File): Promise<string> => {
 };
 
 export default function ProfilePage() {
+  const { ui: du } = useDashboardLanguage();
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -318,7 +322,7 @@ export default function ProfilePage() {
       <div className="flex items-center justify-center min-h-screen bg-[#f9fafd]">
         <div className="flex flex-col items-center gap-3">
           <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-xs font-semibold text-slate-500">Chargement du profil connecté...</p>
+          <p className="text-xs font-semibold text-slate-500">{du("m2c2ed663f872")}</p>
         </div>
       </div>
     );
@@ -327,8 +331,7 @@ export default function ProfilePage() {
   if (!userData || !editFormData) {
     return (
       <div className="p-6 text-center text-sm font-semibold text-rose-600 bg-rose-50 rounded-2xl border border-rose-200">
-        Impossible de charger les informations de l&apos;utilisateur connecté. Veuillez vous reconnecter.
-      </div>
+        {du("m6b3dbff3a7c9")}{" "}</div>
     );
   }
 
@@ -354,13 +357,13 @@ export default function ProfilePage() {
             {previewUrl ? (
               <img 
                 src={previewUrl} 
-                alt="Aperçu avatar" 
+                alt={du("mc0477f7a6388")}
                 className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-md"
               />
             ) : userData.avatar ? (
               <img 
                 src={userData.avatar} 
-                alt="Avatar" 
+                alt={du("mca8e826d9c2e")}
                 className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-md"
               />
             ) : (
@@ -399,7 +402,7 @@ export default function ProfilePage() {
 
             <div className="flex items-center gap-1.5 text-slate-400 text-xs font-medium pt-1">
               <MapPin size={13} className="text-slate-400" />
-              <span>{userData.city || "Non spécifié"}, République Démocratique du Congo</span>
+              <span>{userData.city || du("m60d89ec5edef")}{du("m932249285f00")}</span>
             </div>
           </div>
         </div>
@@ -426,8 +429,7 @@ export default function ProfilePage() {
                 onClick={handleCancelClick}
                 className="w-full sm:w-auto flex items-center justify-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl border border-rose-200 bg-white text-rose-600 hover:bg-rose-50 transition-all shadow-sm whitespace-nowrap"
               >
-                <X size={13} /> Annuler
-              </button>
+                <X size={13} /> {du("m46ad3916f6a0")}{" "}</button>
             )}
             <button 
               onClick={isEditing ? handleSaveProfile : handleEditClick}
@@ -437,12 +439,10 @@ export default function ProfilePage() {
             >
               {isEditing ? (
                 <>
-                  <Check size={13} /> Enregistrer
-                </                >
+                  <Check size={13} /> {du("m71dc74873e23")}{" "}</                >
               ) : (
                 <>
-                  <Edit2 size={12} /> Éditer
-                </>
+                  <Edit2 size={12} /> {du("ma049b48045c1")}{" "}</>
               )}
             </button>
           </div>
@@ -456,7 +456,7 @@ export default function ProfilePage() {
             ? "bg-emerald-50 border-emerald-200 text-emerald-700" 
             : "bg-rose-50 border-rose-200 text-rose-700"
         }`}>
-          {profileMessage.text}
+          {du(profileMessage.text)}
         </div>
       )}
 
@@ -464,8 +464,8 @@ export default function ProfilePage() {
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
         <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-[#fcfdfe]">
           <div>
-            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Informations Personnelles</h3>
-            <p className="text-[11px] text-slate-400 font-medium">Vos coordonnées de gestion de la plateforme</p>
+            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">{du("m909737927c3c")}</h3>
+            <p className="text-[11px] text-slate-400 font-medium">{du("me5195f062b8b")}</p>
           </div>
           {!isEditing && (
             <button onClick={handleEditClick} className="p-1.5 text-slate-400 hover:text-indigo-600 transition-colors">
@@ -477,8 +477,7 @@ export default function ProfilePage() {
         <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-1.5">
             <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1">
-              <User size={12} /> Prénom
-            </label>
+              <User size={12} /> {du("me325bf8f903f")}{" "}</label>
             {isEditing ? (
               <input 
                 type="text" 
@@ -494,8 +493,7 @@ export default function ProfilePage() {
 
           <div className="space-y-1.5">
             <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1">
-              <User size={12} /> Nom de famille
-            </label>
+              <User size={12} /> {du("m83ed01d19751")}{" "}</label>
             {isEditing ? (
               <input 
                 type="text" 
@@ -511,8 +509,7 @@ export default function ProfilePage() {
 
           <div className="space-y-1.5">
             <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1">
-              <Mail size={12} /> Adresse Email
-            </label>
+              <Mail size={12} /> {du("m74d403cd5973")}{" "}</label>
             {isEditing ? (
               <input 
                 type="email" 
@@ -528,15 +525,14 @@ export default function ProfilePage() {
 
           <div className="space-y-1.5">
             <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1">
-              <Phone size={12} /> Numéro de Téléphone (9 chiffres)
-            </label>
+              <Phone size={12} /> {du("m41d22130fede")}{" "}</label>
             {isEditing ? (
               <input 
                 type="text" 
                 value={editFormData.phone || ""}
                 disabled={!canEditRestrictedProfile}
                 onChange={(e) => setEditFormData({...editFormData, phone: e.target.value})}
-                placeholder="Ex: 812345678"
+                placeholder={du("ma8e2601ff217")}
                 className={`w-full text-xs font-medium px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 ${!canEditRestrictedProfile ? "bg-slate-100 text-slate-400 cursor-not-allowed select-none" : ""}`}
               />
             ) : (
@@ -547,17 +543,16 @@ export default function ProfilePage() {
           {/* CHAMP DÉPARTEMENT EN LECTURE SEULE - SÉCURISÉ PAR CADENAS SI IS_EDITING */}
           <div className="space-y-1.5">
             <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1">
-              <Building size={12} /> Département {isEditing && <Lock size={10} className="text-slate-400 inline" />}
+              <Building size={12} /> {du("m5e4596ae9d83")}{" "}{isEditing && <Lock size={10} className="text-slate-400 inline" />}
             </label>
             <p className="text-xs font-bold text-slate-800 bg-slate-50/50 px-3 py-2 rounded-xl border border-slate-100">
-              {userData.departement || "Non spécifié"}
+              {userData.departement || du("m60d89ec5edef")}
             </p>
           </div>
 
           <div className="space-y-1.5 md:col-span-2">
             <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1">
-              <FileText size={12} /> Biographie / Rôle d&apos;exploitation
-            </label>
+              <FileText size={12} /> {du("mbbc663e63b57")}{" "}</label>
             {isEditing ? (
               <textarea 
                 rows={3}
@@ -577,16 +572,15 @@ export default function ProfilePage() {
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
         <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-[#fcfdfe]">
           <div>
-            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Adresse & Données Fiscales</h3>
-            <p className="text-[11px] text-slate-400 font-medium">Localisation et informations réglementaires de l&apos;entreprise</p>
+            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">{du("m12d6d5606e1d")}</h3>
+            <p className="text-[11px] text-slate-400 font-medium">{du("m9783890fd08b")}</p>
           </div>
         </div>
 
         <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-1.5">
             <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1">
-              <Globe size={12} /> Pays
-            </label>
+              <Globe size={12} /> {du("mfe753ffb9bba")}{" "}</label>
             {isEditing ? (
               <input 
                 type="text" 
@@ -595,14 +589,13 @@ export default function ProfilePage() {
                 className="w-full text-xs font-bold px-3 py-2 border border-slate-200 rounded-xl bg-slate-100 text-slate-400 cursor-not-allowed select-none"
               />
             ) : (
-              <p className="text-xs font-bold text-slate-800 bg-slate-50/50 px-3 py-2 rounded-xl border border-slate-100">République Démocratique du Congo</p>
+              <p className="text-xs font-bold text-slate-800 bg-slate-50/50 px-3 py-2 rounded-xl border border-slate-100">{du("mf08297945164")}</p>
             )}
           </div>
 
           <div className="space-y-1.5">
             <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1">
-              <MapPin size={12} /> Ville / Commune
-            </label>
+              <MapPin size={12} /> {du("m481b0137d5ab")}{" "}</label>
             {isEditing ? (
               <input 
                 type="text" 
@@ -618,7 +611,7 @@ export default function ProfilePage() {
 
           <div className="space-y-1.5">
             <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1">
-              <Hash size={12} /> Code Postal {!canEditTotalProfile && isEditing && <Lock size={10} className="text-slate-400 inline" />}
+              <Hash size={12} /> {du("mf959c2cec155")}{" "}{!canEditTotalProfile && isEditing && <Lock size={10} className="text-slate-400 inline" />}
             </label>
             {isEditing ? (
               <input 
@@ -635,7 +628,7 @@ export default function ProfilePage() {
 
           <div className="space-y-1.5">
             <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1">
-              <Briefcase size={12} /> Numéro National Impôt (TAX ID) {!canEditTotalProfile && isEditing && <Lock size={10} className="text-slate-400 inline" />}
+              <Briefcase size={12} /> {du("m90370b0095fe")}{" "}{!canEditTotalProfile && isEditing && <Lock size={10} className="text-slate-400 inline" />}
             </label>
             {isEditing ? (
               <input 
@@ -655,8 +648,8 @@ export default function ProfilePage() {
       {/* SECTION 4 : SÉCURITÉ & AUTHENTIFICATION */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
         <div className="p-5 border-b border-slate-100 bg-[#fcfdfe]">
-          <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Sécurité & Authentification</h3>
-          <p className="text-[11px] text-slate-400 font-medium">Mettez à jour vos identifiants d&apos;accès régulièrement pour protéger la caisse</p>
+          <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">{du("me70b0aec5894")}</h3>
+          <p className="text-[11px] text-slate-400 font-medium">{du("m530315812aa4")}</p>
         </div>
 
         <form onSubmit={handlePasswordUpdate} className="p-6 space-y-5 layout-form max-w-xl">
@@ -666,14 +659,13 @@ export default function ProfilePage() {
                 ? "bg-emerald-50 border-emerald-200 text-emerald-700" 
                 : "bg-rose-50 border-rose-200 text-rose-700"
             }`}>
-              {passwordMessage.text}
+              {du(passwordMessage.text)}
             </div>
           )}
 
           <div className="space-y-1.5">
             <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1">
-              <Lock size={12} /> Mot de passe actuel
-            </label>
+              <Lock size={12} /> {du("m55f685a23ed5")}{" "}</label>
             <input 
               type="password" 
               value={currentPassword}
@@ -686,8 +678,7 @@ export default function ProfilePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
             <div className="space-y-1.5">
               <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1">
-                <Lock size={12} /> Nouveau mot de passe
-              </label>
+                <Lock size={12} /> {du("ma3d65ca5697a")}{" "}</label>
               <input 
                 type="password" 
                 value={newPassword}
@@ -696,41 +687,35 @@ export default function ProfilePage() {
                 onBlur={() => {
                   if (!newPassword) setIsPasswordFocused(false);
                 }}
-                placeholder="Nouveau mot de passe"
+                placeholder={du("ma3d65ca5697a")}
                 className="w-full text-xs font-medium px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 bg-slate-50/30"
               />
               
               {(isPasswordFocused || newPassword.length > 0) && (
                 <div className="mt-2.5 p-3 bg-slate-50 border border-slate-200/60 rounded-xl space-y-2 transition-all">
-                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Exigences :</p>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">{du("ma361e2790197")}</p>
                   <div className={`flex items-center gap-2 text-xs font-medium ${pwdHasLength ? "text-emerald-600" : "text-rose-500"}`}>
-                    {pwdHasLength ? <Check size={14} /> : <X size={14} />} 8 caractères minimum
-                  </div>
+                    {pwdHasLength ? <Check size={14} /> : <X size={14} />} {du("m54f211b43192")}{" "}</div>
                   <div className={`flex items-center gap-2 text-xs font-medium ${pwdHasUpper ? "text-emerald-600" : "text-rose-500"}`}>
-                    {pwdHasUpper ? <Check size={14} /> : <X size={14} />} 1 majuscule
-                  </div>
+                    {pwdHasUpper ? <Check size={14} /> : <X size={14} />} {du("mffe7847caf33")}{" "}</div>
                   <div className={`flex items-center gap-2 text-xs font-medium ${pwdHasLower ? "text-emerald-600" : "text-rose-500"}`}>
-                    {pwdHasLower ? <Check size={14} /> : <X size={14} />} 1 minuscule
-                  </div>
+                    {pwdHasLower ? <Check size={14} /> : <X size={14} />} {du("m93ca44ce3c2c")}{" "}</div>
                   <div className={`flex items-center gap-2 text-xs font-medium ${pwdHasNumber ? "text-emerald-600" : "text-rose-500"}`}>
-                    {pwdHasNumber ? <Check size={14} /> : <X size={14} />} 1 chiffre
-                  </div>
+                    {pwdHasNumber ? <Check size={14} /> : <X size={14} />} {du("m9950e33c1baa")}{" "}</div>
                   <div className={`flex items-center gap-2 text-xs font-medium ${pwdHasSpecial ? "text-emerald-600" : "text-rose-500"}`}>
-                    {pwdHasSpecial ? <Check size={14} /> : <X size={14} />} 1 caractère spécial (@$!%*?&#-_...)
-                  </div>
+                    {pwdHasSpecial ? <Check size={14} /> : <X size={14} />} {du("m8485b6859d28")}{" "}</div>
                 </div>
               )}
             </div>
 
             <div className="space-y-1.5">
               <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1">
-                <Lock size={12} /> Confirmer le mot de passe
-              </label>
+                <Lock size={12} /> {du("m49094d3ba797")}{" "}</label>
               <input 
                 type="password" 
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Répéter le mot de passe"
+                placeholder={du("m5f8b182af539")}
                 className="w-full text-xs font-medium px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 bg-slate-50/30"
               />
             </div>
@@ -741,8 +726,7 @@ export default function ProfilePage() {
               type="submit"
               className="bg-slate-900 text-white text-xs font-bold px-4 py-2 rounded-xl border border-slate-900 hover:bg-slate-800 shadow-sm transition-all flex items-center gap-1.5"
             >
-              Mettre à jour le mot de passe
-            </button>
+              {du("m22d502689382")}{" "}</button>
           </div>
         </form>
       </div>

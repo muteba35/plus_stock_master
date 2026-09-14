@@ -1,4 +1,7 @@
 "use client";
+import { dashboardUi as du, dashboardLocale } from "../../../../src/i18n/catalog";
+import { useLanguage as useDashboardLanguage } from "../../../../src/components/LanguageRuntime";
+
 
 import { BookOpenCheck, Calculator, FileText, Percent, ReceiptText, TrendingUp } from "lucide-react";
 import { CashHeader } from "../../caisse/components/cashier-ui";
@@ -34,20 +37,21 @@ const formulas = [
 ];
 
 export default function FinanceFormulasPage() {
+  const { ui: du } = useDashboardLanguage();
   return <FinanceShell>
-    <CashHeader title="Formules" subtitle="Glossaire et méthodes de calcul utilisées dans la caisse, les rapports et les finances." />
+    <CashHeader title={du("m99c29285eef8")} subtitle={du("mde03724a3dd4")} />
 
     <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
       {glossary.map((item) => (
         <div key={item.sigle} className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center font-black text-xs">{item.sigle}</div>
+            <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center font-black text-xs">{du(item.sigle)}</div>
             <div>
-              <h2 className="text-sm font-black text-slate-900">{item.name}</h2>
-              <p className="text-[11px] text-slate-400 mt-0.5">Définition</p>
+              <h2 className="text-sm font-black text-slate-900">{du(item.name)}</h2>
+              <p className="text-[11px] text-slate-400 mt-0.5">{du("me209f8b469f1")}</p>
             </div>
           </div>
-          <p className="mt-4 text-xs leading-relaxed text-slate-500">{item.text}</p>
+          <p className="mt-4 text-xs leading-relaxed text-slate-500">{du(item.text)}</p>
         </div>
       ))}
     </section>
@@ -56,8 +60,8 @@ export default function FinanceFormulasPage() {
       <div className="p-5 border-b border-slate-100 flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center"><BookOpenCheck size={18} /></div>
         <div>
-          <h2 className="text-sm font-bold text-slate-900">Formules opérationnelles</h2>
-          <p className="text-[11px] text-slate-400 mt-1">Les calculs affichés dans les tableaux de bord et rapports.</p>
+          <h2 className="text-sm font-bold text-slate-900">{du("mbd6707306be1")}</h2>
+          <p className="text-[11px] text-slate-400 mt-1">{du("mf076cd91d9f3")}</p>
         </div>
       </div>
       <div className="divide-y divide-slate-100">
@@ -66,11 +70,11 @@ export default function FinanceFormulasPage() {
           return <div key={item.title} className="p-5 grid grid-cols-1 md:grid-cols-[220px_1fr] gap-4">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-slate-50 text-slate-500 border border-slate-100 flex items-center justify-center"><Icon size={16} /></div>
-              <h3 className="text-xs font-black uppercase tracking-wider text-slate-800">{item.title}</h3>
+              <h3 className="text-xs font-black uppercase tracking-wider text-slate-800">{du(item.title)}</h3>
             </div>
             <div>
-              <p className="rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-xs font-bold text-indigo-700">{item.formula}</p>
-              <p className="mt-2 text-xs text-slate-500">{item.example}</p>
+              <p className="rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-xs font-bold text-indigo-700">{du(item.formula)}</p>
+              <p className="mt-2 text-xs text-slate-500">{du(item.example)}</p>
             </div>
           </div>;
         })}

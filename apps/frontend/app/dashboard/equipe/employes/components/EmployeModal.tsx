@@ -1,4 +1,7 @@
 "use client";
+import { dashboardUi as du, dashboardLocale } from "../../../../../src/i18n/catalog";
+import { useLanguage as useDashboardLanguage } from "../../../../../src/components/LanguageRuntime";
+
 
 import React, { useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -65,6 +68,7 @@ export default function EmployeModal({
   onBoutiqueChange,
   onCreate,
 }: EmployeModalProps) {
+  const { ui: du } = useDashboardLanguage();
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -263,11 +267,9 @@ export default function EmployeModal({
             <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-[#fcfdfe] shrink-0">
               <div>
                 <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
-                  Nouvel Employe
-                </h3>
+                  {du("mcfb385378ec4")}{" "}</h3>
                 <p className="text-[11px] text-slate-400 font-medium mt-0.5">
-                  Creation d&apos;un profil collaborateur
-                </p>
+                  {du("m95f1e556ac2f")}{" "}</p>
               </div>
               <button
                 type="button"
@@ -283,7 +285,7 @@ export default function EmployeModal({
               <form id="add-employee-form" onSubmit={handleSubmit} className="p-6">
                 {error && (
                   <div className="mb-5 rounded-xl border border-rose-100 bg-rose-50 p-3 text-xs font-semibold text-rose-600">
-                    {error}
+                    {du(error)}
                   </div>
                 )}
 
@@ -293,7 +295,7 @@ export default function EmployeModal({
                     className="w-16 h-16 rounded-full border border-slate-200 bg-slate-50 flex items-center justify-center cursor-pointer overflow-hidden group relative"
                   >
                     {avatarPreview ? (
-                      <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
+                      <img src={avatarPreview} alt={du("mca8e826d9c2e")} className="w-full h-full object-cover" />
                     ) : (
                       <Camera size={20} className="text-slate-300 group-hover:text-slate-500 transition-colors" />
                     )}
@@ -309,20 +311,19 @@ export default function EmployeModal({
                     className="hidden"
                   />
                   <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wide mt-3">
-                    Photo de profil
-                  </p>
+                    {du("m71d25ed9998b")}{" "}</p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <FormInput label="Prenom" name="firstName" icon={User} value={formData.firstName} onChange={handleChange} placeholder="Ex: Junior" disabled={isSubmitting} required />
-                  <FormInput label="Nom de famille" name="lastName" icon={User} value={formData.lastName} onChange={handleChange} placeholder="Ex: Muteba" disabled={isSubmitting} required />
-                  <FormInput label="Adresse Email" name="email" type="email" icon={Mail} value={formData.email} onChange={handleChange} placeholder="junior@shop.com" disabled={isSubmitting} required />
-                  <FormInput label="Numero de Telephone" name="phone" type="tel" icon={Phone} value={formData.phone} onChange={handleChange} placeholder="Ex: 812345678" disabled={isSubmitting} required />
+                  <FormInput label={du("mb7cfa73023b8")} name="firstName" icon={User} value={formData.firstName} onChange={handleChange} placeholder={du("m5a51cd0ba105")} disabled={isSubmitting} required />
+                  <FormInput label={du("m83ed01d19751")} name="lastName" icon={User} value={formData.lastName} onChange={handleChange} placeholder={du("m9776f55b36ae")} disabled={isSubmitting} required />
+                  <FormInput label={du("m74d403cd5973")} name="email" type="email" icon={Mail} value={formData.email} onChange={handleChange} placeholder={du("m028c803ff348")} disabled={isSubmitting} required />
+                  <FormInput label={du("mba8acb429ea7")} name="phone" type="tel" icon={Phone} value={formData.phone} onChange={handleChange} placeholder={du("ma8e2601ff217")} disabled={isSubmitting} required />
 
                   {boutiques.length > 0 && (
                     <div className="space-y-1.5 relative md:col-span-2">
                       <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
-                        <Store size={12} /> Boutique / Site <span className="text-rose-500">*</span>
+                        <Store size={12} /> {du("m72bf09e7456a")}{" "}<span className="text-rose-500">*</span>
                       </label>
                       <div
                         onClick={() => {
@@ -334,7 +335,7 @@ export default function EmployeModal({
                         className="w-full text-xs font-medium px-3 py-2.5 border border-slate-200 rounded-xl focus:outline-none bg-white flex justify-between items-center cursor-pointer select-none hover:border-indigo-500 transition-colors"
                       >
                         <span className={selectedBoutique ? "text-slate-800" : "text-slate-400"}>
-                          {selectedBoutique?.name || "Choisir la boutique de rattachement"}
+                          {selectedBoutique?.name || du("m49ea660609e8")}
                         </span>
                         <ChevronDown size={14} className={`text-slate-400 transition-transform duration-200 ${showBoutiqueDropdown ? "rotate-180" : ""}`} />
                       </div>
@@ -352,7 +353,7 @@ export default function EmployeModal({
                               <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                               <input
                                 type="text"
-                                placeholder="Rechercher une boutique..."
+                                placeholder={du("m3d1020afe653")}
                                 value={boutiqueSearch}
                                 onChange={(e) => setBoutiqueSearch(e.target.value)}
                                 onKeyDown={(e) => { if (e.key === "Enter") e.preventDefault(); }}
@@ -379,8 +380,7 @@ export default function EmployeModal({
                                 })
                               ) : (
                                 <p className="text-[11px] text-slate-400 text-center py-3 font-medium">
-                                  Aucune boutique trouvee
-                                </p>
+                                  {du("m360d4bba3ee1")}{" "}</p>
                               )}
                             </div>
                           </motion.div>
@@ -391,7 +391,7 @@ export default function EmployeModal({
 
                   <div className="space-y-1.5 relative">
                     <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
-                      <ShieldCheck size={12} /> Role d&apos;exploitation <span className="text-rose-500">*</span>
+                      <ShieldCheck size={12} /> {du("m446e19b46fdb")}{" "}<span className="text-rose-500">*</span>
                     </label>
                     <div
                       onClick={() => {
@@ -405,7 +405,7 @@ export default function EmployeModal({
                       }`}
                     >
                       <span className={selectedRole ? "text-slate-800" : "text-slate-400"}>
-                        {isLoadingReferences ? "Chargement des roles..." : selectedRole?.name || "Choisir un role"}
+                        {isLoadingReferences ? du("m7587ee70217b") : selectedRole?.name || du("m2d2af23c3eef")}
                       </span>
                       <ChevronDown size={14} className={`text-slate-400 transition-transform duration-200 ${showRoleDropdown ? "rotate-180" : ""}`} />
                     </div>
@@ -423,7 +423,7 @@ export default function EmployeModal({
                             <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                             <input
                               type="text"
-                              placeholder="Rechercher un role..."
+                              placeholder={du("m81a8d54c9a81")}
                               value={roleSearch}
                               onChange={(e) => setRoleSearch(e.target.value)}
                               onKeyDown={(e) => { if (e.key === "Enter") e.preventDefault(); }}
@@ -454,8 +454,7 @@ export default function EmployeModal({
                               })
                             ) : (
                               <p className="text-[11px] text-slate-400 text-center py-3 font-medium">
-                                Aucun role trouve
-                              </p>
+                                {du("m39110561bebd")}{" "}</p>
                             )}
                           </div>
                         </motion.div>
@@ -465,7 +464,7 @@ export default function EmployeModal({
 
                   <div className="space-y-1.5 relative">
                     <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
-                      <Briefcase size={12} /> Departement <span className="text-rose-500">*</span>
+                      <Briefcase size={12} /> {du("m143873c54316")}{" "}<span className="text-rose-500">*</span>
                     </label>
                     <div
                       onClick={() => {
@@ -479,7 +478,7 @@ export default function EmployeModal({
                       }`}
                     >
                       <span className={selectedDepartment ? "text-slate-800" : "text-slate-400"}>
-                        {isLoadingReferences ? "Chargement des departements..." : selectedDepartment?.name || "Choisir un departement"}
+                        {isLoadingReferences ? du("m6317fa765bc6") : selectedDepartment?.name || du("mc0b978c538bc")}
                       </span>
                       <ChevronDown size={14} className={`text-slate-400 transition-transform duration-200 ${showDeptDropdown ? "rotate-180" : ""}`} />
                     </div>
@@ -497,7 +496,7 @@ export default function EmployeModal({
                             <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                             <input
                               type="text"
-                              placeholder="Rechercher un departement..."
+                              placeholder={du("me1237c68164b")}
                               value={deptSearch}
                               onChange={(e) => setDeptSearch(e.target.value)}
                               onKeyDown={(e) => { if (e.key === "Enter") e.preventDefault(); }}
@@ -528,8 +527,7 @@ export default function EmployeModal({
                               })
                             ) : (
                               <p className="text-[11px] text-slate-400 text-center py-3 font-medium">
-                                Aucun departement trouve
-                              </p>
+                                {du("m449106f562d9")}{" "}</p>
                             )}
                           </div>
                         </motion.div>
@@ -547,8 +545,7 @@ export default function EmployeModal({
                 disabled={isSubmitting}
                 className="px-4 py-2 text-[11px] font-bold text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors disabled:opacity-40"
               >
-                Annuler
-              </button>
+                {du("m46ad3916f6a0")}{" "}</button>
               <button
                 type="submit"
                 form="add-employee-form"
@@ -556,8 +553,7 @@ export default function EmployeModal({
                 className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold rounded-xl transition-colors flex items-center gap-2 disabled:bg-slate-400"
               >
                 {isSubmitting && <Loader2 size={14} className="animate-spin" />}
-                Creer l&apos;employe
-              </button>
+                {du("md95ec2e19dd5")}{" "}</button>
             </div>
           </motion.div>
         </div>
@@ -568,10 +564,11 @@ export default function EmployeModal({
 }
 
 function FormInput({ label, icon: Icon, as = "input", children, rightElement, ...props }: FormInputProps) {
+  const { ui: du } = useDashboardLanguage();
   return (
     <div className="space-y-1.5">
       <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
-        <Icon size={12} /> {label} {props.required && <span className="text-rose-500">*</span>}
+        <Icon size={12} /> {du(label)} {props.required && <span className="text-rose-500">*</span>}
       </label>
 
       <div className="relative">

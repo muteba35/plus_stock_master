@@ -1,4 +1,7 @@
 "use client";
+import { dashboardUi as du, dashboardLocale } from "../../../../src/i18n/catalog";
+import { useLanguage as useDashboardLanguage } from "../../../../src/components/LanguageRuntime";
+
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Download, Eye, FileText, Loader2, RefreshCw, Search, ShieldCheck, X } from "lucide-react";
@@ -31,7 +34,7 @@ const getAuthHeaders = () => {
 };
 
 const formatDate = (value: string) =>
-  new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
+  new Intl.DateTimeFormat(dashboardLocale(), { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
 
 const readable = (value = "") =>
   value
@@ -61,6 +64,7 @@ const severityLabel = (severity: string) => {
 };
 
 export default function AuditPage() {
+  const { ui: du } = useDashboardLanguage();
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -132,15 +136,14 @@ export default function AuditPage() {
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 print:hidden">
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-600 text-[10px] font-black uppercase tracking-wider mb-3">
-            <ShieldCheck size={14} /> Traçabilité
-          </div>
-          <h1 className="text-xl font-bold text-slate-900">Journal d'audit global</h1>
-          <p className="text-xs text-slate-400 font-medium mt-1">Toutes les actions API sont suivies : connexion, consultation, modification, suppression, caisse, inventaire et paramètres.</p>
+            <ShieldCheck size={14} /> {du("med7c367c7382")}{" "}</div>
+          <h1 className="text-xl font-bold text-slate-900">{du("m2df817060403")}</h1>
+          <p className="text-xs text-slate-400 font-medium mt-1">{du("mb70716e8adb7")}</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button onClick={exportCsv} className={secondaryButton}><Download size={14} /> Export Excel</button>
-          <button onClick={() => window.print()} className={secondaryButton}><FileText size={14} /> Export PDF</button>
-          <button onClick={() => void fetchLogs()} className={secondaryButton}><RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Actualiser</button>
+          <button onClick={exportCsv} className={secondaryButton}><Download size={14} /> {du("m2b4cc2c3345b")}</button>
+          <button onClick={() => window.print()} className={secondaryButton}><FileText size={14} /> {du("m7aad9d490352")}</button>
+          <button onClick={() => void fetchLogs()} className={secondaryButton}><RefreshCw size={14} className={loading ? "animate-spin" : ""} /> {du("md7d646faaecb")}</button>
         </div>
       </div>
 
@@ -148,7 +151,7 @@ export default function AuditPage() {
         <div className="p-4 border-b border-slate-100 bg-slate-50/70 grid grid-cols-1 lg:grid-cols-5 gap-3 print:hidden">
           <div className="relative lg:col-span-2">
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="Utilisateur, IP, action, navigateur..." className="w-full h-10 pl-10 pr-3 rounded-xl border border-slate-200 text-xs font-semibold outline-none focus:border-indigo-500" />
+            <input value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder={du("m89d1f4273596")} className="w-full h-10 pl-10 pr-3 rounded-xl border border-slate-200 text-xs font-semibold outline-none focus:border-indigo-500" />
           </div>
           <FilterSelect value={moduleFilter} onChange={(value) => { setModuleFilter(value); setPage(1); }} options={modules} />
           <FilterSelect value={severityFilter} onChange={(value) => { setSeverityFilter(value); setPage(1); }} options={["all", "success", "warning", "danger", "info"]} labels={{ all: "Tous les niveaux", success: "Actions réussies", warning: "À vérifier", danger: "Critiques", info: "Informations" }} />
@@ -158,48 +161,47 @@ export default function AuditPage() {
           </div>
         </div>
 
-        {error && <div className="m-4 p-3 rounded-xl bg-rose-50 text-rose-600 border border-rose-100 text-xs font-bold">{error}</div>}
+        {error && <div className="m-4 p-3 rounded-xl bg-rose-50 text-rose-600 border border-rose-100 text-xs font-bold">{du(error)}</div>}
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs min-w-[980px]">
             <thead className="bg-slate-950 text-white uppercase tracking-wider text-[10px]">
               <tr>
-                <th className="px-4 py-3">Quand</th>
-                <th className="px-4 py-3">Utilisateur</th>
-                <th className="px-4 py-3">Module</th>
-                <th className="px-4 py-3">Action effectuée</th>
-                <th className="px-4 py-3">Connexion</th>
-                <th className="px-4 py-3">Résumé</th>
-                <th className="px-4 py-3 text-right print:hidden">Détails</th>
+                <th className="px-4 py-3">{du("m1214bd64b05e")}</th>
+                <th className="px-4 py-3">{du("m721e5b29abab")}</th>
+                <th className="px-4 py-3">{du("mf148224ae44f")}</th>
+                <th className="px-4 py-3">{du("md540f1101a57")}</th>
+                <th className="px-4 py-3">{du("m61d695041034")}</th>
+                <th className="px-4 py-3">{du("m9d750fae7486")}</th>
+                <th className="px-4 py-3 text-right print:hidden">{du("m17eaee489b09")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {loading && <tr><td colSpan={7} className="px-4 py-16 text-center text-slate-400"><Loader2 className="animate-spin mx-auto mb-2 text-indigo-500" />Chargement...</td></tr>}
-              {!loading && logs.length === 0 && <tr><td colSpan={7} className="px-4 py-16 text-center text-slate-400 font-semibold">Aucune action trouvée.</td></tr>}
+              {loading && <tr><td colSpan={7} className="px-4 py-16 text-center text-slate-400"><Loader2 className="animate-spin mx-auto mb-2 text-indigo-500" />{du("mbc0bbf18ceef")}</td></tr>}
+              {!loading && logs.length === 0 && <tr><td colSpan={7} className="px-4 py-16 text-center text-slate-400 font-semibold">{du("md4b828c1c503")}</td></tr>}
               {!loading && logs.map((log) => (
                 <tr key={log._id} className="hover:bg-slate-50">
                   <td className="px-4 py-3 whitespace-nowrap font-semibold text-slate-500">{formatDate(log.createdAt)}</td>
                   <td className="px-4 py-3">
-                    <p className="font-black text-slate-900">{log.userName || "Utilisateur inconnu"}</p>
-                    <p className="text-[10px] text-slate-400">{log.userEmail || "Email non renseigné"}</p>
+                    <p className="font-black text-slate-900">{log.userName || du("maaa998a9b243")}</p>
+                    <p className="text-[10px] text-slate-400">{log.userEmail || du("m01f87cb59bcb")}</p>
                   </td>
-                  <td className="px-4 py-3 font-black text-indigo-600">{readable(log.module)}</td>
+                  <td className="px-4 py-3 font-black text-indigo-600">{du(readable(log.module))}</td>
                   <td className="px-4 py-3">
-                    <p className="font-black text-slate-800">{readable(log.action)}</p>
-                    <p className="text-[10px] text-slate-400">{log.target || "Cible non renseignée"}</p>
-                  </td>
-                  <td className="px-4 py-3">
-                    <p className="font-bold text-slate-700">{log.ipAddress || "IP non renseignée"}</p>
-                    <p className="text-[10px] text-slate-400">{log.browser || "Navigateur non renseigné"}</p>
+                    <p className="font-black text-slate-800">{du(readable(log.action))}</p>
+                    <p className="text-[10px] text-slate-400">{log.target || du("mb937c76b62e8")}</p>
                   </td>
                   <td className="px-4 py-3">
-                    <span className={"inline-flex mb-1 px-2 py-1 rounded-lg border text-[10px] font-black " + severityClass(log.severity)}>{severityLabel(log.severity)}</span>
+                    <p className="font-bold text-slate-700">{log.ipAddress || du("m640b26e93b07")}</p>
+                    <p className="text-[10px] text-slate-400">{log.browser || du("m99786c246858")}</p>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={"inline-flex mb-1 px-2 py-1 rounded-lg border text-[10px] font-black " + severityClass(log.severity)}>{du(severityLabel(log.severity))}</span>
                     <p className="text-[11px] font-semibold text-slate-500 leading-relaxed">{actionSentence(log)}</p>
                   </td>
                   <td className="px-4 py-3 text-right print:hidden">
                     <button type="button" onClick={() => setSelectedLog(log)} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-[10px] font-black text-slate-600 hover:text-indigo-600 hover:border-indigo-200">
-                      <Eye size={13} /> Voir
-                    </button>
+                      <Eye size={13} /> {du("m4a1e847ec470")}{" "}</button>
                   </td>
                 </tr>
               ))}
@@ -211,12 +213,12 @@ export default function AuditPage() {
 
       {selectedLog && (
         <div className="fixed inset-0 z-[220] flex items-center justify-center p-4 print:hidden">
-          <button type="button" aria-label="Fermer" onClick={() => setSelectedLog(null)} className="absolute inset-0 bg-slate-950/45 backdrop-blur-sm" />
+          <button type="button" aria-label={du("m711e5f2e198d")} onClick={() => setSelectedLog(null)} className="absolute inset-0 bg-slate-950/45 backdrop-blur-sm" />
           <div className="relative z-10 w-full max-w-3xl max-h-[88vh] overflow-hidden bg-white rounded-3xl border border-slate-200 shadow-2xl">
             <div className="p-5 border-b border-slate-100 flex items-start justify-between gap-4 bg-slate-50/80">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-wider text-indigo-600">Détails de l'audit</p>
-                <h2 className="text-lg font-black text-slate-950 mt-1">{readable(selectedLog.action)}</h2>
+                <p className="text-[10px] font-black uppercase tracking-wider text-indigo-600">{du("m41ac658e2340")}</p>
+                <h2 className="text-lg font-black text-slate-950 mt-1">{du(readable(selectedLog.action))}</h2>
                 <p className="text-xs text-slate-500 mt-1">{actionSentence(selectedLog)}</p>
               </div>
               <button type="button" onClick={() => setSelectedLog(null)} className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-white"><X size={18} /></button>
@@ -224,24 +226,24 @@ export default function AuditPage() {
 
             <div className="p-5 overflow-y-auto max-h-[calc(88vh-92px)] space-y-5">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <InfoBox label="Utilisateur" value={selectedLog.userName || "Utilisateur inconnu"} hint={selectedLog.userEmail || "Email non renseigné"} />
-                <InfoBox label="Date et heure" value={formatDate(selectedLog.createdAt)} />
-                <InfoBox label="Adresse IP" value={selectedLog.ipAddress || "IP non renseignée"} />
-                <InfoBox label="Navigateur" value={selectedLog.browser || "Navigateur non renseigné"} />
-                <InfoBox label="Module" value={readable(selectedLog.module)} />
-                <InfoBox label="Élément concerné" value={selectedLog.target || "Non renseigné"} />
+                <InfoBox label={du("m721e5b29abab")} value={selectedLog.userName || "Utilisateur inconnu"} hint={selectedLog.userEmail || "Email non renseigné"} />
+                <InfoBox label={du("m4891cd042a20")} value={formatDate(selectedLog.createdAt)} />
+                <InfoBox label={du("m1d233ecad306")} value={selectedLog.ipAddress || "IP non renseignée"} />
+                <InfoBox label={du("mdb2039f22724")} value={selectedLog.browser || "Navigateur non renseigné"} />
+                <InfoBox label={du("mf148224ae44f")} value={readable(selectedLog.module)} />
+                <InfoBox label={du("m015478cc96aa")} value={selectedLog.target || "Non renseigné"} />
               </div>
 
               <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
                 <div className="px-4 py-3 bg-slate-50 border-b border-slate-100">
-                  <p className="text-xs font-black text-slate-900">Résumé lisible</p>
+                  <p className="text-xs font-black text-slate-900">{du("m52965c0af65d")}</p>
                 </div>
                 <div className="p-4 space-y-3">
                   <p className="text-sm font-bold text-slate-700 leading-relaxed">{actionSentence(selectedLog)}</p>
                   <div className="flex flex-wrap gap-2">
                     {(selectedLog.changedFields || []).length > 0 ? selectedLog.changedFields?.map((field) => (
-                      <span key={field} className="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 text-[10px] font-black">{readable(field)}</span>
-                    )) : <p className="text-xs text-slate-400 font-semibold">Aucun champ précis à afficher pour cette action.</p>}
+                      <span key={field} className="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 text-[10px] font-black">{du(readable(field))}</span>
+                    )) : <p className="text-xs text-slate-400 font-semibold">{du("med3eee3608dd")}</p>}
                   </div>
                 </div>
               </div>
@@ -254,16 +256,18 @@ export default function AuditPage() {
 }
 
 function InfoBox({ label, value, hint }: { label: string; value: string; hint?: string }) {
+  const { ui: du } = useDashboardLanguage();
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4">
-      <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">{label}</p>
+      <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">{du(label)}</p>
       <p className="text-sm font-black text-slate-900 mt-1 break-all">{value}</p>
-      {hint && <p className="text-[10px] font-semibold text-slate-400 mt-1 break-all">{hint}</p>}
+      {hint && <p className="text-[10px] font-semibold text-slate-400 mt-1 break-all">{du(hint)}</p>}
     </div>
   );
 }
 
 function FilterSelect({ value, onChange, options, labels = {} }: { value: string; onChange: (value: string) => void; options: string[]; labels?: Record<string, string> }) {
+  const { ui: du } = useDashboardLanguage();
   return (
     <select value={value} onChange={(event) => onChange(event.target.value)} className="h-10 rounded-xl border border-slate-200 px-3 text-xs font-black outline-none focus:border-indigo-500 bg-white">
       {options.map((option) => <option key={option} value={option}>{labels[option] || (option === "all" ? "Tous" : readable(option))}</option>)}

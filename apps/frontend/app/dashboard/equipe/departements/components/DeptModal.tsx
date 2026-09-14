@@ -1,4 +1,7 @@
 "use client";
+import { dashboardUi as du, dashboardLocale } from "../../../../../src/i18n/catalog";
+import { useLanguage as useDashboardLanguage } from "../../../../../src/components/LanguageRuntime";
+
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -12,6 +15,7 @@ interface DeptModalProps {
 }
 
 export default function DeptModal({ isOpen, onClose, onSuccess }: DeptModalProps) {
+  const { ui: du } = useDashboardLanguage();
   const [formData, setFormData] = useState({
     nom: "",
     description: "",
@@ -105,11 +109,9 @@ export default function DeptModal({ isOpen, onClose, onSuccess }: DeptModalProps
             <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-[#fcfdfe]">
               <div>
                 <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
-                  Nouveau Département
-                </h3>
+                  {du("m89ee85443942")}{" "}</h3>
                 <p className="text-[11px] text-slate-400 font-medium mt-0.5">
-                  Définissez un nouveau pôle d`activité pour l`organisation.
-                </p>
+                  {du("mdf283e2acbf9")}{" "}</p>
               </div>
               <button onClick={handleSafeClose} disabled={isLoading || !!success} className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg transition-colors disabled:opacity-30">
                 <X size={16} />
@@ -119,20 +121,20 @@ export default function DeptModal({ isOpen, onClose, onSuccess }: DeptModalProps
             <form id="add-dept-form" onSubmit={handleSubmit} className="p-6 space-y-5">
               {error && (
                 <div className="p-3 text-xs font-semibold bg-rose-50 text-rose-600 rounded-xl border border-rose-100">
-                  {error}
+                  {du(error)}
                 </div>
               )}
 
               {success && (
                 <div className="p-3 text-xs font-semibold bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100 flex items-center gap-2">
                   <CheckCircle2 size={14} className="text-emerald-500" />
-                  {success}
+                  {du(success)}
                 </div>
               )}
 
               <div className="space-y-1.5">
                 <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
-                  <Building size={12} /> Nom du département <span className="text-rose-500">*</span>
+                  <Building size={12} /> {du("mcf8dd1612df8")}{" "}<span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -141,22 +143,21 @@ export default function DeptModal({ isOpen, onClose, onSuccess }: DeptModalProps
                   disabled={isLoading || !!success}
                   value={formData.nom}
                   onChange={handleChange}
-                  placeholder="Ex: Logistique, Ventes, Comptabilité..."
+                  placeholder={du("m19a26f76cfc4")}
                   className="w-full text-xs font-medium px-3.5 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 transition-all bg-white text-slate-800 disabled:opacity-60"
                 />
               </div>
 
               <div className="space-y-1.5">
                 <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
-                  <FileText size={12} /> Description (Optionnelle)
-                </label>
+                  <FileText size={12} /> {du("m88000a350189")}{" "}</label>
                 <textarea
                   name="description"
                   rows={4}
                   disabled={isLoading || !!success}
                   value={formData.description}
                   onChange={handleChange}
-                  placeholder="Objectifs, périmètre ou détails du pôle d'activité..."
+                  placeholder={du("m62d4f098ddf9")}
                   className="w-full text-xs font-medium px-3.5 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 resize-none bg-white text-slate-800 disabled:opacity-60"
                 />
               </div>
@@ -169,8 +170,7 @@ export default function DeptModal({ isOpen, onClose, onSuccess }: DeptModalProps
                 disabled={isLoading || !!success}
                 className="px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition-colors disabled:opacity-50"
               >
-                Annuler
-              </button>
+                {du("m46ad3916f6a0")}{" "}</button>
               <button
                 type="submit"
                 form="add-dept-form"
@@ -178,7 +178,7 @@ export default function DeptModal({ isOpen, onClose, onSuccess }: DeptModalProps
                 className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-2 disabled:bg-indigo-400 shadow-sm"
               >
                 {isLoading && <Loader2 size={14} className="animate-spin" />}
-                {success ? "Créé !" : "Créer le département"}
+                {success ? du("m759f80e09266") : du("maaeb8666c43e")}
               </button>
             </div>
           </motion.div>

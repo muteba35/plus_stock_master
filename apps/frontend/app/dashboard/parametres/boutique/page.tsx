@@ -1,4 +1,7 @@
 "use client";
+import { dashboardUi as du, dashboardLocale } from "../../../../src/i18n/catalog";
+import { useLanguage as useDashboardLanguage } from "../../../../src/components/LanguageRuntime";
+
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -102,7 +105,7 @@ const printProfessionalTable = (title: string, columns: string[], rows: Array<Ar
   if (!popup) return;
   const header = columns.map((column) => "<th>" + escapeHtml(column) + "</th>").join("");
   const body = rows.map((row) => "<tr>" + row.map((cell) => "<td>" + escapeHtml(cell) + "</td>").join("") + "</tr>").join("");
-  popup.document.write("<!doctype html><html lang='fr'><head><meta charset='utf-8'><title>" + escapeHtml(title) + "</title><style>@page{size:A4 landscape;margin:12mm}body{font-family:Arial,sans-serif;color:#172033;margin:0}h1{font-size:20px;margin:0 0 4px}p{font-size:11px;color:#64748b;margin:0 0 18px}table{width:100%;border-collapse:collapse;font-size:9px}th{background:#f1f5f9;text-align:left;text-transform:uppercase;color:#64748b}th,td{padding:7px;border:1px solid #e2e8f0;vertical-align:top}.footer{margin-top:12px;font-size:9px;color:#94a3b8}</style></head><body><h1>" + escapeHtml(title) + "</h1><p>Export du " + escapeHtml(new Date().toLocaleString("fr-FR")) + "</p><table><thead><tr>" + header + "</tr></thead><tbody>" + body + "</tbody></table><div class='footer'>Movoora - Document genere automatiquement</div><script>window.onload=()=>window.print();</script></body></html>");
+  popup.document.write("<!doctype html><html lang='fr'><head><meta charset='utf-8'><title>" + escapeHtml(title) + "</title><style>@page{size:A4 landscape;margin:12mm}body{font-family:Arial,sans-serif;color:#172033;margin:0}h1{font-size:20px;margin:0 0 4px}p{font-size:11px;color:#64748b;margin:0 0 18px}table{width:100%;border-collapse:collapse;font-size:9px}th{background:#f1f5f9;text-align:left;text-transform:uppercase;color:#64748b}th,td{padding:7px;border:1px solid #e2e8f0;vertical-align:top}.footer{margin-top:12px;font-size:9px;color:#94a3b8}</style></head><body><h1>" + escapeHtml(title) + "</h1><p>" + du("m7289d99c0cec") + " " + escapeHtml(new Date().toLocaleString(dashboardLocale())) + "</p><table><thead><tr>" + header + "</tr></thead><tbody>" + body + "</tbody></table><div class='footer'>" + du("m37009f25b2eb") + "</div><script>window.onload=()=>window.print();</script></body></html>");
   popup.document.close();
 };
 
@@ -110,7 +113,7 @@ const formatDate = (date?: string) => {
   if (!date) return "Non defini";
 
   try {
-    return new Intl.DateTimeFormat("fr-FR", {
+    return new Intl.DateTimeFormat(dashboardLocale(), {
       day: "2-digit",
       month: "short",
       year: "numeric",
@@ -144,6 +147,7 @@ const normalizeExchangeRates = (rates: ExchangeRate[] = []) => {
 };
 
 export default function BoutiquePage() {
+  const { ui: du } = useDashboardLanguage();
   const router = useRouter();
   const [boutiques, setBoutiques] = useState<Boutique[]>([]);
   const [loading, setLoading] = useState(true);
@@ -621,7 +625,7 @@ export default function BoutiquePage() {
               }`}
             >
               {toast.type === "success" ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
-              {toast.message}
+              {du(toast.message)}
             </div>
           </motion.div>
         )}
@@ -629,30 +633,27 @@ export default function BoutiquePage() {
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">Gestion des Boutiques</h1>
+          <h1 className="text-xl font-bold text-slate-900">{du("mcb5f3b9b7ebf")}</h1>
           <p className="text-xs text-slate-400 font-medium">
-            Creez vos points de vente et choisissez la boutique active de votre session.
-          </p>
+            {du("m478d8ca895b5")}{" "}</p>
         </div>
 
         {canCreate && (
           <div className="flex flex-col min-[420px]:flex-row gap-2">
-            <button type="button" onClick={exportBoutiquesPdf} className="flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold px-4 py-2.5 rounded-xl border border-slate-200 transition-all"><FileText size={14} /> PDF</button>
-            <button type="button" onClick={exportBoutiquesXlsx} className="flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold px-4 py-2.5 rounded-xl border border-slate-200 transition-all"><Download size={14} /> Excel</button>
+            <button type="button" onClick={exportBoutiquesPdf} className="flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold px-4 py-2.5 rounded-xl border border-slate-200 transition-all"><FileText size={14} /> {du("m1d393b0081b6")}</button>
+            <button type="button" onClick={exportBoutiquesXlsx} className="flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold px-4 py-2.5 rounded-xl border border-slate-200 transition-all"><Download size={14} /> {du("m48d53635551c")}</button>
             <button
               type="button"
               onClick={() => setIsImportOpen(true)}
               className="flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold px-4 py-2.5 rounded-xl border border-slate-200 transition-all"
             >
-              <FileSpreadsheet size={14} /> Importer Excel
-            </button>
+              <FileSpreadsheet size={14} /> {du("m9f7aa20c451d")}{" "}</button>
             <button
               type="button"
               onClick={handleOpenCreate}
               className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-md shadow-indigo-600/10 active:scale-[0.98]"
             >
-              <Plus size={14} /> Nouvelle boutique
-            </button>
+              <Plus size={14} /> {du("mfa416cd75670")}{" "}</button>
           </div>
         )}
       </div>
@@ -661,10 +662,9 @@ export default function BoutiquePage() {
         <section className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
           <div className="p-5 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div>
-              <h2 className="text-sm font-bold text-slate-900">Devise & taux de change</h2>
+              <h2 className="text-sm font-bold text-slate-900">{du("m7783b1322820")}</h2>
               <p className="text-[11px] text-slate-400 mt-1">
-                La devise de reference consolide la caisse, les factures, les historiques et les futurs rapports.
-              </p>
+                {du("m5f2c445cc9ce")}{" "}</p>
             </div>
             <div className="flex flex-col sm:flex-row gap-2">
               <button
@@ -674,8 +674,7 @@ export default function BoutiquePage() {
                 className="inline-flex items-center justify-center gap-2 border border-indigo-100 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold px-4 py-2.5 rounded-xl disabled:opacity-50"
               >
                 {ratesSyncing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-                Synchroniser
-              </button>
+                {du("me72c2c98b361")}{" "}</button>
               <button
                 type="button"
                 onClick={saveCurrencySettings}
@@ -683,28 +682,26 @@ export default function BoutiquePage() {
                 className="inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl disabled:opacity-50"
               >
                 {ratesSaving && <Loader2 size={14} className="animate-spin" />}
-                Enregistrer
-              </button>
+                {du("m71dc74873e23")}{" "}</button>
             </div>
           </div>
           <div className="p-5 grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)] gap-5">
             <label className="space-y-1.5">
-              <span className="text-[10px] font-bold uppercase text-slate-400">Devise de reference</span>
+              <span className="text-[10px] font-bold uppercase text-slate-400">{du("m470927ca32cc")}</span>
               <select value={referenceCurrency} disabled={!canChangeCurrency} onChange={(event) => setReferenceCurrency(event.target.value)} className="w-full text-xs font-bold px-3 py-2.5 border border-slate-200 rounded-xl bg-white focus:outline-none focus:border-indigo-500 disabled:bg-slate-50 disabled:text-slate-400">
                 {DEVISES.map((devise) => <option key={devise} value={devise}>{devise}</option>)}
               </select>
               <p className="text-[10px] text-slate-400 leading-relaxed">
-                Les ventes multi-devises seront converties vers cette devise au moment de l'encaissement.
-              </p>
+                {du("md03f2b06ddec")}{" "}</p>
               <div className="mt-3 rounded-xl border border-indigo-100 bg-indigo-50/60 p-3">
-                <p className="text-[10px] font-bold uppercase text-indigo-600">TVA incluse</p>
-                <p className="text-[11px] text-slate-500 mt-0.5">Le taux standard de 16% est applique automatiquement aux nouvelles ventes.</p>
+                <p className="text-[10px] font-bold uppercase text-indigo-600">{du("m2c5d6178967b")}</p>
+                <p className="text-[11px] text-slate-500 mt-0.5">{du("mc7563cf7a24b")}</p>
               </div>
             </label>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {exchangeRates.map((rate, index) => (
                 <label key={`${rate.source}-${rate.cible}`} className="space-y-1.5 p-3 rounded-xl border border-slate-100 bg-slate-50/60">
-                  <span className="text-[10px] font-bold uppercase text-slate-400">{rate.source} vers {rate.cible}</span>
+                  <span className="text-[10px] font-bold uppercase text-slate-400">{rate.source} {du("m611071b85e4a")}{" "}{rate.cible}</span>
                   <input
                     type="number"
                     min="0.000001"
@@ -727,7 +724,7 @@ export default function BoutiquePage() {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
             <input
               type="text"
-              placeholder="Rechercher une boutique, un secteur, une devise ou un statut..."
+              placeholder={du("mcfd74685efc4")}
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
               className="w-full pl-12 pr-4 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 font-medium text-slate-800 bg-white"
@@ -739,7 +736,7 @@ export default function BoutiquePage() {
             className={`h-9 w-9 rounded-xl border flex items-center justify-center transition-colors ${
               isFilterOpen ? "border-indigo-200 bg-indigo-50 text-indigo-600" : "border-slate-200 bg-white text-slate-500 hover:text-indigo-600"
             }`}
-            title="Filtres"
+            title={du("m6e2287796c72")}
           >
             <SlidersHorizontal size={16} />
           </button>
@@ -755,29 +752,29 @@ export default function BoutiquePage() {
               >
                 <div className="grid grid-cols-1 gap-3">
                   <label className="space-y-1.5">
-                    <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Secteur</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">{du("m5212aa4d3176")}</span>
                     <select value={sectorFilter} onChange={(event) => { setSectorFilter(event.target.value); setIsFilterOpen(false); }} className="w-full text-xs font-bold px-3 py-2 border border-slate-200 rounded-xl bg-white text-slate-600 focus:outline-none focus:border-indigo-500">
-                      <option value="all">Tous les secteurs</option>
+                      <option value="all">{du("m8b6367846fd3")}</option>
                       {Array.from(new Set(boutiques.map((boutique) => boutique.secteurActivite))).map((sector) => (
-                        <option key={sector} value={sector}>{sector}</option>
+                        <option key={sector} value={sector}>{du(sector)}</option>
                       ))}
                     </select>
                   </label>
                   <label className="space-y-1.5">
-                    <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Devise</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">{du("mc34106379cbb")}</span>
                     <select value={currencyFilter} onChange={(event) => { setCurrencyFilter(event.target.value); setIsFilterOpen(false); }} className="w-full text-xs font-bold px-3 py-2 border border-slate-200 rounded-xl bg-white text-slate-600 focus:outline-none focus:border-indigo-500">
-                      <option value="all">Toutes les devises</option>
+                      <option value="all">{du("m6ba8dc3e1a37")}</option>
                       {Array.from(new Set(boutiques.map((boutique) => boutique.deviseParDefaut))).map((currency) => (
                         <option key={currency} value={currency}>{currency}</option>
                       ))}
                     </select>
                   </label>
                   <label className="space-y-1.5">
-                    <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Statut</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">{du("mdee377cfd8cd")}</span>
                     <select value={statusFilter} onChange={(event) => { setStatusFilter(event.target.value); setIsFilterOpen(false); }} className="w-full text-xs font-bold px-3 py-2 border border-slate-200 rounded-xl bg-white text-slate-600 focus:outline-none focus:border-indigo-500">
-                      <option value="all">Tous les statuts</option>
-                      <option value="active">Active</option>
-                      <option value="inactive">Non active</option>
+                      <option value="all">{du("md2bbf4fe69be")}</option>
+                      <option value="active">{du("m92340695899b")}</option>
+                      <option value="inactive">{du("m814c88c7424b")}</option>
                     </select>
                   </label>
                 </div>
@@ -790,28 +787,28 @@ export default function BoutiquePage() {
           {loading ? (
             <div className="flex flex-col items-center justify-center p-16 gap-3 text-slate-400">
               <Loader2 className="animate-spin text-indigo-500" size={24} />
-              <span className="text-xs font-medium">Chargement de vos boutiques...</span>
+              <span className="text-xs font-medium">{du("me7b07ffffd75")}</span>
             </div>
           ) : !canView ? (
-            <EmptyState title="Acces restreint" message="Vous n'avez pas la permission de consulter les boutiques." />
+            <EmptyState title={du("m6b63e9f066f4")} message={du("m68d046510928")} />
           ) : (
             <table className="w-full text-left text-xs min-w-[850px]">
               <thead className="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider">
                 <tr>
-                  <th className="px-6 py-4">Boutique</th>
-                  <th className="px-6 py-4">Secteur</th>
-                  <th className="px-6 py-4">Devise</th>
-                  <th className="px-6 py-4">Taille</th>
-                  <th className="px-6 py-4">Plan</th>
-                  <th className="px-6 py-4">Statut</th>
-                  <th className="px-6 py-4 text-right">Actions</th>
+                  <th className="px-6 py-4">{du("m2bb88a8007e9")}</th>
+                  <th className="px-6 py-4">{du("m5212aa4d3176")}</th>
+                  <th className="px-6 py-4">{du("mc34106379cbb")}</th>
+                  <th className="px-6 py-4">{du("m77093e0c33ff")}</th>
+                  <th className="px-6 py-4">{du("mfa8ed0bdabdd")}</th>
+                  <th className="px-6 py-4">{du("mdee377cfd8cd")}</th>
+                  <th className="px-6 py-4 text-right">{du("mff8059dc6752")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredBoutiques.length === 0 ? (
                   <tr>
                     <td colSpan={7}>
-                      <EmptyState title="Aucune boutique trouvee" message="Aucune boutique ne correspond a votre recherche." />
+                      <EmptyState title={du("m360d4bba3ee1")} message={du("mcfae89872830")} />
                     </td>
                   </tr>
                 ) : (
@@ -825,7 +822,7 @@ export default function BoutiquePage() {
                           <div>
                             <span className="font-bold text-slate-900 block">{boutique.nom}</span>
                             <span className="text-[10px] text-slate-400 font-semibold">
-                              Creee le {formatDate(boutique.createdAt)}
+                              {du("m397f8e073f15")}{" "}{formatDate(boutique.createdAt)}
                             </span>
                           </div>
                         </div>
@@ -843,7 +840,7 @@ export default function BoutiquePage() {
 
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="bg-slate-100 text-slate-700 px-2 py-1 rounded-md font-bold">
-                          {boutique.plan || "Free"}
+                          {boutique.plan || du("mf411a1fb6275")}
                         </span>
                       </td>
 
@@ -853,7 +850,7 @@ export default function BoutiquePage() {
                             boutique.isActive ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-500"
                           }`}
                         >
-                          {boutique.isActive ? "Active" : "Non active"}
+                          {boutique.isActive ? du("m92340695899b") : du("m814c88c7424b")}
                         </span>
                       </td>
 
@@ -863,7 +860,7 @@ export default function BoutiquePage() {
                             type="button"
                             onClick={() => handleOpenView(boutique)}
                             className="text-slate-400 hover:text-indigo-600 p-1.5 transition-colors"
-                            title="Consulter"
+                            title={du("m2cf9926224a3")}
                           >
                             <Eye size={15} />
                           </button>
@@ -878,7 +875,7 @@ export default function BoutiquePage() {
                                   ? "text-emerald-500 cursor-default"
                                   : "text-slate-400 hover:text-emerald-600"
                               } disabled:opacity-60`}
-                              title={boutique.isActive ? "Boutique active" : "Activer la boutique"}
+                              title={boutique.isActive ? du("m6cc413115662") : du("md8fbca7ed78e")}
                             >
                               {activatingId === boutique.id ? <Loader2 size={15} className="animate-spin" /> : <Power size={15} />}
                             </button>
@@ -889,7 +886,7 @@ export default function BoutiquePage() {
                               type="button"
                               onClick={() => handleOpenEdit(boutique)}
                               className="text-slate-400 hover:text-amber-600 p-1.5 transition-colors"
-                              title="Modifier"
+                              title={du("m42e37604b638")}
                             >
                               <Edit2 size={15} />
                             </button>
@@ -905,7 +902,7 @@ export default function BoutiquePage() {
                                   ? "text-slate-200 cursor-not-allowed"
                                   : "text-slate-400 hover:text-rose-600"
                               }`}
-                              title={boutique.isActive && boutiques.length > 1 ? "Activez une autre boutique avant suppression" : "Supprimer"}
+                              title={boutique.isActive && boutiques.length > 1 ? du("m85a977b4a4bd") : du("m5e5d0216ce0b")}
                             >
                               {deletingId === boutique.id ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
                             </button>
@@ -925,7 +922,7 @@ export default function BoutiquePage() {
       <TeamCsvImportModal
         open={isImportOpen}
         onClose={() => setIsImportOpen(false)}
-        title="Importer des boutiques"
+        title={du("mba9237e0f604")}
         columns={[
           { key: "nom", label: "nom", required: true },
           { key: "secteur", label: "secteur", required: true },
@@ -964,6 +961,7 @@ export default function BoutiquePage() {
 }
 
 function EmptyState({ title, message }: { title: string; message: string }) {
+  const { ui: du } = useDashboardLanguage();
   return (
     <div className="px-6 py-16 text-center text-slate-400 font-medium">
       <motion.div
@@ -974,8 +972,8 @@ function EmptyState({ title, message }: { title: string; message: string }) {
         <div className="p-3 rounded-full bg-slate-50 text-slate-400 border border-slate-100">
           <AlertCircle size={20} />
         </div>
-        <p className="text-xs font-bold text-slate-700">{title}</p>
-        <p className="text-[11px] text-slate-400 font-normal leading-relaxed">{message}</p>
+        <p className="text-xs font-bold text-slate-700">{du(title)}</p>
+        <p className="text-[11px] text-slate-400 font-normal leading-relaxed">{du(message)}</p>
       </motion.div>
     </div>
   );
@@ -1004,6 +1002,7 @@ function DeleteBoutiqueModal({
   onCodeChange: (value: string) => void;
   onRequestCode: () => void;
 }) {
+  const { ui: du } = useDashboardLanguage();
   return (
     <ModalPortal>
       <AnimatePresence>
@@ -1029,8 +1028,8 @@ function DeleteBoutiqueModal({
                   <Trash2 size={16} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-900 text-sm">Supprimer la boutique</h3>
-                  <p className="text-[11px] text-slate-400">Confirmation requise avant suppression.</p>
+                  <h3 className="font-bold text-slate-900 text-sm">{du("mc4e8c1ee36c5")}</h3>
+                  <p className="text-[11px] text-slate-400">{du("md9ec45355c94")}</p>
                 </div>
               </div>
               <button
@@ -1049,20 +1048,20 @@ function DeleteBoutiqueModal({
               </div>
               <div>
                 <p className="text-slate-600 text-sm font-medium">
-                  Etes-vous sur de vouloir supprimer definitivement la boutique{" "}
+                  {du("mc5b3394761c8")}{" "}
                   <span className="font-bold text-slate-900">{boutique.nom}</span> ?
                 </p>
                 <p className="text-slate-400 text-[10px] mt-1 font-medium">
-                  {requiresCode ? "Cette derniere boutique exige un code envoye dans la messagerie du proprietaire." : "Cette action est irreversible. La boutique active ne peut pas etre supprimee."}
+                  {requiresCode ? du("m6101dc560f23") : du("m98360528ebed")}
                 </p>
               </div>
               {requiresCode && (
                 <div className="text-left space-y-2 rounded-xl border border-rose-100 bg-rose-50/60 p-3">
-                  {error && <p className="text-[11px] font-bold text-rose-600">{error}</p>}
+                  {error && <p className="text-[11px] font-bold text-rose-600">{du(error)}</p>}
                   <button type="button" onClick={onRequestCode} disabled={isSendingCode || isDeleting} className="w-full px-3 py-2 rounded-xl bg-white border border-rose-200 text-rose-600 font-black text-[10px] uppercase tracking-wide disabled:opacity-50">
-                    {isSendingCode ? "Envoi en cours..." : "Envoyer le code au proprietaire"}
+                    {isSendingCode ? du("mb8df9e5c9ba1") : du("mc10d21b01175")}
                   </button>
-                  <input value={code} onChange={(event) => onCodeChange(event.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="Code a 6 chiffres" inputMode="numeric" className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-center text-sm font-black tracking-[0.35em] outline-none focus:border-rose-400" />
+                  <input value={code} onChange={(event) => onCodeChange(event.target.value.replace(/\D/g, "").slice(0, 6))} placeholder={du("m00739b905313")} inputMode="numeric" className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-center text-sm font-black tracking-[0.35em] outline-none focus:border-rose-400" />
                 </div>
               )}
             </div>
@@ -1074,8 +1073,7 @@ function DeleteBoutiqueModal({
                 disabled={isDeleting}
                 className="px-4 py-2 hover:bg-slate-200/60 rounded-xl font-bold text-slate-500 text-[11px] transition-colors disabled:opacity-40"
               >
-                Annuler
-              </button>
+                {du("m46ad3916f6a0")}{" "}</button>
               <button
                 type="button"
                 onClick={onConfirm}
@@ -1083,8 +1081,7 @@ function DeleteBoutiqueModal({
                 className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/60 rounded-xl font-bold text-[11px] transition-colors shadow-sm flex items-center gap-2 disabled:opacity-60"
               >
                 {isDeleting && <Loader2 size={12} className="animate-spin" />}
-                Supprimer
-              </button>
+                {du("m5e5d0216ce0b")}{" "}</button>
             </div>
           </motion.div>
         </div>
@@ -1113,6 +1110,7 @@ function BoutiqueModal({
   onClose: () => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
 }) {
+  const { ui: du } = useDashboardLanguage();
   const isView = mode === "view";
   const title = mode === "create" ? "Nouvelle Boutique" : mode === "edit" ? "Modifier la Boutique" : "Detail de la Boutique";
 
@@ -1138,9 +1136,9 @@ function BoutiqueModal({
           >
             <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-[#fcfdfe]">
               <div>
-                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">{title}</h3>
+                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">{du(title)}</h3>
                 <p className="text-[11px] text-slate-400 font-medium mt-0.5">
-                  {isView ? "Consultation du point de vente." : "Configuration du point de vente lie a votre compte."}
+                  {isView ? du("m8db6a5eba742") : du("mbcd46f87e59e")}
                 </p>
               </div>
               <button
@@ -1156,24 +1154,24 @@ function BoutiqueModal({
             <form onSubmit={onSubmit} className="p-6 space-y-5">
               {error && (
                 <div className="rounded-xl border border-rose-100 bg-rose-50 p-3 text-xs font-semibold text-rose-600">
-                  {error}
+                  {du(error)}
                 </div>
               )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <TextInput
-                  label="Nom de la boutique"
+                  label={du("m012915308d96")}
                   name="nom"
                   icon={Store}
                   value={formData.nom}
                   onChange={onChange}
-                  placeholder="Ex: Movoora Kinshasa"
+                  placeholder={du("mc612d0e84cde")}
                   disabled={isSubmitting || isView}
                   required
                 />
 
                 <SelectInput
-                  label="Secteur d'activite"
+                  label={du("m7b8825569080")}
                   name="secteurActivite"
                   icon={Building2}
                   value={formData.secteurActivite}
@@ -1184,7 +1182,7 @@ function BoutiqueModal({
 
                 {mode === "create" && (
                   <SelectInput
-                    label="Devise par défaut"
+                    label={du("m2bf9bce04828")}
                     name="deviseParDefaut"
                     icon={Coins}
                     value={formData.deviseParDefaut}
@@ -1195,7 +1193,7 @@ function BoutiqueModal({
                 )}
 
                 <SelectInput
-                  label="Taille business"
+                  label={du("m36dbdad52c4a")}
                   name="tailleBusiness"
                   icon={Users}
                   value={formData.tailleBusiness}
@@ -1208,8 +1206,8 @@ function BoutiqueModal({
               {!isView && (
                 <div className="p-4 bg-indigo-50/50 border border-indigo-100 rounded-xl text-xs text-indigo-700 font-semibold leading-relaxed">
                   {mode === "create"
-                    ? "Cette boutique deviendra automatiquement la boutique active apres creation."
-                    : "La modification conserve les donnees deja rattachees a cette boutique."}
+                    ? du("m7064df280b20")
+                    : du("ma94e7cbbf119")}
                 </div>
               )}
 
@@ -1220,7 +1218,7 @@ function BoutiqueModal({
                   disabled={isSubmitting}
                   className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors disabled:opacity-40"
                 >
-                  {isView ? "Fermer" : "Annuler"}
+                  {isView ? du("m711e5f2e198d") : du("m46ad3916f6a0")}
                 </button>
                 {!isView && (
                   <button
@@ -1229,7 +1227,7 @@ function BoutiqueModal({
                     className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-2 disabled:bg-slate-400"
                   >
                     {isSubmitting && <Loader2 size={14} className="animate-spin" />}
-                    {mode === "edit" ? "Enregistrer" : "Creer la boutique"}
+                    {mode === "edit" ? du("m71dc74873e23") : du("m83f9ed85946e")}
                   </button>
                 )}
               </div>
@@ -1250,10 +1248,11 @@ function TextInput({
   label: string;
   icon: React.ComponentType<{ size: number; className?: string }>;
 }) {
+  const { ui: du } = useDashboardLanguage();
   return (
     <div className="space-y-1.5">
       <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
-        <Icon size={12} /> {label}
+        <Icon size={12} /> {du(label)}
       </label>
       <input
         {...props}
@@ -1273,10 +1272,11 @@ function SelectInput({
   icon: React.ComponentType<{ size: number; className?: string }>;
   options: string[];
 }) {
+  const { ui: du } = useDashboardLanguage();
   return (
     <div className="space-y-1.5">
       <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
-        <Icon size={12} /> {label}
+        <Icon size={12} /> {du(label)}
       </label>
       <div className="relative">
         <select
@@ -1285,7 +1285,7 @@ function SelectInput({
         >
           {options.map((option) => (
             <option key={option} value={option}>
-              {option}
+              {du(option)}
             </option>
           ))}
         </select>

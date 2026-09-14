@@ -1,11 +1,14 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import {
   getStoredLanguage,
   languageChangeEvent,
   languageStorageKey,
   setStoredLanguage,
+  setDashboardLanguage,
+  dashboardUi,
   translateValue,
   type AppLanguage,
 } from "../i18n/catalog";
@@ -19,6 +22,7 @@ type LanguageContextValue = {
   setLanguage: (language: AppLanguage) => void;
   t: (key: string, params?: Params) => string;
   translate: (value: string) => string;
+  ui: typeof dashboardUi;
 };
 
 const dictionaries = { fr: frCommon, en: enCommon } as const;
@@ -50,6 +54,7 @@ const translateDocument = (language: AppLanguage) => {
   if (!document.body) return;
   document.documentElement.lang = language;
   document.documentElement.dataset.language = language;
+  if (window.location.pathname.startsWith("/dashboard")) return;
 
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
     acceptNode: (node) => {
@@ -102,9 +107,11 @@ export function useLanguage() {
 }
 
 export default function LanguageRuntime({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
   // The server always renders French. Keep the browser's first render identical,
   // then restore the persisted preference once hydration has completed.
   const [language, setLanguageState] = useState<AppLanguage>("fr");
+  setDashboardLanguage(language);
   const setLanguage = useCallback((next: AppLanguage) => {
     setLanguageState(next);
     setStoredLanguage(next);
@@ -129,6 +136,9 @@ export default function LanguageRuntime({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    document.documentElement.lang = language;
+    document.documentElement.dataset.language = language;
+    if (pathname?.startsWith("/dashboard")) return;
     let frame = 0;
     const schedule = () => {
       window.cancelAnimationFrame(frame);
@@ -147,9 +157,10 @@ export default function LanguageRuntime({ children }: { children: ReactNode }) {
       window.cancelAnimationFrame(frame);
       observer.disconnect();
     };
-  }, [language]);
+  }, [language, pathname]);
 
   const translate = useCallback((value: string) => translateValue(value, language), [language]);
+  const ui: typeof dashboardUi = useCallback((value, params) => dashboardUi(value, params, language), [language]);
   const t = useCallback((key: string, params?: Params) => {
     const value = getByPath(dictionaries[language], key) ?? getByPath(dictionaries.fr, key) ?? key;
     return interpolate(value, params);
@@ -160,7 +171,8 @@ export default function LanguageRuntime({ children }: { children: ReactNode }) {
     setLanguage,
     t,
     translate,
-  }), [language, setLanguage, t, translate]);
+    ui,
+  }), [language, setLanguage, t, translate, ui]);
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 }

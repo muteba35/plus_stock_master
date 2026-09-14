@@ -1,4 +1,7 @@
 "use client";
+import { dashboardUi as du, dashboardLocale } from "../../../../src/i18n/catalog";
+import { useLanguage as useDashboardLanguage } from "../../../../src/components/LanguageRuntime";
+
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { AlertCircle, ArrowDownLeft, CheckCircle2, Download, Eye, FileText, Loader2, Plus, Printer, RotateCcw, WalletCards, XCircle } from "lucide-react";
@@ -12,7 +15,7 @@ const stripHtml = (value: string) => value.replace(/[<>]/g, "");
 const compactMoney = (value: number, devise: string) => {
   const amount = Number(value || 0);
   if (Math.abs(amount) < 1000000) return formatMoney(amount, devise);
-  const label = new Intl.NumberFormat("fr-FR", { notation: "compact", maximumFractionDigits: 2 }).format(amount);
+  const label = new Intl.NumberFormat(dashboardLocale(), { notation: "compact", maximumFractionDigits: 2 }).format(amount);
   return `${label} ${devise.replace(/.*\\((.*)\\).*/, "$1")}`;
 };
 const downloadBlob = (content: string, filename: string, type: string) => {
@@ -26,7 +29,7 @@ const downloadBlob = (content: string, filename: string, type: string) => {
 const exportPdf = (title: string, html: string) => {
   const printWindow = window.open("", "_blank", "width=1100,height=760");
   if (!printWindow) return;
-  printWindow.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${stripHtml(title)}</title><style>@page{size:A4 landscape;margin:12mm}body{font-family:Arial,sans-serif;color:#172033;margin:0}h1{font-size:20px;margin:0 0 4px}p{font-size:11px;color:#64748b;margin:0 0 18px}table{width:100%;border-collapse:collapse;font-size:9px}th{background:#f1f5f9;text-align:left;text-transform:uppercase;color:#64748b}th,td{padding:7px;border:1px solid #e2e8f0;vertical-align:top}.total{font-weight:800}.footer{margin-top:12px;font-size:9px;color:#94a3b8}</style></head><body><h1>${stripHtml(title)}</h1><p>Export du ${new Date().toLocaleString("fr-FR")}</p>${html}<div class="footer">Movoora · Document généré automatiquement</div><script>window.onload=()=>{window.print();}</script></body></html>`);
+  printWindow.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${stripHtml(title)}</title><style>@page{size:A4 landscape;margin:12mm}body{font-family:Arial,sans-serif;color:#172033;margin:0}h1{font-size:20px;margin:0 0 4px}p{font-size:11px;color:#64748b;margin:0 0 18px}table{width:100%;border-collapse:collapse;font-size:9px}th{background:#f1f5f9;text-align:left;text-transform:uppercase;color:#64748b}th,td{padding:7px;border:1px solid #e2e8f0;vertical-align:top}.total{font-weight:800}.footer{margin-top:12px;font-size:9px;color:#94a3b8}</style></head><body><h1>${stripHtml(title)}</h1><p>${du("m7289d99c0cec")} ${new Date().toLocaleString(dashboardLocale())}</p>${html}<div class="footer">${du("me4461ff35f0d")}</div><script>window.onload=()=>{window.print();}</script></body></html>`);
   printWindow.document.close();
 };
 
@@ -109,6 +112,7 @@ const statusLabel = (status: string) => {
 };
 
 export default function CustomerReturnsPage() {
+  const { ui: du } = useDashboardLanguage();
   const [returnsData, setReturnsData] = useState<ReturnItem[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
   const [search, setSearch] = useState("");
@@ -169,9 +173,9 @@ export default function CustomerReturnsPage() {
   const exchanges = filtered.filter((item) => item.typeRetour === "ECHANGE").length;
   const returnCurrency = validReturns[0]?.deviseReference || validReturns[0]?.devise || getActiveBoutiqueCurrency();
   const totalReturned = validReturns.reduce((sum, item) => sum + Number(item.montantTotalTTC || 0), 0);
-  const returnsRowsHtml = (items: ReturnItem[]) => `<table><thead><tr><th>Retour</th><th>Vente</th><th>Client</th><th>Type</th><th>Montant</th><th>Statut</th></tr></thead><tbody>${items.map((item) => `<tr><td>${item.reference}</td><td>${item.venteReference}</td><td>${item.clientNom}</td><td>${typeLabel(item.typeRetour)}</td><td class="total">${formatMoney(item.montantTotalTTC, item.deviseReference || item.devise || returnCurrency)}</td><td>${statusLabel(item.statut)}</td></tr>`).join("")}</tbody></table>`;
+  const returnsRowsHtml = (items: ReturnItem[]) => `<table><thead><tr><th>${du("mef23a5940244")}</th><th>${du("mee19f8d8fffd")}</th><th>${du("m0c77fe09ab33")}</th><th>${du("mbaaddf70fb5d")}</th><th>${du("m947cc07e2b3e")}</th><th>${du("mdee377cfd8cd")}</th></tr></thead><tbody>${items.map((item) => `<tr><td>${item.reference}</td><td>${item.venteReference}</td><td>${item.clientNom}</td><td>${typeLabel(item.typeRetour)}</td><td class="total">${formatMoney(item.montantTotalTTC, item.deviseReference || item.devise || returnCurrency)}</td><td>${statusLabel(item.statut)}</td></tr>`).join("")}</tbody></table>`;
   const exportCsv = () => exportXlsxWorkbook("retours-clients.xlsx", [{ name: "Retours clients", columns: ["Retour", "Vente", "Client", "Type", "Montant", "Statut"], rows: filtered.map((item) => [item.reference, item.venteReference, item.clientNom, typeLabel(item.typeRetour), item.montantTotalTTC, statusLabel(item.statut)]) }]);
-  const exportWord = () => downloadBlob(`<html><body><h1>Retours clients</h1>${returnsRowsHtml(filtered)}</body></html>`, "retours-clients.doc", "application/msword;charset=utf-8");
+  const exportWord = () => downloadBlob(`<html><body><h1>${du("me44b386d4c1e")}</h1>${returnsRowsHtml(filtered)}</body></html>`, "retours-clients.doc", "application/msword;charset=utf-8");
   const exportCurrentPdf = () => exportPdf("Retours clients", returnsRowsHtml(filtered));
 
   const openCreateModal = () => {
@@ -227,37 +231,36 @@ export default function CustomerReturnsPage() {
   return (
     <div className="space-y-5 bg-[#f9fafd] p-3 sm:p-6 rounded-2xl sm:rounded-3xl min-h-screen text-slate-800">
       <CashHeader
-        title="Retours clients"
-        subtitle="Traitez les remboursements, échanges et retours après vente."
+        title={du("me44b386d4c1e")}
+        subtitle={du("m686404ba99aa")}
         action={
-          <div className="flex flex-wrap gap-2">{canExportReturns && <><button onClick={exportCsv} disabled={filtered.length === 0} className={secondaryButton}><Download size={14} /> Excel</button><button onClick={exportWord} disabled={filtered.length === 0} className={secondaryButton}><FileText size={14} /> Word</button><button onClick={exportCurrentPdf} disabled={filtered.length === 0} className={secondaryButton}><Printer size={14} /> PDF</button></>}{canCreateReturn && <button onClick={openCreateModal} className={primaryButton}>
+          <div className="flex flex-wrap gap-2">{canExportReturns && <><button onClick={exportCsv} disabled={filtered.length === 0} className={secondaryButton}><Download size={14} /> {du("m48d53635551c")}</button><button onClick={exportWord} disabled={filtered.length === 0} className={secondaryButton}><FileText size={14} /> {du("m3a2860ece5a4")}</button><button onClick={exportCurrentPdf} disabled={filtered.length === 0} className={secondaryButton}><Printer size={14} /> {du("m1d393b0081b6")}</button></>}{canCreateReturn && <button onClick={openCreateModal} className={primaryButton}>
             <Plus size={15} />
-            Nouveau retour
-          </button>}</div>
+            {du("m55b74cb23ae1")}{" "}</button>}</div>
         }
       />
 
       {(error || success) && (
         <div className={`p-3 rounded-xl border text-xs font-bold flex items-center gap-2 ${error ? "bg-rose-50 text-rose-600 border-rose-100" : "bg-emerald-50 text-emerald-600 border-emerald-100"}`}>
           {error ? <AlertCircle size={15} /> : <CheckCircle2 size={15} />}
-          {error || success}
+          {error || du(success)}
         </div>
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <CashMetric label="Retours affichés" value={`${filtered.length}`} detail="Selon les filtres" icon={RotateCcw} />
-        <CashMetric label="Montant retourné" value={compactMoney(totalReturned, returnCurrency)} detail={`Retours validés en ${returnCurrency}`} icon={WalletCards} tone="emerald" onInspect={() => setMetricOpen(true)} />
-        <CashMetric label="Échanges" value={`${exchanges}`} detail="Compensations produit" icon={ArrowDownLeft} tone="amber" />
-        <CashMetric label="Refusés" value={`${filtered.filter((item) => item.statut === "REFUSE").length}`} detail="Demandes rejetées" icon={XCircle} tone="rose" />
+        <CashMetric label={du("m894cd3022f00")} value={`${filtered.length}`} detail={du("me20d6c1054d0")} icon={RotateCcw} />
+        <CashMetric label={du("m6d83e3bc7ed4")} value={compactMoney(totalReturned, returnCurrency)} detail={du("md23a62cbdcff", {p0: returnCurrency})} icon={WalletCards} tone="emerald" onInspect={() => setMetricOpen(true)} />
+        <CashMetric label={du("m2c1017935891")} value={`${exchanges}`} detail={du("m744b507b5994")} icon={ArrowDownLeft} tone="amber" />
+        <CashMetric label={du("mb3fd626a7932")} value={`${filtered.filter((item) => item.statut === "REFUSE").length}`} detail={du("m7efd102601c5")} icon={XCircle} tone="rose" />
       </div>
 
       <section className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
         <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-3">
-          <CashSearch value={search} onChange={setSearch} placeholder="Rechercher un retour, une vente, une facture, un client..." />
+          <CashSearch value={search} onChange={setSearch} placeholder={du("m1ca80e4e972c")} />
           <select value={status} onChange={(event) => setStatus(event.target.value)} className={`${fieldClass} sm:w-48`}>
-            <option value="Tous">Tous les statuts</option>
-            <option value="VALIDE">Validés</option>
-            <option value="REFUSE">Refusés</option>
+            <option value="Tous">{du("md2bbf4fe69be")}</option>
+            <option value="VALIDE">{du("mc89377ea81db")}</option>
+            <option value="REFUSE">{du("mb3fd626a7932")}</option>
           </select>
         </div>
 
@@ -265,29 +268,27 @@ export default function CustomerReturnsPage() {
           {loading ? (
             <div className="p-12 flex flex-col items-center gap-3 text-slate-400 text-xs font-bold">
               <Loader2 className="animate-spin text-indigo-600" size={24} />
-              Chargement des retours clients...
-            </div>
+              {du("m8a073efae0db")}{" "}</div>
           ) : (
             <table className="w-full text-left text-xs min-w-[960px]">
               <thead className="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider">
                 <tr>
-                  <th className="px-6 py-4">Retour</th>
-                  <th className="px-6 py-4">Vente</th>
-                  <th className="px-6 py-4">Client</th>
-                  <th className="px-6 py-4">Produit</th>
-                  <th className="px-6 py-4">Type</th>
-                  <th className="px-6 py-4">Montant</th>
-                  <th className="px-6 py-4">Stock</th>
-                  <th className="px-6 py-4">Statut</th>
-                  <th className="px-6 py-4 text-right">Actions</th>
+                  <th className="px-6 py-4">{du("mef23a5940244")}</th>
+                  <th className="px-6 py-4">{du("mee19f8d8fffd")}</th>
+                  <th className="px-6 py-4">{du("m0c77fe09ab33")}</th>
+                  <th className="px-6 py-4">{du("ma0d3db2f0803")}</th>
+                  <th className="px-6 py-4">{du("mbaaddf70fb5d")}</th>
+                  <th className="px-6 py-4">{du("m947cc07e2b3e")}</th>
+                  <th className="px-6 py-4">{du("md5cade7ef319")}</th>
+                  <th className="px-6 py-4">{du("mdee377cfd8cd")}</th>
+                  <th className="px-6 py-4 text-right">{du("mff8059dc6752")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {visibleReturns.length === 0 ? (
                   <tr>
                     <td colSpan={9} className="px-6 py-14 text-center text-slate-400 font-medium">
-                      Aucun retour client trouvé.
-                    </td>
+                      {du("m39aae9093e4f")}{" "}</td>
                   </tr>
                 ) : (
                   visibleReturns.map((item) => {
@@ -296,7 +297,7 @@ export default function CustomerReturnsPage() {
                       <tr key={item._id} className="hover:bg-slate-50/60">
                         <td className="px-6 py-4">
                           <p className="font-bold text-slate-900">{item.reference}</p>
-                          <p className="text-[10px] text-slate-400">{new Date(item.createdAt).toLocaleDateString("fr-FR")}</p>
+                          <p className="text-[10px] text-slate-400">{new Date(item.createdAt).toLocaleDateString(dashboardLocale())}</p>
                         </td>
                         <td className="px-6 py-4 text-slate-500">
                           <p>{item.venteReference}</p>
@@ -305,18 +306,18 @@ export default function CustomerReturnsPage() {
                         <td className="px-6 py-4">{item.clientNom}</td>
                         <td className="px-6 py-4">
                           <p className="font-bold text-slate-800">{firstLine?.nomProduit || "-"}</p>
-                          <p className="text-[10px] text-slate-400">Qté {firstLine?.quantite || 0}</p>
+                          <p className="text-[10px] text-slate-400">{du("m3849f9d2a8fa")}{" "}{firstLine?.quantite || 0}</p>
                         </td>
-                        <td className="px-6 py-4">{typeLabel(item.typeRetour)}</td>
+                        <td className="px-6 py-4">{du(typeLabel(item.typeRetour))}</td>
                         <td className="px-6 py-4 font-black">{formatMoney(item.montantTotalTTC, item.deviseReference || item.devise || returnCurrency)}</td>
                         <td className="px-6 py-4">
                           <span className={`inline-flex whitespace-nowrap px-2 py-1 rounded-md text-[10px] font-bold ${firstLine?.remiseEnStock ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
-                            {firstLine?.remiseEnStock ? "Remis en stock" : "Non remis"}
+                            {firstLine?.remiseEnStock ? du("mb16201df7a1b") : du("mba492cd41aed")}
                           </span>
                         </td>
                         <td className="px-6 py-4"><CashBadge status={statusLabel(item.statut)} /></td>
                         <td className="px-6 py-4 text-right">
-                          <button onClick={() => setSelectedReturn(item)} className="p-1.5 text-slate-400 hover:text-indigo-600" title="Consulter">
+                          <button onClick={() => setSelectedReturn(item)} className="p-1.5 text-slate-400 hover:text-indigo-600" title={du("m2cf9926224a3")}>
                             <Eye size={15} />
                           </button>
                         </td>
@@ -333,30 +334,29 @@ export default function CustomerReturnsPage() {
 
       <CashModal
         open={modalOpen}
-        title="Nouveau retour"
-        subtitle="Sélectionnez la vente et le produit concerné."
+        title={du("m55b74cb23ae1")}
+        subtitle={du("m9fe044c77e38")}
         onClose={() => setModalOpen(false)}
         footer={
           <>
-            <button onClick={() => setModalOpen(false)} className={secondaryButton}>Annuler</button>
+            <button onClick={() => setModalOpen(false)} className={secondaryButton}>{du("m46ad3916f6a0")}</button>
             <button type="submit" form="return-form" disabled={saving || !form.venteId || !form.produitId} className={primaryButton}>
               {saving ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
-              Enregistrer
-            </button>
+              {du("m71dc74873e23")}{" "}</button>
           </>
         }
       >
         {modalError && (
           <div className="mb-4 p-3 rounded-xl border border-rose-100 bg-rose-50 text-rose-600 text-xs font-bold flex items-start gap-2">
             <AlertCircle size={15} className="shrink-0 mt-0.5" />
-            <span>{modalError}</span>
+            <span>{du(modalError)}</span>
           </div>
         )}
         <form id="return-form" onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <label className="space-y-1.5 sm:col-span-2">
-            <span className="text-[10px] font-bold uppercase text-slate-400">Vente concernée <span className="text-rose-500">*</span></span>
+            <span className="text-[10px] font-bold uppercase text-slate-400">{du("m708b1e76afa1")}{" "}<span className="text-rose-500">*</span></span>
             <select value={form.venteId} onChange={(event) => handleSaleChange(event.target.value)} className={fieldClass} required>
-              <option value="">Sélectionner une vente</option>
+              <option value="">{du("md56bccdc60d5")}</option>
               {sales.map((sale) => (
                 <option key={sale._id} value={sale._id}>
                   {sale.reference} · {sale.clientNom} · {formatMoney(sale.totalTTC, sale.devise)}
@@ -366,19 +366,19 @@ export default function CustomerReturnsPage() {
           </label>
 
           <label className="space-y-1.5">
-            <span className="text-[10px] font-bold uppercase text-slate-400">Produit <span className="text-rose-500">*</span></span>
+            <span className="text-[10px] font-bold uppercase text-slate-400">{du("ma0d3db2f0803")}{" "}<span className="text-rose-500">*</span></span>
             <select value={form.produitId} onChange={(event) => setForm((current) => ({ ...current, produitId: event.target.value, quantite: 1 }))} className={fieldClass} required disabled={!selectedSale}>
-              <option value="">Sélectionner un produit</option>
+              <option value="">{du("m30b710bc734b")}</option>
               {selectedSale?.lignes.map((line) => (
                 <option key={line.produitId} value={line.produitId}>
-                  {line.nomProduit} · vendu {line.quantite}
+                  {line.nomProduit} {du("m0c48fc1e3fe8")}{" "}{line.quantite}
                 </option>
               ))}
             </select>
           </label>
 
           <label className="space-y-1.5">
-            <span className="text-[10px] font-bold uppercase text-slate-400">Quantité <span className="text-rose-500">*</span></span>
+            <span className="text-[10px] font-bold uppercase text-slate-400">{du("ma258a8ef030a")}{" "}<span className="text-rose-500">*</span></span>
             <input
               type="number"
               min="1"
@@ -391,35 +391,35 @@ export default function CustomerReturnsPage() {
           </label>
 
           <label className="space-y-1.5">
-            <span className="text-[10px] font-bold uppercase text-slate-400">Compensation <span className="text-rose-500">*</span></span>
+            <span className="text-[10px] font-bold uppercase text-slate-400">{du("me1f27044cd25")}{" "}<span className="text-rose-500">*</span></span>
             <select value={form.typeRetour} onChange={(event) => setForm((current) => ({ ...current, typeRetour: event.target.value }))} className={fieldClass}>
-              <option value="REMBOURSEMENT">Remboursement</option>
-              <option value="ECHANGE">Échange</option>
-              <option value="AVOIR">Avoir client</option>
+              <option value="REMBOURSEMENT">{du("m1d2bff7fbeda")}</option>
+              <option value="ECHANGE">{du("ma347c8575d1d")}</option>
+              <option value="AVOIR">{du("medca159c60a9")}</option>
             </select>
           </label>
 
           <label className="space-y-1.5">
-            <span className="text-[10px] font-bold uppercase text-slate-400">Stock</span>
+            <span className="text-[10px] font-bold uppercase text-slate-400">{du("md5cade7ef319")}</span>
             <select value={form.remiseEnStock ? "yes" : "no"} onChange={(event) => setForm((current) => ({ ...current, remiseEnStock: event.target.value === "yes" }))} className={fieldClass}>
-              <option value="yes">Remettre en stock</option>
-              <option value="no">Ne pas remettre en stock</option>
+              <option value="yes">{du("m86a6fdde1bec")}</option>
+              <option value="no">{du("m708a41b07bea")}</option>
             </select>
           </label>
 
           {selectedLine && (
             <div className="sm:col-span-2 p-3 rounded-xl bg-indigo-50 border border-indigo-100 text-xs text-indigo-700 font-bold">
-              Montant estimé : {formatMoney((Number(selectedLine.totalTTC || 0) / Number(selectedLine.quantite || 1)) * Number(form.quantite || 0), selectedSale?.devise)}
+              {du("m9cfe24500caf")}{" "}{formatMoney((Number(selectedLine.totalTTC || 0) / Number(selectedLine.quantite || 1)) * Number(form.quantite || 0), selectedSale?.devise)}
             </div>
           )}
 
           <label className="space-y-1.5 sm:col-span-2">
-            <span className="text-[10px] font-bold uppercase text-slate-400">Motif <span className="text-rose-500">*</span></span>
+            <span className="text-[10px] font-bold uppercase text-slate-400">{du("mc89ac8f0d41a")}{" "}<span className="text-rose-500">*</span></span>
             <textarea
               value={form.motif}
               onChange={(event) => setForm((current) => ({ ...current, motif: event.target.value }))}
               className={`${fieldClass} h-24 py-3 resize-none`}
-              placeholder="Exemple : produit défectueux, erreur de référence, échange demandé..."
+              placeholder={du("m03784fe06b19")}
               required
             />
           </label>
@@ -428,33 +428,33 @@ export default function CustomerReturnsPage() {
 
       <CashModal
         open={Boolean(selectedReturn)}
-        title="Détail du retour"
+        title={du("m6226f0c80734")}
         subtitle={selectedReturn?.reference || ""}
         onClose={() => setSelectedReturn(null)}
-        footer={<button onClick={() => setSelectedReturn(null)} className={secondaryButton}>Fermer</button>}
+        footer={<button onClick={() => setSelectedReturn(null)} className={secondaryButton}>{du("m711e5f2e198d")}</button>}
       >
         {selectedReturn && (
           <div className="space-y-3 text-xs">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="p-3 bg-slate-50 rounded-xl"><span className="text-slate-400 block">Vente</span><strong>{selectedReturn.venteReference}</strong></div>
-              <div className="p-3 bg-slate-50 rounded-xl"><span className="text-slate-400 block">Facture</span><strong>{selectedReturn.factureReference}</strong></div>
-              <div className="p-3 bg-slate-50 rounded-xl"><span className="text-slate-400 block">Client</span><strong>{selectedReturn.clientNom}</strong></div>
-              <div className="p-3 bg-slate-50 rounded-xl"><span className="text-slate-400 block">Montant</span><strong>{formatMoney(selectedReturn.montantTotalTTC, selectedReturn.deviseReference || selectedReturn.devise || returnCurrency)}</strong></div>
+              <div className="p-3 bg-slate-50 rounded-xl"><span className="text-slate-400 block">{du("mee19f8d8fffd")}</span><strong>{selectedReturn.venteReference}</strong></div>
+              <div className="p-3 bg-slate-50 rounded-xl"><span className="text-slate-400 block">{du("m7ba96f08a0bf")}</span><strong>{selectedReturn.factureReference}</strong></div>
+              <div className="p-3 bg-slate-50 rounded-xl"><span className="text-slate-400 block">{du("m0c77fe09ab33")}</span><strong>{selectedReturn.clientNom}</strong></div>
+              <div className="p-3 bg-slate-50 rounded-xl"><span className="text-slate-400 block">{du("m947cc07e2b3e")}</span><strong>{formatMoney(selectedReturn.montantTotalTTC, selectedReturn.deviseReference || selectedReturn.devise || returnCurrency)}</strong></div>
             </div>
             <div className="p-3 bg-slate-50 rounded-xl">
-              <span className="text-slate-400 block mb-2">Produits retournés</span>
+              <span className="text-slate-400 block mb-2">{du("m62232ba19bf5")}</span>
               {selectedReturn.lignes.map((line) => (
                 <div key={line.produitId} className="flex justify-between gap-3 py-1">
                   <strong>{line.nomProduit}</strong>
-                  <span>Qté {line.quantite}</span>
+                  <span>{du("m3849f9d2a8fa")}{" "}{line.quantite}</span>
                 </div>
               ))}
             </div>
-            <div className="p-3 bg-slate-50 rounded-xl"><span className="text-slate-400 block">Motif</span><strong>{selectedReturn.motif}</strong></div>
+            <div className="p-3 bg-slate-50 rounded-xl"><span className="text-slate-400 block">{du("mc89ac8f0d41a")}</span><strong>{selectedReturn.motif}</strong></div>
           </div>
         )}
       </CashModal>
-      <CashModal open={metricOpen} title="Montant retourné" subtitle="Montant complet des retours validés" onClose={() => setMetricOpen(false)} footer={<button onClick={() => setMetricOpen(false)} className={secondaryButton}>Fermer</button>}><div className="p-4 rounded-xl bg-slate-50 border border-slate-100"><p className="text-[10px] uppercase font-bold text-slate-400">Montant retourné</p><p className="text-2xl font-black text-slate-900 mt-2">{formatMoney(totalReturned, returnCurrency)}</p><p className="text-xs text-slate-500 mt-2">{validReturns.length} retour(s) validé(s)</p></div></CashModal>
+      <CashModal open={metricOpen} title={du("m6d83e3bc7ed4")} subtitle={du("m07caeb90e3d1")} onClose={() => setMetricOpen(false)} footer={<button onClick={() => setMetricOpen(false)} className={secondaryButton}>{du("m711e5f2e198d")}</button>}><div className="p-4 rounded-xl bg-slate-50 border border-slate-100"><p className="text-[10px] uppercase font-bold text-slate-400">{du("m6d83e3bc7ed4")}</p><p className="text-2xl font-black text-slate-900 mt-2">{formatMoney(totalReturned, returnCurrency)}</p><p className="text-xs text-slate-500 mt-2">{validReturns.length} {du("m9ce74faf30b1")}</p></div></CashModal>
     </div>
   );
 }

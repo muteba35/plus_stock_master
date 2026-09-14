@@ -1,4 +1,7 @@
 "use client";
+import { dashboardUi as du, dashboardLocale } from "../../src/i18n/catalog";
+import { useLanguage as useDashboardLanguage } from "../../src/components/LanguageRuntime";
+
 
 import React, { useCallback, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
@@ -87,70 +90,66 @@ interface BoutiqueAppearance {
   logo?: string;
 }
 
-const LockedSubscriptionState = ({ requiredPlan, feature }: { requiredPlan: PlanCode; feature: string }) => (
+const LockedSubscriptionState = ({ requiredPlan, feature }: { requiredPlan: PlanCode; feature: string }) => { const { ui: du } = useDashboardLanguage(); return (
   <div className="min-h-full bg-[#f9fafd] rounded-3xl border border-slate-200/80 flex items-center justify-center p-6">
     <div className="relative w-full max-w-2xl overflow-hidden rounded-[2rem] border border-indigo-100 bg-white p-8 text-center shadow-[0_24px_80px_-32px_rgba(79,70,229,0.45)]">
       <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-indigo-500 via-sky-400 to-indigo-700" />
       <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-xl shadow-indigo-600/20">
         <LockKeyhole size={27} />
       </div>
-      <p className="mb-3 text-[10px] font-black uppercase tracking-[0.32em] text-indigo-600">Module premium</p>
-      <h2 className="text-xl font-black uppercase tracking-tight text-slate-950">{feature}</h2>
+      <p className="mb-3 text-[10px] font-black uppercase tracking-[0.32em] text-indigo-600">{du("mf488215a9ed7")}</p>
+      <h2 className="text-xl font-black uppercase tracking-tight text-slate-950">{du(feature)}</h2>
       <p className="mx-auto mt-3 max-w-md text-sm font-semibold leading-relaxed text-slate-500">
-        Ce module est disponible dans l'offre <span className="font-black text-slate-900">{planNames[requiredPlan]}</span>. Mettez votre boutique à niveau pour le débloquer.
-      </p>
+        {du("mdfa29eec288f")}{" "}<span className="font-black text-slate-900">{du(planNames[requiredPlan])}</span>{du("m2e7711e94a95")}{" "}</p>
       <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
         <Link href="/dashboard/parametres/abonnement" className="inline-flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-6 py-3 text-xs font-black uppercase tracking-wider text-white shadow-lg shadow-indigo-600/20 transition-colors hover:bg-indigo-700">
-          Mettre à niveau
-          <ChevronRight size={15} />
+          {du("m1fafc6fac98e")}{" "}<ChevronRight size={15} />
         </Link>
         <span className="rounded-full bg-slate-50 px-4 py-2 text-[10px] font-black uppercase tracking-wider text-slate-500">
-          Plan requis : {planNames[requiredPlan]}
+          {du("m27010db871e9")}{" "}{du(planNames[requiredPlan])}
         </span>
       </div>
     </div>
   </div>
-);
+); };
 
-const ExpiredSubscriptionState = () => (
+const ExpiredSubscriptionState = () => { const { ui: du } = useDashboardLanguage(); return (
   <div className="min-h-full bg-[#f9fafd] rounded-3xl border border-slate-200/80 flex items-center justify-center p-6">
     <div className="relative w-full max-w-2xl overflow-hidden rounded-[2rem] border border-amber-100 bg-white p-8 text-center shadow-[0_24px_80px_-32px_rgba(245,158,11,0.45)]">
       <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500" />
       <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-xl shadow-amber-500/20">
         <LockKeyhole size={27} />
       </div>
-      <p className="mb-3 text-[10px] font-black uppercase tracking-[0.32em] text-amber-600">Essai terminé</p>
-      <h2 className="text-xl font-black uppercase tracking-tight text-slate-950">Votre période d'essai est arrivée à terme</h2>
+      <p className="mb-3 text-[10px] font-black uppercase tracking-[0.32em] text-amber-600">{du("mf77f3c8ab804")}</p>
+      <h2 className="text-xl font-black uppercase tracking-tight text-slate-950">{du("mb9b35f3e94dc")}</h2>
       <p className="mx-auto mt-3 max-w-lg text-sm font-semibold leading-relaxed text-slate-500">
-        Vos données restent conservées. Pour continuer à utiliser la caisse, l'inventaire, l'équipe et la finance, choisissez un abonnement adapté à votre boutique.
-      </p>
+        {du("m6a1a68e10245")}{" "}</p>
       <Link href="/dashboard/parametres/abonnement" className="mt-7 inline-flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-6 py-3 text-xs font-black uppercase tracking-wider text-white shadow-lg shadow-indigo-600/20 transition-colors hover:bg-indigo-700">
-        Choisir un abonnement
-        <ChevronRight size={15} />
+        {du("m4c86dc0f6c92")}{" "}<ChevronRight size={15} />
       </Link>
     </div>
   </div>
-);
+); };
 
-const EmptyPermissionState = () => (
+const EmptyPermissionState = () => { const { ui: du } = useDashboardLanguage(); return (
   <div className="min-h-full bg-[#f9fafd] rounded-3xl border border-slate-200/80 flex items-center justify-center p-8">
     <div className="max-w-md text-center">
       <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-500 border border-slate-200 flex items-center justify-center mx-auto mb-4">
         <ShieldCheck size={22} />
       </div>
-      <h2 className="text-sm font-black uppercase tracking-wider text-slate-900">Accès restreint</h2>
+      <h2 className="text-sm font-black uppercase tracking-wider text-slate-900">{du("m90c5aeeb8aef")}</h2>
       <p className="text-xs text-slate-500 font-medium mt-2 leading-relaxed">
-        Aucune permission active ne permet d&apos;afficher cette interface. Contactez l&apos;administrateur de la boutique.
-      </p>
+        {du("m91696feaeef4")}{" "}</p>
     </div>
   </div>
-);
+); };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://plus-stock-master.onrender.com/api";
 
 
 
 function FlagIcon({ language }: { language: AppLanguage }) {
+  const { ui: du } = useDashboardLanguage();
   if (language === "fr") {
     return (
       <span className="grid h-4 w-6 grid-cols-3 overflow-hidden rounded-[3px] border border-slate-300 shadow-sm">
@@ -188,6 +187,7 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const { ui: du } = useDashboardLanguage();
   const { language, setLanguage, t } = useLanguage();
   const pathname = usePathname();
   const router = useRouter();
@@ -635,7 +635,7 @@ export default function DashboardLayout({
       : true);
 
   if (!isMounted) {
-    return <div className="flex h-screen bg-[#F1F5F9] items-center justify-center font-sans">Chargement...</div>;
+    return <div className="flex h-screen bg-[#F1F5F9] items-center justify-center font-sans">{du("mbc0bbf18ceef")}</div>;
   }
 
   return (
@@ -668,17 +668,16 @@ export default function DashboardLayout({
           <div className="p-6 border-b border-slate-800/60 bg-[#141C2F] h-20 flex items-center justify-between shrink-0">
             <div className="flex items-center space-x-3 overflow-hidden">
               <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-600/20 shrink-0">
-                <img src={boutiqueLogo || "/movoora-mark.svg?v=2"} alt="Movoora" className="bg-white rounded-sm p-0.5 w-5 h-5 object-contain" />
+                <img src={boutiqueLogo || "/movoora-mark.svg?v=2"} alt={du("m21b13396785f")} className="bg-white rounded-sm p-0.5 w-5 h-5 object-contain" />
               </div>
 
               {(isSidebarOpen || isMobileSidebarOpen) && (
                 <div className="flex flex-col items-start">
                   <h1 className="text-lg font-black tracking-tight leading-none text-white">
-                    MOVO<span className="text-indigo-500">ORA</span>
+                    {du("mc1eefa0388b3")}<span className="text-indigo-500">{du("mcc6db1d5bfb0")}</span>
                   </h1>
                   <span className="text-[8px] font-bold text-slate-500 uppercase tracking-[0.2em] mt-1">
-                    Commerce Platform
-                  </span>
+                    {du("m1edcdcb2a04e")}{" "}</span>
                 </div>
               )}
             </div>
@@ -704,7 +703,7 @@ export default function DashboardLayout({
             {(isSidebarOpen || isMobileSidebarOpen) && (
               <div className="overflow-hidden">
                 <p className="text-xs font-bold text-white truncate">{boutique.nom}</p>
-                <p className="text-[10px] text-slate-500 truncate font-medium">{user.boutique?.secteurActivite || "Boutique active"}</p>
+                <p className="text-[10px] text-slate-500 truncate font-medium">{user.boutique?.secteurActivite || du("m6cc413115662")}</p>
               </div>
             )}
           </div>
@@ -751,7 +750,7 @@ export default function DashboardLayout({
                             isParentActive ? "text-indigo-400 scale-110" : "group-hover:text-indigo-400"
                           }`}
                         />
-                        {(isSidebarOpen || isMobileSidebarOpen) && <span>{item.name}</span>}
+                        {(isSidebarOpen || isMobileSidebarOpen) && <span>{du(item.name)}</span>}
                       </div>
 
                       {(isSidebarOpen || isMobileSidebarOpen) && (
@@ -780,7 +779,7 @@ export default function DashboardLayout({
                       `}
                     >
                       <IconComponent size={18} className="shrink-0" />
-                      {(isSidebarOpen || isMobileSidebarOpen) && <span>{item.name}</span>}
+                      {(isSidebarOpen || isMobileSidebarOpen) && <span>{du(item.name)}</span>}
                     </Link>
                   )}
 
@@ -807,8 +806,8 @@ export default function DashboardLayout({
                               size={10}
                               className={isSubActive ? "text-indigo-400" : "text-slate-600"}
                             />
-                            <span>{sub.name}</span>
-                            {sub.requiredPlan && !canUsePlan(subscription.planCode, sub.requiredPlan) && <span className="ml-auto inline-flex items-center gap-1 rounded-md border border-amber-400/20 bg-amber-400/10 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wide text-amber-300"><LockKeyhole size={9} /> Pro</span>}
+                            <span>{du(sub.name)}</span>
+                            {sub.requiredPlan && !canUsePlan(subscription.planCode, sub.requiredPlan) && <span className="ml-auto inline-flex items-center gap-1 rounded-md border border-amber-400/20 bg-amber-400/10 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wide text-amber-300"><LockKeyhole size={9} /> {du("m957b0b874524")}</span>}
                           </Link>
                         );
                       })}
@@ -824,7 +823,7 @@ export default function DashboardLayout({
         <div className="p-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-slate-800/60 bg-[#141C2F]/60 shrink-0 space-y-3">
           <button
             onClick={handleLogout}
-            title={!isSidebarOpen ? "Se déconnecter" : ""}
+            title={!isSidebarOpen ? du("mb18aeed1a806") : ""}
             className={`
               w-full flex items-center rounded-xl text-xs font-black uppercase tracking-wider
               text-rose-400 bg-rose-500/5 border border-rose-500/10 hover:bg-rose-500/20 hover:border-rose-500/30
@@ -833,7 +832,7 @@ export default function DashboardLayout({
             `}
           >
             <LogOut size={18} className="shrink-0 group-hover:translate-x-1 transition-transform duration-200 text-rose-400" />
-            {(isSidebarOpen || isMobileSidebarOpen) && <span>Déconnexion</span>}
+            {(isSidebarOpen || isMobileSidebarOpen) && <span>{du("mfb5f9e92c1ae")}</span>}
           </button>
         </div>
       </aside>
@@ -862,7 +861,7 @@ export default function DashboardLayout({
                 <Search size={16} className="text-slate-500 group-focus-within:text-indigo-600 transition-colors shrink-0" />
                 <input
                   type="text"
-                  placeholder="Rechercher..."
+                  placeholder={du("m8984247e3f42")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full bg-white ml-2 text-xs text-slate-800 outline-none placeholder:text-slate-400 font-bold uppercase tracking-wider"
@@ -876,7 +875,7 @@ export default function DashboardLayout({
             <button
               onClick={toggleDarkMode}
               className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200/70 text-slate-600 transition-colors shrink-0"
-              title={darkMode ? "Mode clair" : "Mode sombre"}
+              title={darkMode ? du("maa90ecc06767") : du("medd937663dfa")}
             >
               {darkMode ? <Sun size={20} className="text-amber-500 animate-pulse" /> : <Moon size={20} className="text-slate-600" />}
             </button>
@@ -888,7 +887,7 @@ export default function DashboardLayout({
                 aria-label={t("language.change")}
               >
                 <FlagIcon language={language} />
-                <span>{supportedLanguages.find((item) => item.code === language)?.label || "FR"}</span>
+                <span>{supportedLanguages.find((item) => item.code === language)?.label || du("m501c26b2571a")}</span>
                 <ChevronDown size={13} className={`transition-transform ${showLanguageMenu ? "rotate-180" : ""}`} />
               </button>
 
@@ -918,7 +917,7 @@ export default function DashboardLayout({
                   void fetchNotifications();
                 }}
                 className="w-10 h-10 flex items-center justify-center relative rounded-full bg-slate-100 hover:bg-slate-200/70 text-slate-600 transition-colors shrink-0"
-                title="Notifications"
+                title={du("m788011833a5a")}
               >
                 <Bell size={20} />
                 {unreadNotificationsCount > 0 && !notificationsSeen && (
@@ -939,10 +938,9 @@ export default function DashboardLayout({
                             <Bell size={16} />
                           </div>
                           <div>
-                            <p className="text-sm font-black uppercase tracking-wider">Centre d'alertes</p>
+                            <p className="text-sm font-black uppercase tracking-wider">{du("ma9331938b328")}</p>
                             <p className="text-[11px] text-white/65 mt-1">
-                              Alertes recentes
-                            </p>
+                              {du("m9e92c8cca509")}{" "}</p>
                           </div>
                         </div>
                         <span className="px-2.5 py-1 rounded-full bg-white/10 border border-white/15 text-[10px] font-black">
@@ -954,21 +952,19 @@ export default function DashboardLayout({
                     <div className="px-3 py-2 bg-slate-50 border-b border-slate-100 flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-slate-500">
                         <span className="w-2 h-2 rounded-full bg-rose-500" />
-                        Priorites recentes
-                      </div>
+                        {du("m4331767cfdf5")}{" "}</div>
                       <button onClick={() => void fetchNotifications()} className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-[10px] font-black text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 transition-colors">
-                        Actualiser
-                      </button>
+                        {du("md7d646faaecb")}{" "}</button>
                     </div>
 
                     <div className="max-h-[255px] overflow-y-auto p-2.5 space-y-2">
                       {notificationsLoading && (
-                        <div className="p-6 text-xs text-slate-400 font-semibold text-center">Chargement...</div>
+                        <div className="p-6 text-xs text-slate-400 font-semibold text-center">{du("mbc0bbf18ceef")}</div>
                       )}
                       {!notificationsLoading && notifications.slice(0, 3).length === 0 && (
                         <div className="p-6 text-center">
-                          <p className="text-xs font-black text-slate-700">Aucune alerte importante</p>
-                          <p className="text-[11px] text-slate-400 mt-1">La boutique ne signale rien de critique pour le moment.</p>
+                          <p className="text-xs font-black text-slate-700">{du("m7ad3d8f46f77")}</p>
+                          <p className="text-[11px] text-slate-400 mt-1">{du("m942547831f09")}</p>
                         </div>
                       )}
                       {!notificationsLoading && notifications.slice(0, 3).map((item) => (
@@ -990,14 +986,14 @@ export default function DashboardLayout({
                             <span className={`mt-1 w-2.5 h-2.5 rounded-full shrink-0 ${item.type === "danger" ? "bg-rose-500" : item.type === "warning" ? "bg-amber-500" : item.type === "success" ? "bg-emerald-500" : "bg-indigo-500"}`} />
                             <div className="min-w-0 flex-1">
                               <div className="flex items-start justify-between gap-2">
-                                <p className="text-[11px] font-black text-slate-950 leading-snug">{item.title}</p>
+                                <p className="text-[11px] font-black text-slate-950 leading-snug">{du(item.title)}</p>
                                 <span className="shrink-0 px-2 py-0.5 rounded-lg bg-white/70 border border-white text-[9px] font-black uppercase tracking-wide text-slate-500">
-                                  {item.category}
+                                  {du(item.category)}
                                 </span>
                               </div>
-                              <p className="text-[10px] text-slate-600 mt-1 leading-relaxed line-clamp-2">{item.message}</p>
+                              <p className="text-[10px] text-slate-600 mt-1 leading-relaxed line-clamp-2">{du(item.message)}</p>
                               <p className="text-[10px] text-slate-400 font-bold mt-2">
-                                {new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short" }).format(new Date(item.createdAt))}
+                                {new Intl.DateTimeFormat(dashboardLocale(), { dateStyle: "short", timeStyle: "short" }).format(new Date(item.createdAt))}
                               </p>
                             </div>
                           </div>
@@ -1006,8 +1002,7 @@ export default function DashboardLayout({
                     </div>
 
                     <Link href="/dashboard/notifications" onClick={() => setShowNotifications(false)} className="block p-3 text-center text-[10px] font-black uppercase tracking-wider text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border-t border-indigo-100">
-                      Afficher toutes les notifications
-                    </Link>
+                      {du("m2d3ab91c2764")}{" "}</Link>
                   </div>
                 </>
               )}
@@ -1069,7 +1064,7 @@ export default function DashboardLayout({
                       className="flex items-center space-x-2.5 px-4 py-3 text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-colors uppercase tracking-wider"
                     >
                       <User size={16} />
-                      <span>Mon Profil</span>
+                      <span>{du("me00f50faa715")}</span>
                     </Link>
 
                     <Link
@@ -1078,7 +1073,7 @@ export default function DashboardLayout({
                       className="flex items-center space-x-2.5 px-4 py-3 text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-colors uppercase tracking-wider"
                     >
                       <Settings size={16} />
-                      <span>Paramètres</span>
+                      <span>{du("m01923df7a446")}</span>
                     </Link>
 
                     <div className="h-px bg-slate-100 my-1" />
@@ -1091,7 +1086,7 @@ export default function DashboardLayout({
                       className="w-full flex items-center space-x-2.5 px-4 py-3 text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors uppercase tracking-wider text-left"
                     >
                       <LogOut size={16} />
-                      <span>Se déconnecter</span>
+                      <span>{du("mb18aeed1a806")}</span>
                     </button>
                   </div>
                 </>

@@ -1,4 +1,7 @@
 "use client";
+import { dashboardUi as du, dashboardLocale } from "../../src/i18n/catalog";
+import { useLanguage as useDashboardLanguage } from "../../src/components/LanguageRuntime";
+
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -90,19 +93,20 @@ const emptyData: DashboardData = {
 
 const formatMoney = (value: number, devise: string) => {
   const symbol = devise.includes("(") ? devise.replace(/^.*\((.*)\).*$/, "$1") : devise;
-  return new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 2 }).format(Number(value || 0)) + " " + symbol;
+  return new Intl.NumberFormat(dashboardLocale(), { maximumFractionDigits: 2 }).format(Number(value || 0)) + " " + symbol;
 };
 
 const compactMoney = (value: number, devise: string) => {
   const symbol = devise.includes("(") ? devise.replace(/^.*\((.*)\).*$/, "$1") : devise;
-  return new Intl.NumberFormat("fr-FR", { notation: "compact", maximumFractionDigits: 1 }).format(Number(value || 0)) + " " + symbol;
+  return new Intl.NumberFormat(dashboardLocale(), { notation: "compact", maximumFractionDigits: 1 }).format(Number(value || 0)) + " " + symbol;
 };
 const formatDate = (value?: string) => {
   if (!value) return "-";
-  return new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short" }).format(new Date(value));
+  return new Intl.DateTimeFormat(dashboardLocale(), { dateStyle: "short", timeStyle: "short" }).format(new Date(value));
 };
 
 const TrendBadge = ({ value }: { value: number }) => {
+  const { ui: du } = useDashboardLanguage();
   const positive = value >= 0;
   const Icon = positive ? ArrowUpRight : ArrowDownRight;
   return (
@@ -114,6 +118,7 @@ const TrendBadge = ({ value }: { value: number }) => {
 };
 
 export default function OverviewPage() {
+  const { ui: du } = useDashboardLanguage();
   const [data, setData] = useState<DashboardData>(emptyData);
   const [period, setPeriod] = useState<PeriodValue>("7");
   const [customStart, setCustomStart] = useState("");
@@ -160,8 +165,8 @@ export default function OverviewPage() {
     <div className="space-y-6 bg-[#f9fafd] p-6 rounded-3xl min-h-screen">
       <div className="flex flex-col gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight">Tableau de bord</h2>
-          <p className="text-xs text-slate-500 font-medium mt-1">Performances globales, caisse, stock et équipe de la boutique active.</p>
+          <h2 className="text-xl font-bold text-slate-900 tracking-tight">{du("mac0e5fc936ad")}</h2>
+          <p className="text-xs text-slate-500 font-medium mt-1">{du("m09f4ea687282")}</p>
         </div>
 
         <div className="flex flex-col sm:flex-row sm:items-center gap-2">
@@ -178,7 +183,7 @@ export default function OverviewPage() {
                 onClick={() => setPeriod(item.value as PeriodValue)}
                 className={`px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider rounded-lg whitespace-nowrap transition-all ${period === item.value ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}
               >
-                {item.label}
+                {du(item.label)}
               </button>
             ))}
           </div>
@@ -188,7 +193,7 @@ export default function OverviewPage() {
               <input type="date" value={customEnd} onChange={(event) => setCustomEnd(event.target.value)} className="h-9 rounded-xl border border-slate-200 px-3 text-[11px] font-semibold text-slate-600 outline-none focus:border-indigo-500" />
             </div>
           )}
-          <button onClick={fetchOverview} disabled={loading} className="p-2.5 bg-[#f9fafd] border border-slate-200 rounded-xl hover:bg-slate-100 text-slate-600 transition-colors disabled:opacity-50" title="Actualiser">
+          <button onClick={fetchOverview} disabled={loading} className="p-2.5 bg-[#f9fafd] border border-slate-200 rounded-xl hover:bg-slate-100 text-slate-600 transition-colors disabled:opacity-50" title={du("md7d646faaecb")}>
             {loading ? <Loader2 size={15} className="animate-spin" /> : <RefreshCw size={15} />}
           </button>
         </div>
@@ -197,7 +202,7 @@ export default function OverviewPage() {
       {error && (
         <div className="bg-rose-50 border border-rose-100 text-rose-600 rounded-2xl px-4 py-3 text-xs font-bold flex items-center gap-2">
           <AlertTriangle size={15} />
-          {error}
+          {du(error)}
         </div>
       )}
 
@@ -220,12 +225,11 @@ export default function OverviewPage() {
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-black text-slate-950 uppercase tracking-wider">
-                  {data.metrics.alertCount} alerte{data.metrics.alertCount > 1 ? "s" : ""} de stock
-                </p>
+                  {data.metrics.alertCount} {du("m301fd88a1c35")}{data.metrics.alertCount > 1 ? du("m043a718774c5") : ""} {du("m11dd8716f6ff")}{" "}</p>
                 <p className="text-xs text-slate-600 font-semibold mt-1 truncate">
                   {data.topProducts[0]
-                    ? `${data.topProducts[0].name}: ${data.topProducts[0].stock} ${data.topProducts[0].unit} restant(s)`
-                    : "Des produits necessitent une verification."}
+                    ? du("mae28a6225f1c", {p0: data.topProducts[0].name, p1: data.topProducts[0].stock, p2: data.topProducts[0].unit})
+                    : du("m1899611a5b12")}
                 </p>
               </div>
             </div>
@@ -236,12 +240,11 @@ export default function OverviewPage() {
                   onClick={() => setShowStockAlertsModal(true)}
                   className="px-3 py-2 rounded-xl bg-white/80 border border-white text-[11px] font-black text-slate-700 hover:bg-white transition-colors"
                 >
-                  +{data.metrics.alertCount - 1} autre{data.metrics.alertCount - 1 > 1 ? "s" : ""}
+                  +{data.metrics.alertCount - 1} {du("me996f291499e")}{data.metrics.alertCount - 1 > 1 ? du("m043a718774c5") : ""}
                 </button>
               )}
               <Link href="/dashboard/inventaire/alertes" className="px-3 py-2 rounded-xl bg-slate-950 text-white text-[11px] font-black">
-                Voir les alertes
-              </Link>
+                {du("m5c3eed0878a0")}{" "}</Link>
             </div>
           </div>
         </div>
@@ -249,33 +252,32 @@ export default function OverviewPage() {
 
       {showStockAlertsModal && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
-          <button className="absolute inset-0 bg-slate-950/40" onClick={() => setShowStockAlertsModal(false)} aria-label="Fermer les alertes" />
+          <button className="absolute inset-0 bg-slate-950/40" onClick={() => setShowStockAlertsModal(false)} aria-label={du("mafcd65bb793b")} />
           <div className="relative w-full max-w-lg bg-white rounded-3xl border border-slate-200 shadow-2xl overflow-hidden">
             <div className="p-5 border-b border-slate-100 flex items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-black text-slate-950 uppercase tracking-wider">Alertes de stock</p>
-                <p className="text-xs text-slate-400 font-semibold mt-1">{data.metrics.alertCount} produit(s) a verifier</p>
+                <p className="text-sm font-black text-slate-950 uppercase tracking-wider">{du("m4a4e2c871381")}</p>
+                <p className="text-xs text-slate-400 font-semibold mt-1">{data.metrics.alertCount} {du("mdaba0ed02238")}</p>
               </div>
-              <button onClick={() => setShowStockAlertsModal(false)} className="w-9 h-9 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 font-black">x</button>
+              <button onClick={() => setShowStockAlertsModal(false)} className="w-9 h-9 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 font-black">{du("m2d711642b726")}</button>
             </div>
             <div className="max-h-[360px] overflow-y-auto divide-y divide-slate-100">
               {data.topProducts.map((product) => (
                 <div key={product.name} className="p-4 flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-xs font-black text-slate-900 truncate">{product.name}</p>
-                    <p className="text-[11px] text-slate-400 font-semibold mt-1">Seuil minimum: {product.threshold} {product.unit}</p>
+                    <p className="text-[11px] text-slate-400 font-semibold mt-1">{du("m251d940d5769")}{" "}{product.threshold} {du(product.unit)}</p>
                   </div>
                   <span className={`px-3 py-1.5 rounded-xl text-[11px] font-black whitespace-nowrap ${
                     product.stock <= 0 ? "bg-rose-50 text-rose-600" : "bg-amber-50 text-amber-600"
                   }`}>
-                    {product.stock} {product.unit}
+                    {product.stock} {du(product.unit)}
                   </span>
                 </div>
               ))}
             </div>
             <Link href="/dashboard/inventaire/alertes" className="block p-4 text-center bg-indigo-50 text-indigo-600 text-[11px] font-black uppercase tracking-wider" onClick={() => setShowStockAlertsModal(false)}>
-              Ouvrir le module alertes
-            </Link>
+              {du("m7689125f5eda")}{" "}</Link>
           </div>
         </div>
       )}
@@ -284,48 +286,48 @@ export default function OverviewPage() {
         <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
           <div className="flex justify-between items-start">
             <div className="space-y-1.5 min-w-0">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Chiffre d'affaires TTC</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{du("m9735bc91d6c0")}</span>
               <h3 className="text-xl font-black text-slate-900 truncate">{formatMoney(data.metrics.caTTC, data.devise)}</h3>
             </div>
             <div className="w-9 h-9 bg-indigo-500/10 rounded-xl flex items-center justify-center text-indigo-500 border border-indigo-500/10"><DollarSign size={18} /></div>
           </div>
-          <div className="mt-4 flex items-center gap-1.5"><TrendBadge value={data.metrics.caTrend} /><span className="text-[10px] font-medium text-slate-400">vs période précédente</span></div>
+          <div className="mt-4 flex items-center gap-1.5"><TrendBadge value={data.metrics.caTrend} /><span className="text-[10px] font-medium text-slate-400">{du("m6d5362845902")}</span></div>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
           <div className="flex justify-between items-start">
             <div className="space-y-1.5">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Ventes réalisées</span>
-              <h3 className="text-xl font-black text-slate-900">{data.metrics.ventes} panier{data.metrics.ventes > 1 ? "s" : ""}</h3>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{du("mab1feae0f0e4")}</span>
+              <h3 className="text-xl font-black text-slate-900">{data.metrics.ventes} {du("medfbc24a60ad")}{data.metrics.ventes > 1 ? du("m043a718774c5") : ""}</h3>
             </div>
             <div className="w-9 h-9 bg-emerald-500/10 rounded-xl flex items-center justify-center text-emerald-500 border border-emerald-500/10"><ShoppingCart size={18} /></div>
           </div>
-          <div className="mt-4 flex items-center gap-1.5"><TrendBadge value={data.metrics.ventesTrend} /><span className="text-[10px] font-medium text-slate-400">{data.period.label}</span></div>
+          <div className="mt-4 flex items-center gap-1.5"><TrendBadge value={data.metrics.ventesTrend} /><span className="text-[10px] font-medium text-slate-400">{du(data.period.label)}</span></div>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
           <div className="flex justify-between items-start">
             <div className="space-y-1.5 min-w-0">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Volume stock</span>
-              <h3 className="text-xl font-black text-slate-900 truncate">{data.metrics.totalUnits} unité{data.metrics.totalUnits > 1 ? "s" : ""}</h3>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{du("m98fa95ea85fc")}</span>
+              <h3 className="text-xl font-black text-slate-900 truncate">{data.metrics.totalUnits} {du("m401b43adca03")}{data.metrics.totalUnits > 1 ? du("m043a718774c5") : ""}</h3>
             </div>
             <div className="w-9 h-9 bg-amber-500/10 rounded-xl flex items-center justify-center text-amber-500 border border-amber-500/10"><Package size={18} /></div>
           </div>
           <div className="mt-4 flex items-center gap-1.5">
-            <span className="inline-flex items-center text-[11px] font-bold text-amber-600 bg-amber-500/10 px-1.5 py-0.5 rounded-md">{data.metrics.totalProducts} réf.</span>
-            <span className="text-[10px] font-medium text-slate-400">{data.metrics.alertCount} alerte{data.metrics.alertCount > 1 ? "s" : ""}</span>
+            <span className="inline-flex items-center text-[11px] font-bold text-amber-600 bg-amber-500/10 px-1.5 py-0.5 rounded-md">{data.metrics.totalProducts} {du("m7035b0be26e3")}</span>
+            <span className="text-[10px] font-medium text-slate-400">{data.metrics.alertCount} {du("m301fd88a1c35")}{data.metrics.alertCount > 1 ? du("m043a718774c5") : ""}</span>
           </div>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
           <div className="flex justify-between items-start">
             <div className="space-y-1.5 min-w-0">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Marge brute</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{du("mb9982b198e10")}</span>
               <h3 className="text-xl font-black text-slate-900 truncate">{formatMoney(data.metrics.marge, data.devise)}</h3>
             </div>
             <div className="w-9 h-9 bg-violet-500/10 rounded-xl flex items-center justify-center text-violet-500 border border-violet-500/10"><TrendingUp size={18} /></div>
           </div>
-          <div className="mt-4 flex items-center gap-1.5"><TrendBadge value={data.metrics.margeTrend} /><span className="text-[10px] font-medium text-slate-400">{data.metrics.tauxMarge}% de marge</span></div>
+          <div className="mt-4 flex items-center gap-1.5"><TrendBadge value={data.metrics.margeTrend} /><span className="text-[10px] font-medium text-slate-400">{data.metrics.tauxMarge}{du("m42af1903dcdd")}</span></div>
         </div>
       </div>
 
@@ -333,12 +335,12 @@ export default function OverviewPage() {
         <div className="lg:col-span-2 bg-white p-4 sm:p-6 rounded-2xl border border-slate-200/80 shadow-sm min-w-0 overflow-hidden">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-4">
             <div>
-              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Analyse des flux financiers</h3>
-              <p className="text-[11px] text-slate-400 font-medium mt-0.5">{data.period.chartFallback ? "La période choisie est vide : affichage des dernières ventes enregistrées." : "Évolution réelle des ventes et de la marge brute."}</p>
+              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">{du("m9607c3bc8485")}</h3>
+              <p className="text-[11px] text-slate-400 font-medium mt-0.5">{data.period.chartFallback ? du("m2fd9d1cc9694") : du("mee15d559a652")}</p>
             </div>
             <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-[10px] font-bold uppercase tracking-wide">
-              <span className="flex items-center gap-1.5 text-slate-600"><span className="w-2.5 h-2.5 rounded-full bg-indigo-500" />Ventes</span>
-              <span className="flex items-center gap-1.5 text-slate-600"><span className="w-2.5 h-2.5 rounded-full bg-teal-400" />Bénéfice</span><span className="flex items-center gap-1.5 text-slate-600"><span className="w-2.5 h-2.5 rounded-full bg-rose-500" />Perte</span>
+              <span className="flex items-center gap-1.5 text-slate-600"><span className="w-2.5 h-2.5 rounded-full bg-indigo-500" />{du("m0dda3e60892d")}</span>
+              <span className="flex items-center gap-1.5 text-slate-600"><span className="w-2.5 h-2.5 rounded-full bg-teal-400" />{du("m1a30f6aec834")}</span><span className="flex items-center gap-1.5 text-slate-600"><span className="w-2.5 h-2.5 rounded-full bg-rose-500" />{du("mbd1d191545b5")}</span>
             </div>
           </div>
           <div className="w-full overflow-x-auto overflow-y-hidden pb-1">
@@ -354,7 +356,7 @@ export default function OverviewPage() {
                 <YAxis axisLine={false} tickLine={false} stroke="#94A3B8" width={58} tick={{ fontSize: 10 }} tickFormatter={(value) => compactMoney(Number(value), data.devise)} />
                 <Tooltip formatter={(value) => formatMoney(Number(value), data.devise)} />
                 <Area type="monotone" dataKey="ventes" stroke="#4F46E5" strokeWidth={2} fillOpacity={1} fill="url(#colorVentes)" />
-                <Area type="monotone" dataKey="beneficePositif" name="Bénéfice" stroke="#2DD4BF" strokeWidth={2} fillOpacity={1} fill="url(#colorBenefs)" connectNulls={false} /><Area type="monotone" dataKey="perteNegative" name="Perte" stroke="#F43F5E" strokeWidth={2} fillOpacity={1} fill="url(#colorPertes)" connectNulls={false} />
+                <Area type="monotone" dataKey="beneficePositif" name={du("m1a30f6aec834")} stroke="#2DD4BF" strokeWidth={2} fillOpacity={1} fill="url(#colorBenefs)" connectNulls={false} /><Area type="monotone" dataKey="perteNegative" name={du("mbd1d191545b5")} stroke="#F43F5E" strokeWidth={2} fillOpacity={1} fill="url(#colorPertes)" connectNulls={false} />
               </AreaChart>
             </ResponsiveContainer>
             </div>
@@ -363,17 +365,17 @@ export default function OverviewPage() {
 
         <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
           <div>
-            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-1">Stock à surveiller</h3>
-            <p className="text-[11px] text-slate-400 font-medium mb-6">Produits proches du seuil ou en rupture.</p>
+            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-1">{du("m38913dce17b1")}</h3>
+            <p className="text-[11px] text-slate-400 font-medium mb-6">{du("mf17cf505ddb9")}</p>
             <div className="space-y-4">
-              {data.topProducts.length === 0 && <p className="text-xs text-slate-400 font-semibold text-center py-8">Aucun produit critique.</p>}
+              {data.topProducts.length === 0 && <p className="text-xs text-slate-400 font-semibold text-center py-8">{du("m0771f54d511a")}</p>}
               {data.topProducts.map((product) => (
                 <div key={product.name} className="flex items-center justify-between gap-3">
                   <div className="space-y-0.5 min-w-0">
                     <p className="text-xs font-bold text-slate-800 truncate">{product.name}</p>
-                    <p className="text-[10px] text-slate-400 font-medium">Seuil {product.threshold} {product.unit}</p>
+                    <p className="text-[10px] text-slate-400 font-medium">{du("meb212e3d44c1")}{" "}{product.threshold} {du(product.unit)}</p>
                   </div>
-                  <span className={`text-xs font-bold px-2.5 py-1 rounded-lg whitespace-nowrap ${product.stock <= 0 ? "text-rose-500 bg-rose-500/10" : product.stock <= product.threshold ? "text-amber-500 bg-amber-500/10" : "text-indigo-500 bg-indigo-500/10"}`}>{product.stock} {product.unit}</span>
+                  <span className={`text-xs font-bold px-2.5 py-1 rounded-lg whitespace-nowrap ${product.stock <= 0 ? "text-rose-500 bg-rose-500/10" : product.stock <= product.threshold ? "text-amber-500 bg-amber-500/10" : "text-indigo-500 bg-indigo-500/10"}`}>{product.stock} {du(product.unit)}</span>
                 </div>
               ))}
             </div>
@@ -389,26 +391,26 @@ export default function OverviewPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
           <div className="p-6 border-b border-slate-100">
-            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Activité de caisse récente</h3>
-            <p className="text-[11px] text-slate-400 font-medium mt-0.5">Derniers encaissements validés par les opérateurs.</p>
+            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">{du("m41b17654028b")}</h3>
+            <p className="text-[11px] text-slate-400 font-medium mt-0.5">{du("ma2fa4bb3163b")}</p>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
-              <thead><tr className="bg-[#f9fafd] text-[10px] font-black uppercase tracking-wider text-slate-400 border-b border-slate-100"><th className="py-3 px-6">ID vente</th><th className="py-3 px-6">Caissier</th><th className="py-3 px-6">Règlement</th><th className="py-3 px-6">Montant total</th><th className="py-3 px-6 text-right">Statut</th></tr></thead>
+              <thead><tr className="bg-[#f9fafd] text-[10px] font-black uppercase tracking-wider text-slate-400 border-b border-slate-100"><th className="py-3 px-6">{du("m857e07a996ad")}</th><th className="py-3 px-6">{du("mbe0e77f22f53")}</th><th className="py-3 px-6">{du("m54d5138b57b9")}</th><th className="py-3 px-6">{du("me1a4c71d0499")}</th><th className="py-3 px-6 text-right">{du("mdee377cfd8cd")}</th></tr></thead>
               <tbody className="divide-y divide-slate-100 text-xs">
-                {data.recentSales.length === 0 && <tr><td colSpan={5} className="py-10 px-6 text-center text-slate-400 font-semibold">Aucune vente récente.</td></tr>}
+                {data.recentSales.length === 0 && <tr><td colSpan={5} className="py-10 px-6 text-center text-slate-400 font-semibold">{du("mf48971610bbb")}</td></tr>}
                 {data.recentSales.map((sale) => (
                   <tr key={sale.id} className="hover:bg-[#f9fafd]/60 transition-colors">
                     <td className="py-4 px-6 font-bold text-slate-400">{sale.id}</td>
                     <td className="py-4 px-6"><p className="font-bold text-slate-800">{sale.gerant}</p><p className="text-[10px] text-slate-400">{formatDate(sale.date)}</p></td>
-                    <td className="py-4 px-6"><span className="inline-flex items-center gap-1.5 text-slate-600 font-medium">{sale.methode.toLowerCase().includes("esp") ? <Coins size={13} className="text-amber-500" /> : <CreditCard size={13} className="text-indigo-400" />}{sale.methode}</span></td>
+                    <td className="py-4 px-6"><span className="inline-flex items-center gap-1.5 text-slate-600 font-medium">{sale.methode.toLowerCase().includes("esp") ? <Coins size={13} className="text-amber-500" /> : <CreditCard size={13} className="text-indigo-400" />}{du(sale.methode)}</span></td>
                     <td className="py-4 px-6 font-black text-slate-900">{formatMoney(sale.montant, data.devise)}</td>
                     <td className="py-4 px-6 text-right">
                       <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-bold ${sale.statut === "PAYEE" ? "bg-emerald-500/10 text-emerald-500" : sale.statut === "ANNULEE" ? "bg-amber-500/10 text-amber-500" : "bg-rose-500/10 text-rose-500"}`}>
                         {sale.statut === "PAYEE" && <CheckCircle2 size={12} />}
                         {sale.statut === "ANNULEE" && <AlertTriangle size={12} />}
                         {sale.statut === "REMBOURSEE" && <XCircle size={12} />}
-                        {sale.statut === "PAYEE" ? "Payée" : sale.statut === "ANNULEE" ? "Annulée" : "Remboursée"}
+                        {sale.statut === "PAYEE" ? du("mabfdec4b23e7") : sale.statut === "ANNULEE" ? du("m2f7ea8495f47") : du("m60eb5f1efb72")}
                       </span>
                     </td>
                   </tr>
@@ -420,11 +422,11 @@ export default function OverviewPage() {
 
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6">
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2"><Users size={16} className="text-indigo-500" /><h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Équipe active</h3></div>
-            <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md font-bold">{onlineUsers} actif{onlineUsers > 1 ? "s" : ""}</span>
+            <div className="flex items-center gap-2"><Users size={16} className="text-indigo-500" /><h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">{du("mb445a4e2d782")}</h3></div>
+            <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md font-bold">{onlineUsers} {du("m92b2bce8d39c")}{onlineUsers > 1 ? du("m043a718774c5") : ""}</span>
           </div>
           <div className="divide-y divide-slate-100">
-            {data.activeUsers.length === 0 && <p className="text-xs text-slate-400 font-semibold text-center py-8">Aucun membre trouvé.</p>}
+            {data.activeUsers.length === 0 && <p className="text-xs text-slate-400 font-semibold text-center py-8">{du("m7a9e19363e16")}</p>}
             {data.activeUsers.map((user) => (
               <div key={user.email} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
                 <div className="flex items-center gap-3 min-w-0">

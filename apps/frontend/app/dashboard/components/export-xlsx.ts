@@ -1,4 +1,6 @@
 "use client";
+import { dashboardUi as du, dashboardLocale } from "../../../src/i18n/catalog";
+
 
 import * as XLSX from "xlsx";
 import { getStoredLanguage, translateValue } from "../../../src/i18n/catalog";
@@ -18,7 +20,7 @@ const generatedAt = (locale: string) => new Intl.DateTimeFormat(locale, { dateSt
 export const exportXlsxWorkbook = (fileName: string, sheets: XlsxSheet[]) => {
   const workbook = XLSX.utils.book_new();
   const language = getStoredLanguage();
-  const locale = language === "en" ? "en-GB" : "fr-FR";
+  const locale = language === "en" ? "en-GB" : dashboardLocale();
   const exportedOn = language === "en" ? "Exported on" : "Export du";
 
   sheets.forEach((sheet) => {

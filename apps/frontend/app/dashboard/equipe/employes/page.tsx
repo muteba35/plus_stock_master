@@ -1,4 +1,7 @@
 "use client";
+import { dashboardUi as du, dashboardLocale } from "../../../../src/i18n/catalog";
+import { useLanguage as useDashboardLanguage } from "../../../../src/components/LanguageRuntime";
+
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -166,6 +169,7 @@ const validateEmployeeForm = ({
 };
 
 export default function EmployesPage() {
+  const { ui: du } = useDashboardLanguage();
   const [employes, setEmployes] = useState<Employe[]>([]);
   const [roles, setRoles] = useState<EmployeOption[]>([]);
   const [departements, setDepartements] = useState<EmployeOption[]>([]);
@@ -501,7 +505,7 @@ export default function EmployesPage() {
                 : "bg-rose-50 text-rose-600 border-rose-100"
             }`}>
               {toast.type === "success" ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
-              {toast.message}
+              {du(toast.message)}
             </div>
           </motion.div>
         )}
@@ -509,10 +513,10 @@ export default function EmployesPage() {
 
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">Annuaire du Personnel</h1>
-          <p className="text-xs text-slate-400 font-medium">Gerez les acces et le statut de vos collaborateurs.</p>
+          <h1 className="text-xl font-bold text-slate-900">{du("m6bf301c9bf62")}</h1>
+          <p className="text-xs text-slate-400 font-medium">{du("m3fc698096c7b")}</p>
         </div>
-        <div className="flex flex-wrap justify-end gap-2"><button onClick={exportEmployeesPdf} className="flex items-center gap-2 border border-slate-200 bg-white hover:border-indigo-300 text-slate-600 text-xs font-bold px-4 py-2.5 rounded-xl"><FileText size={14} /> PDF</button><button onClick={exportEmployeesXlsx} className="flex items-center gap-2 border border-slate-200 bg-white hover:border-indigo-300 text-slate-600 text-xs font-bold px-4 py-2.5 rounded-xl"><Download size={14} /> Excel</button><button onClick={() => setIsImportOpen(true)} className="flex items-center gap-2 border border-slate-200 bg-white hover:border-indigo-300 text-slate-600 text-xs font-bold px-4 py-2.5 rounded-xl"><FileSpreadsheet size={14} /> Importer Excel</button><button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-sm"><UserPlus size={14} /> Nouvel Employe</button></div>
+        <div className="flex flex-wrap justify-end gap-2"><button onClick={exportEmployeesPdf} className="flex items-center gap-2 border border-slate-200 bg-white hover:border-indigo-300 text-slate-600 text-xs font-bold px-4 py-2.5 rounded-xl"><FileText size={14} /> {du("m1d393b0081b6")}</button><button onClick={exportEmployeesXlsx} className="flex items-center gap-2 border border-slate-200 bg-white hover:border-indigo-300 text-slate-600 text-xs font-bold px-4 py-2.5 rounded-xl"><Download size={14} /> {du("m48d53635551c")}</button><button onClick={() => setIsImportOpen(true)} className="flex items-center gap-2 border border-slate-200 bg-white hover:border-indigo-300 text-slate-600 text-xs font-bold px-4 py-2.5 rounded-xl"><FileSpreadsheet size={14} /> {du("m9f7aa20c451d")}</button><button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-sm"><UserPlus size={14} /> {du("mcfb385378ec4")}</button></div>
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-visible">
@@ -521,7 +525,7 @@ export default function EmployesPage() {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
             <input
               type="text"
-              placeholder="Rechercher un employe..."
+              placeholder={du("m9190471be0b5")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-12 pr-4 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 font-medium transition-all"
@@ -533,7 +537,7 @@ export default function EmployesPage() {
             className={`h-9 w-9 rounded-xl border flex items-center justify-center transition-colors ${
               isFilterOpen ? "border-indigo-200 bg-indigo-50 text-indigo-600" : "border-slate-200 bg-white text-slate-500 hover:text-indigo-600"
             }`}
-            title="Filtres"
+            title={du("m6e2287796c72")}
           >
             <SlidersHorizontal size={16} />
           </button>
@@ -549,25 +553,25 @@ export default function EmployesPage() {
               >
                 <div className="grid grid-cols-1 gap-3">
                   <label className="space-y-1.5">
-                    <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Role</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">{du("m14736a2eb9f4")}</span>
                     <select value={roleFilter} onChange={(e) => { setRoleFilter(e.target.value); setIsFilterOpen(false); }} className="w-full text-xs font-bold px-3 py-2 border border-slate-200 rounded-xl bg-white text-slate-600 focus:outline-none focus:border-indigo-500">
-                      <option value="all">Tous les roles</option>
+                      <option value="all">{du("m7819b9a2f6c7")}</option>
                       {roles.map((role) => <option key={role.id} value={role.id}>{role.name}</option>)}
                     </select>
                   </label>
                   <label className="space-y-1.5">
-                    <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Departement</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">{du("m143873c54316")}</span>
                     <select value={departmentFilter} onChange={(e) => { setDepartmentFilter(e.target.value); setIsFilterOpen(false); }} className="w-full text-xs font-bold px-3 py-2 border border-slate-200 rounded-xl bg-white text-slate-600 focus:outline-none focus:border-indigo-500">
-                      <option value="all">Tous les departements</option>
+                      <option value="all">{du("m48fd9001a2da")}</option>
                       {departements.map((dept) => <option key={dept.id} value={dept.id}>{dept.name}</option>)}
                     </select>
                   </label>
                   <label className="space-y-1.5">
-                    <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Statut</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">{du("mdee377cfd8cd")}</span>
                     <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setIsFilterOpen(false); }} className="w-full text-xs font-bold px-3 py-2 border border-slate-200 rounded-xl bg-white text-slate-600 focus:outline-none focus:border-indigo-500">
-                      <option value="all">Tous les statuts</option>
-                      <option value="Actif">Actif</option>
-                      <option value="Suspendu">Suspendu</option>
+                      <option value="all">{du("md2bbf4fe69be")}</option>
+                      <option value="Actif">{du("mad26287ab66b")}</option>
+                      <option value="Suspendu">{du("mff129984f4a1")}</option>
                     </select>
                   </label>
                 </div>
@@ -580,12 +584,12 @@ export default function EmployesPage() {
           <table className="w-full text-left text-xs min-w-[700px]">
             <thead className="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider">
               <tr>
-                <th className="px-6 py-4">Employe</th>
-                <th className="px-6 py-4">Contact</th>
-                <th className="px-6 py-4">Role</th>
-                <th className="px-6 py-4">Departement</th>
-                <th className="px-6 py-4">Statut</th>
-                <th className="px-6 py-4 text-right">Actions</th>
+                <th className="px-6 py-4">{du("m496b444f8b03")}</th>
+                <th className="px-6 py-4">{du("m2b5c3d26721a")}</th>
+                <th className="px-6 py-4">{du("m14736a2eb9f4")}</th>
+                <th className="px-6 py-4">{du("m143873c54316")}</th>
+                <th className="px-6 py-4">{du("mdee377cfd8cd")}</th>
+                <th className="px-6 py-4 text-right">{du("mff8059dc6752")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -594,22 +598,20 @@ export default function EmployesPage() {
                   <td colSpan={6} className="px-6 py-12 text-center text-slate-400 font-medium bg-slate-50/30">
                     <div className="flex items-center justify-center gap-2">
                       <Loader2 size={16} className="animate-spin text-indigo-500" />
-                      Chargement des employes...
-                    </div>
+                      {du("m09bd80311398")}{" "}</div>
                   </td>
                 </tr>
               ) : filteredEmployes.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-8 text-center text-slate-400 font-medium bg-slate-50/30">
-                    Aucun element trouve
-                  </td>
+                    {du("mf0b3da2d4f95")}{" "}</td>
                 </tr>
               ) : (
                 paginatedEmployes.map((emp) => (
                   <tr key={emp.id} className="hover:bg-slate-50/50 transition-colors">
                     <td className="px-6 py-4 flex items-center gap-3">
                       {emp.avatarUrl ? (
-                        <img src={emp.avatarUrl} alt="Avatar" className="w-8 h-8 rounded-full object-cover border border-slate-100" />
+                        <img src={emp.avatarUrl} alt={du("mca8e826d9c2e")} className="w-8 h-8 rounded-full object-cover border border-slate-100" />
                       ) : (
                         <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-[11px]">
                           {emp.firstName?.[0]}{emp.lastName?.[0]}
@@ -627,20 +629,20 @@ export default function EmployesPage() {
                     <td className="px-6 py-4 text-slate-600 font-medium">{emp.department}</td>
                     <td className="px-6 py-4">
                       <span className={`px-2 py-1 rounded-md font-bold ${emp.status === "Actif" ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"}`}>
-                        {emp.status}
+                        {du(emp.status)}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right whitespace-nowrap">
-                      <button onClick={() => { setSelectedEmploye(emp); setActiveActionModal("edit"); }} className="text-slate-400 hover:text-indigo-600 p-1.5 mr-1 bg-slate-50 hover:bg-indigo-50 rounded-lg transition-all" title="Modifier le profil">
+                      <button onClick={() => { setSelectedEmploye(emp); setActiveActionModal("edit"); }} className="text-slate-400 hover:text-indigo-600 p-1.5 mr-1 bg-slate-50 hover:bg-indigo-50 rounded-lg transition-all" title={du("m2bfb8d8e9bc1")}>
                         <Pencil size={14} />
                       </button>
-                      <button onClick={() => { setSelectedEmploye(emp); setActiveActionModal("reset"); }} className="text-slate-400 hover:text-amber-600 p-1.5 mr-1 bg-slate-50 hover:bg-amber-50 rounded-lg transition-all" title="Reinitialiser les acces">
+                      <button onClick={() => { setSelectedEmploye(emp); setActiveActionModal("reset"); }} className="text-slate-400 hover:text-amber-600 p-1.5 mr-1 bg-slate-50 hover:bg-amber-50 rounded-lg transition-all" title={du("m2245d7a39af5")}>
                         <KeyRound size={14} />
                       </button>
-                      <button onClick={() => { setSelectedEmploye(emp); setActiveActionModal("status"); }} className={`p-1.5 mr-1 rounded-lg transition-all bg-slate-50 ${emp.status === "Actif" ? "text-slate-400 hover:text-rose-600 hover:bg-rose-50" : "text-slate-400 hover:text-emerald-600 hover:bg-emerald-50"}`} title="Changer le statut">
+                      <button onClick={() => { setSelectedEmploye(emp); setActiveActionModal("status"); }} className={`p-1.5 mr-1 rounded-lg transition-all bg-slate-50 ${emp.status === "Actif" ? "text-slate-400 hover:text-rose-600 hover:bg-rose-50" : "text-slate-400 hover:text-emerald-600 hover:bg-emerald-50"}`} title={du("m64a1f1b9aa13")}>
                         <Power size={14} />
                       </button>
-                      <button onClick={() => { setSelectedEmploye(emp); setActiveActionModal("delete"); }} className="text-slate-400 hover:text-rose-600 p-1.5 bg-slate-50 hover:bg-rose-50 rounded-lg transition-all" title="Supprimer l'utilisateur">
+                      <button onClick={() => { setSelectedEmploye(emp); setActiveActionModal("delete"); }} className="text-slate-400 hover:text-rose-600 p-1.5 bg-slate-50 hover:bg-rose-50 rounded-lg transition-all" title={du("mcd85fbecc8c9")}>
                         <Trash2 size={14} />
                       </button>
                     </td>
@@ -662,7 +664,7 @@ export default function EmployesPage() {
         onBoutiqueChange={fetchReferences}
         onCreate={handleCreateEmploye}
       />
-      <TeamCsvImportModal open={isImportOpen} onClose={() => setIsImportOpen(false)} title="Importer des employés" columns={[{ key: "prenom", label: "prenom", required: true }, { key: "nom", label: "nom", required: true }, { key: "email", label: "email", required: true }, { key: "telephone", label: "telephone", required: true }, { key: "boutique", label: "boutique", required: true }, { key: "role", label: "role", required: true }, { key: "departement", label: "departement", required: true }]} example={{ prenom: "Sarah", nom: "Mwamba", email: "sarah@example.com", telephone: "0812345678", boutique: "Boutique Centre", role: "Gestionnaire stock", departement: "Logistique" }} onImport={importEmployes} />
+      <TeamCsvImportModal open={isImportOpen} onClose={() => setIsImportOpen(false)} title={du("m025faa707e60")} columns={[{ key: "prenom", label: "prenom", required: true }, { key: "nom", label: "nom", required: true }, { key: "email", label: "email", required: true }, { key: "telephone", label: "telephone", required: true }, { key: "boutique", label: "boutique", required: true }, { key: "role", label: "role", required: true }, { key: "departement", label: "departement", required: true }]} example={{ prenom: "Sarah", nom: "Mwamba", email: "sarah@example.com", telephone: "0812345678", boutique: "Boutique Centre", role: "Gestionnaire stock", departement: "Logistique" }} onImport={importEmployes} />
 
       <ModalPortal>
       <AnimatePresence>
@@ -710,10 +712,11 @@ export default function EmployesPage() {
 }
 
 const FormInput: React.FC<FormInputProps> = ({ label, icon: Icon, ...props }) => {
+  const { ui: du } = useDashboardLanguage();
   return (
     <div className="space-y-1.5">
       <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
-        <Icon size={12} /> {label} {props.required && <span className="text-rose-500">*</span>}
+        <Icon size={12} /> {du(label)} {props.required && <span className="text-rose-500">*</span>}
       </label>
       <div className="relative">
         <Icon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={15} />
@@ -724,6 +727,7 @@ const FormInput: React.FC<FormInputProps> = ({ label, icon: Icon, ...props }) =>
 };
 
 function EditInterface({ employe, roles, departements, boutiques, onBoutiqueChange, onClose, onSave }: EditInterfaceProps) {
+  const { ui: du } = useDashboardLanguage();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(employe.avatarUrl || null);
   const [showRoleDropdown, setShowRoleDropdown] = useState(false);
@@ -820,8 +824,8 @@ function EditInterface({ employe, roles, departements, boutiques, onBoutiqueChan
     <>
       <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-[#fcfdfe] shrink-0">
         <div>
-          <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Modifier l&apos;Employe</h3>
-          <p className="text-[11px] text-slate-400 font-medium mt-0.5">Mise a jour globale de la fiche d&apos;identite</p>
+          <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">{du("mb6ab04f66d41")}</h3>
+          <p className="text-[11px] text-slate-400 font-medium mt-0.5">{du("me7ebef73b951")}</p>
         </div>
         <button onClick={onClose} disabled={isSaving} className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-40">
           <X size={16} />
@@ -829,12 +833,12 @@ function EditInterface({ employe, roles, departements, boutiques, onBoutiqueChan
       </div>
 
       <div className="overflow-y-auto p-6 space-y-6 max-h-[calc(90vh-130px)]">
-        {error && <div className="rounded-xl border border-rose-100 bg-rose-50 p-3 text-xs font-semibold text-rose-600">{error}</div>}
+        {error && <div className="rounded-xl border border-rose-100 bg-rose-50 p-3 text-xs font-semibold text-rose-600">{du(error)}</div>}
 
         <div className="flex flex-col items-center justify-center">
           <div onClick={() => !isSaving && fileInputRef.current?.click()} className="w-20 h-20 rounded-full border border-slate-200 bg-slate-50 flex items-center justify-center cursor-pointer overflow-hidden group relative">
             {avatarPreview ? (
-              <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
+              <img src={avatarPreview} alt={du("mca8e826d9c2e")} className="w-full h-full object-cover" />
             ) : (
               <div className="font-bold text-indigo-600 text-lg uppercase">{formData.firstName?.[0]}{formData.lastName?.[0]}</div>
             )}
@@ -843,19 +847,19 @@ function EditInterface({ employe, roles, departements, boutiques, onBoutiqueChan
             </div>
           </div>
           <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".jpeg,.jpg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif" className="hidden" />
-          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wide mt-3">Photo de profil</p>
+          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wide mt-3">{du("m71d25ed9998b")}</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <FormInput label="Prenom" name="firstName" icon={User} value={formData.firstName} onChange={handleChange} required disabled={isSaving} />
-          <FormInput label="Nom de famille" name="lastName" icon={User} value={formData.lastName} onChange={handleChange} required disabled={isSaving} />
-          <FormInput label="Adresse Email" name="email" type="email" icon={Mail} value={formData.email} onChange={handleChange} required disabled={isSaving} />
-          <FormInput label="Numero de Telephone" name="phone" type="tel" icon={Phone} value={formData.phone} onChange={handleChange} required disabled={isSaving} />
+          <FormInput label={du("mb7cfa73023b8")} name="firstName" icon={User} value={formData.firstName} onChange={handleChange} required disabled={isSaving} />
+          <FormInput label={du("m83ed01d19751")} name="lastName" icon={User} value={formData.lastName} onChange={handleChange} required disabled={isSaving} />
+          <FormInput label={du("m74d403cd5973")} name="email" type="email" icon={Mail} value={formData.email} onChange={handleChange} required disabled={isSaving} />
+          <FormInput label={du("mba8acb429ea7")} name="phone" type="tel" icon={Phone} value={formData.phone} onChange={handleChange} required disabled={isSaving} />
 
           {boutiques.length > 0 && (
             <div className="space-y-2 md:col-span-2">
               <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
-                <Store size={12} /> Site de rattachement <span className="text-rose-500">*</span>
+                <Store size={12} /> {du("me97138fd4ea4")}{" "}<span className="text-rose-500">*</span>
               </label>
               <div className="flex flex-wrap gap-2">
                 {boutiques.map((boutique) => {
@@ -880,17 +884,17 @@ function EditInterface({ employe, roles, departements, boutiques, onBoutiqueChan
                 })}
               </div>
               <p className="text-[10px] text-slate-400 font-medium">
-                Site actuel : {selectedBoutique?.name || formData.boutique || "Boutique active"}
+                {du("mf17612e23c17")}{" "}{selectedBoutique?.name || formData.boutique || du("m6cc413115662")}
               </p>
             </div>
           )}
 
           <div className="space-y-1.5 relative">
             <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
-              <ShieldCheck size={12} /> Role d&apos;exploitation <span className="text-rose-500">*</span>
+              <ShieldCheck size={12} /> {du("m446e19b46fdb")}{" "}<span className="text-rose-500">*</span>
             </label>
             <div onClick={() => { if (!isSaving && !isLoadingReferences) { setShowRoleDropdown(!showRoleDropdown); setShowDeptDropdown(false); } }} className={`w-full text-xs font-medium px-3 py-2.5 border border-slate-200 rounded-xl bg-white flex justify-between items-center transition-colors ${isLoadingReferences ? "cursor-wait opacity-70" : "cursor-pointer hover:border-indigo-500"}`}>
-              <span className={formData.role ? "text-slate-800" : "text-slate-400"}>{isLoadingReferences ? "Chargement des roles..." : formData.role || "Choisir un role"}</span>
+              <span className={formData.role ? "text-slate-800" : "text-slate-400"}>{isLoadingReferences ? du("m7587ee70217b") : formData.role || du("m2d2af23c3eef")}</span>
               <ChevronDown size={14} className={`text-slate-400 transition-transform ${showRoleDropdown ? "rotate-180" : ""}`} />
             </div>
             <AnimatePresence>
@@ -898,11 +902,11 @@ function EditInterface({ employe, roles, departements, boutiques, onBoutiqueChan
                 <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className="absolute w-full mt-1 bg-white border border-slate-200 shadow-xl rounded-xl z-50 p-2 space-y-2 max-h-[220px] overflow-y-auto">
                   <div className="relative flex items-center" onClick={(e) => e.stopPropagation()}>
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
-                    <input type="text" placeholder="Rechercher..." value={roleSearch} onChange={(e) => setRoleSearch(e.target.value)} className="w-full pl-12 pr-4 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 font-medium transition-all bg-slate-50/50" />
+                    <input type="text" placeholder={du("m8984247e3f42")} value={roleSearch} onChange={(e) => setRoleSearch(e.target.value)} className="w-full pl-12 pr-4 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 font-medium transition-all bg-slate-50/50" />
                   </div>
                   <div className="space-y-0.5 pt-1">
                     {filteredRoles.length === 0 ? (
-                      <div className="text-xs font-medium px-2.5 py-3 text-slate-400 text-center">Aucun element trouve</div>
+                      <div className="text-xs font-medium px-2.5 py-3 text-slate-400 text-center">{du("mf0b3da2d4f95")}</div>
                     ) : (
                       filteredRoles.map((role) => (
                         <div key={role.id} onClick={() => { setFormData({ ...formData, role: role.name, roleId: role.id }); setShowRoleDropdown(false); setRoleSearch(""); }} className={`text-xs font-medium px-2.5 py-2 rounded-lg cursor-pointer flex justify-between items-center ${formData.roleId === role.id ? "bg-indigo-50 text-indigo-600 font-bold" : "text-slate-700 hover:bg-slate-50"}`}>
@@ -919,10 +923,10 @@ function EditInterface({ employe, roles, departements, boutiques, onBoutiqueChan
 
           <div className="space-y-1.5 relative">
             <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
-              <Briefcase size={12} /> Departement <span className="text-rose-500">*</span>
+              <Briefcase size={12} /> {du("m143873c54316")}{" "}<span className="text-rose-500">*</span>
             </label>
             <div onClick={() => { if (!isSaving && !isLoadingReferences) { setShowDeptDropdown(!showDeptDropdown); setShowRoleDropdown(false); } }} className={`w-full text-xs font-medium px-3 py-2.5 border border-slate-200 rounded-xl bg-white flex justify-between items-center transition-colors ${isLoadingReferences ? "cursor-wait opacity-70" : "cursor-pointer hover:border-indigo-500"}`}>
-              <span className={formData.department ? "text-slate-800" : "text-slate-400"}>{isLoadingReferences ? "Chargement des departements..." : formData.department || "Choisir un departement"}</span>
+              <span className={formData.department ? "text-slate-800" : "text-slate-400"}>{isLoadingReferences ? du("m6317fa765bc6") : formData.department || du("mc0b978c538bc")}</span>
               <ChevronDown size={14} className={`text-slate-400 transition-transform ${showDeptDropdown ? "rotate-180" : ""}`} />
             </div>
             <AnimatePresence>
@@ -930,11 +934,11 @@ function EditInterface({ employe, roles, departements, boutiques, onBoutiqueChan
                 <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className="absolute w-full mt-1 bg-white border border-slate-200 shadow-xl rounded-xl z-50 p-2 space-y-2 max-h-[220px] overflow-y-auto">
                   <div className="relative flex items-center" onClick={(e) => e.stopPropagation()}>
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
-                    <input type="text" placeholder="Rechercher..." value={deptSearch} onChange={(e) => setDeptSearch(e.target.value)} className="w-full pl-12 pr-4 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 font-medium transition-all bg-slate-50/50" />
+                    <input type="text" placeholder={du("m8984247e3f42")} value={deptSearch} onChange={(e) => setDeptSearch(e.target.value)} className="w-full pl-12 pr-4 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 font-medium transition-all bg-slate-50/50" />
                   </div>
                   <div className="space-y-0.5 pt-1">
                     {filteredDepartments.length === 0 ? (
-                      <div className="text-xs font-medium px-2.5 py-3 text-slate-400 text-center">Aucun element trouve</div>
+                      <div className="text-xs font-medium px-2.5 py-3 text-slate-400 text-center">{du("mf0b3da2d4f95")}</div>
                     ) : (
                       filteredDepartments.map((dept) => (
                         <div key={dept.id} onClick={() => { setFormData({ ...formData, department: dept.name, departementId: dept.id }); setShowDeptDropdown(false); setDeptSearch(""); }} className={`text-xs font-medium px-2.5 py-2 rounded-lg cursor-pointer flex justify-between items-center ${formData.departementId === dept.id ? "bg-indigo-50 text-indigo-600 font-bold" : "text-slate-700 hover:bg-slate-50"}`}>
@@ -952,17 +956,17 @@ function EditInterface({ employe, roles, departements, boutiques, onBoutiqueChan
       </div>
 
       <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2 shrink-0">
-        <button onClick={onClose} disabled={isSaving || isLoadingReferences} className="px-4 py-2 hover:bg-slate-200/60 rounded-xl font-bold text-slate-500 text-[11px] transition-colors disabled:opacity-40">Annuler</button>
+        <button onClick={onClose} disabled={isSaving || isLoadingReferences} className="px-4 py-2 hover:bg-slate-200/60 rounded-xl font-bold text-slate-500 text-[11px] transition-colors disabled:opacity-40">{du("m46ad3916f6a0")}</button>
         <button onClick={handleSave} disabled={isSaving || isLoadingReferences} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-[11px] transition-colors flex items-center gap-2 disabled:bg-slate-400">
           {(isSaving || isLoadingReferences) && <Loader2 size={12} className="animate-spin" />}
-          Appliquer les changements
-        </button>
+          {du("m43e68afe45f2")}{" "}</button>
       </div>
     </>
   );
 }
 
 function ResetInterface({ employe, onClose, onReset, copyToClipboard, copied }: ResetInterfaceProps) {
+  const { ui: du } = useDashboardLanguage();
   const [generatedTempPassword, setGeneratedTempPassword] = useState(employe.temporaryAccess?.temporaryPassword || "");
   const [isResetting, setIsResetting] = useState(false);
   const [error, setError] = useState("");
@@ -986,23 +990,23 @@ function ResetInterface({ employe, onClose, onReset, copyToClipboard, copied }: 
         <div className="flex items-center gap-2">
           <div className="p-2 bg-amber-50 text-amber-600 rounded-lg"><KeyRound size={16} /></div>
           <div>
-            <h3 className="font-bold text-slate-900 text-sm">Identifiants & Securite</h3>
-            <p className="text-[11px] text-slate-400">Reinitialiser les acces de l&apos;utilisateur.</p>
+            <h3 className="font-bold text-slate-900 text-sm">{du("m7e6fc6c631eb")}</h3>
+            <p className="text-[11px] text-slate-400">{du("medc26e0143ba")}</p>
           </div>
         </div>
         <button onClick={onClose} disabled={isResetting} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 transition-colors disabled:opacity-40"><X size={16} /></button>
       </div>
 
       <div className="p-5 space-y-4 text-xs">
-        {error && <div className="rounded-xl border border-rose-100 bg-rose-50 p-3 text-xs font-semibold text-rose-600">{error}</div>}
+        {error && <div className="rounded-xl border border-rose-100 bg-rose-50 p-3 text-xs font-semibold text-rose-600">{du(error)}</div>}
         <div className="p-3 bg-amber-50/50 border border-amber-100 rounded-xl flex gap-3 text-amber-800">
           <AlertTriangle size={18} className="shrink-0 mt-0.5" />
-          <p className="leading-relaxed font-medium">Cette action deconnectera immediatement la session de <strong>{employe.firstName} {employe.lastName}</strong>.</p>
+          <p className="leading-relaxed font-medium">{du("m60e2d5cfd00e")}{" "}<strong>{employe.firstName} {employe.lastName}</strong>.</p>
         </div>
 
         <div className="space-y-3">
           <AccessValue
-            label="Code temporaire initial"
+            label={du("m5a11e8b4e010")}
             value={generatedTempPassword || "Cliquez sur reinitialiser"}
             icon={Lock}
             canCopy={Boolean(generatedTempPassword)}
@@ -1011,8 +1015,7 @@ function ResetInterface({ employe, onClose, onReset, copyToClipboard, copied }: 
           />
           {!generatedTempPassword && (
             <p className="text-[10px] text-slate-400 font-medium leading-relaxed">
-              Le code initial n&apos;est plus affiche si l&apos;utilisateur a deja change son mot de passe. Vous pouvez generer un nouveau code avec le bouton de reinitialisation.
-            </p>
+              {du("m14242019d7fe")}{" "}</p>
           )}
         </div>
       </div>
@@ -1020,7 +1023,7 @@ function ResetInterface({ employe, onClose, onReset, copyToClipboard, copied }: 
       <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
         <button onClick={handleReset} disabled={isResetting} className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-bold text-[11px] transition-colors flex items-center gap-1.5 disabled:bg-slate-400">
           {isResetting ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
-          {isResetting ? "Reinitialisation..." : "Reinitialiser"}
+          {isResetting ? du("md9648d5fa331") : du("m045fa787b10d")}
         </button>
       </div>
     </>
@@ -1042,9 +1045,10 @@ function AccessValue({
   copied: boolean;
   onCopy: () => void;
 }) {
+  const { ui: du } = useDashboardLanguage();
   return (
     <div className="space-y-1.5">
-      <label className="block text-slate-500 font-semibold">{label}</label>
+      <label className="block text-slate-500 font-semibold">{du(label)}</label>
       <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 p-2.5 rounded-xl font-mono text-slate-700 justify-between">
         <div className="flex items-center gap-2 min-w-0">
           <Icon size={14} className="text-slate-400 shrink-0" />
@@ -1053,7 +1057,7 @@ function AccessValue({
         {canCopy && (
           <button onClick={onCopy} className={`p-1.5 rounded-lg transition-colors flex items-center gap-1 font-sans shrink-0 ${copied ? "bg-emerald-100 text-emerald-700" : "bg-white hover:bg-slate-100 border border-slate-200 text-slate-500"}`}>
             {copied ? <Check size={12} /> : <Copy size={12} />}
-            <span className="text-[10px] font-bold">{copied ? "Copie" : "Copier"}</span>
+            <span className="text-[10px] font-bold">{copied ? du("m03bb28dfec9c") : du("m84b03702780e")}</span>
           </button>
         )}
       </div>
@@ -1062,6 +1066,7 @@ function AccessValue({
 }
 
 function StatusInterface({ employe, onClose, onConfirm }: StatusInterfaceProps) {
+  const { ui: du } = useDashboardLanguage();
   const isCurrentlyActive = employe.status === "Actif";
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -1077,8 +1082,8 @@ function StatusInterface({ employe, onClose, onConfirm }: StatusInterfaceProps) 
         <div className="flex items-center gap-2">
           <div className={`p-2 ${isCurrentlyActive ? "bg-rose-50 text-rose-600" : "bg-emerald-50 text-emerald-600"} rounded-lg`}><Power size={16} /></div>
           <div>
-            <h3 className="font-bold text-slate-900 text-sm">Changer le statut</h3>
-            <p className="text-[11px] text-slate-400">Modifier l&apos;etat operationnel.</p>
+            <h3 className="font-bold text-slate-900 text-sm">{du("m64a1f1b9aa13")}</h3>
+            <p className="text-[11px] text-slate-400">{du("me1494ff44095")}</p>
           </div>
         </div>
         <button onClick={onClose} disabled={isProcessing} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 transition-colors disabled:opacity-40"><X size={16} /></button>
@@ -1089,23 +1094,23 @@ function StatusInterface({ employe, onClose, onConfirm }: StatusInterfaceProps) 
           <User size={24} className="text-slate-500" />
         </div>
         <p className="text-slate-600 text-sm font-medium">
-          Voulez-vous vraiment {isCurrentlyActive ? "suspendre" : "activer"} le collaborateur{" "}
+          {du("m2b2918730b81")}{" "}{isCurrentlyActive ? du("me23ec6a0aae1") : du("m0f83b885889f")} {du("mc6c3ecdef93a")}{" "}
           <span className="font-bold text-slate-900">{employe.firstName} {employe.lastName}</span> ?
         </p>
       </div>
 
       <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
-        <button onClick={onClose} disabled={isProcessing} className="px-4 py-2 hover:bg-slate-200/60 rounded-xl font-bold text-slate-500 text-[11px] transition-colors disabled:opacity-40">Annuler</button>
+        <button onClick={onClose} disabled={isProcessing} className="px-4 py-2 hover:bg-slate-200/60 rounded-xl font-bold text-slate-500 text-[11px] transition-colors disabled:opacity-40">{du("m46ad3916f6a0")}</button>
         <button onClick={handleConfirm} disabled={isProcessing} className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/60 rounded-xl font-bold text-[11px] transition-colors shadow-sm flex items-center gap-2 disabled:opacity-60">
           {isProcessing && <Loader2 size={12} className="animate-spin" />}
-          Confirmer
-        </button>
+          {du("m30a8b7846961")}{" "}</button>
       </div>
     </>
   );
 }
 
 function DeleteInterface({ employe, onClose, onConfirm }: DeleteInterfaceProps) {
+  const { ui: du } = useDashboardLanguage();
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handleConfirm = async () => {
@@ -1120,8 +1125,8 @@ function DeleteInterface({ employe, onClose, onConfirm }: DeleteInterfaceProps) 
         <div className="flex items-center gap-2">
           <div className="p-2 bg-rose-50 text-rose-600 rounded-lg"><Trash2 size={16} /></div>
           <div>
-            <h3 className="font-bold text-slate-900 text-sm">Supprimer definitivement</h3>
-            <p className="text-[11px] text-slate-400">Retirer l&apos;acces et detruire la fiche.</p>
+            <h3 className="font-bold text-slate-900 text-sm">{du("m0ab4711708a9")}</h3>
+            <p className="text-[11px] text-slate-400">{du("mf14507c3554f")}</p>
           </div>
         </div>
         <button onClick={onClose} disabled={isProcessing} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 transition-colors disabled:opacity-40"><X size={16} /></button>
@@ -1133,19 +1138,18 @@ function DeleteInterface({ employe, onClose, onConfirm }: DeleteInterfaceProps) 
         </div>
         <div>
           <p className="text-slate-600 text-sm font-medium">
-            Etes-vous sur de vouloir supprimer definitivement le collaborateur{" "}
+            {du("mf8943f901f3e")}{" "}
             <span className="font-bold text-slate-900">{employe.firstName} {employe.lastName}</span> ?
           </p>
-          <p className="text-slate-400 text-[10px] mt-1 font-medium">Cette action est irreversible et annulera immediatement toutes ses autorisations.</p>
+          <p className="text-slate-400 text-[10px] mt-1 font-medium">{du("m466a5024b1d1")}</p>
         </div>
       </div>
 
       <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
-        <button onClick={onClose} disabled={isProcessing} className="px-4 py-2 hover:bg-slate-200/60 rounded-xl font-bold text-slate-500 text-[11px] transition-colors disabled:opacity-40">Annuler</button>
+        <button onClick={onClose} disabled={isProcessing} className="px-4 py-2 hover:bg-slate-200/60 rounded-xl font-bold text-slate-500 text-[11px] transition-colors disabled:opacity-40">{du("m46ad3916f6a0")}</button>
         <button onClick={handleConfirm} disabled={isProcessing} className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/60 rounded-xl font-bold text-[11px] transition-colors shadow-sm flex items-center gap-2 disabled:opacity-60">
           {isProcessing && <Loader2 size={12} className="animate-spin" />}
-          Supprimer
-        </button>
+          {du("m5e5d0216ce0b")}{" "}</button>
       </div>
     </>
   );

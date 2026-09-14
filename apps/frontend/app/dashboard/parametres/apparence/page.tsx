@@ -1,4 +1,7 @@
 "use client";
+import { dashboardUi as du, dashboardLocale } from "../../../../src/i18n/catalog";
+import { useLanguage as useDashboardLanguage } from "../../../../src/components/LanguageRuntime";
+
 
 import { ChangeEvent, useEffect, useMemo, useState } from "react";
 import { ImagePlus, Palette, RotateCcw, Save, ShieldAlert, Trash2 } from "lucide-react";
@@ -11,6 +14,7 @@ type Appearance = typeof DEFAULTS;
 type Store = { id: string; isActive?: boolean; appearance?: Partial<Appearance> };
 
 export default function AppearancePage() {
+  const { ui: du } = useDashboardLanguage();
   const { translate } = useLanguage();
   const [store, setStore] = useState<Store | null>(null);
   const [form, setForm] = useState<Appearance>(DEFAULTS);
@@ -91,7 +95,7 @@ export default function AppearancePage() {
           <div className="flex flex-wrap gap-2"><label className={`rounded-xl bg-indigo-600 px-4 py-2 text-xs font-black text-white ${!canEdit ? "pointer-events-none opacity-50" : "cursor-pointer"}`}><input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={chooseLogo}/>{translate("Choisir une image")}</label><button disabled={!canEdit || !form.logo} onClick={() => preview({ ...form, logo: "" })} className="flex items-center gap-2 rounded-xl border px-4 py-2 text-xs font-black disabled:opacity-40"><Trash2 size={14}/>{translate("Supprimer le logo")}</button></div>
         </section>
       </div>
-      {message && <p className="text-sm font-bold text-indigo-600">{message}</p>}
+      {message && <p className="text-sm font-bold text-indigo-600">{du(message)}</p>}
       <div className="flex flex-wrap justify-end gap-3"><button disabled={!canEdit} onClick={() => preview(DEFAULTS)} className="flex items-center gap-2 rounded-xl border px-5 py-3 text-xs font-black disabled:opacity-40"><RotateCcw size={15}/>{translate("Réinitialiser")}</button><button disabled={!canEdit || saving} onClick={save} className="flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-xs font-black text-white disabled:opacity-40"><Save size={15}/>{saving ? translate("Enregistrement...") : translate("Enregistrer les modifications")}</button></div>
     </div>
   );

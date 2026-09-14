@@ -1,4 +1,50 @@
+import frCommon from "./locales/fr/common.json";
+import enCommon from "./locales/en/common.json";
+
 export type AppLanguage = "fr" | "en";
+
+let dashboardLanguage: AppLanguage = "fr";
+export const setDashboardLanguage = (language: AppLanguage) => { dashboardLanguage = language; };
+export const dashboardLocale = () => dashboardLanguage === "en" ? "en-GB" : "fr-FR";
+const dashboardMessages: Record<AppLanguage, Record<string, string>> = {
+  fr: frCommon.dashboard,
+  en: enCommon.dashboard,
+};
+const normalizeUi = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+  .replace(/[’`]/g, "'").replace(/\s+/g, " ").trim().toLowerCase();
+const dashboardKeys = new Map(Object.entries(dashboardMessages.fr).map(([key, value]) => [normalizeUi(value), key]));
+const dashboardTemplates = Object.entries(dashboardMessages.fr)
+  .filter(([, value]) => /\{p\d+\}/.test(value))
+  .sort((a, b) => b[1].replace(/\{p\d+\}/g, "").length - a[1].replace(/\{p\d+\}/g, "").length)
+  .map(([key, source]) => {
+    const names: string[] = [];
+    const pattern = source.split(/(\{p\d+\})/g).map((part) => {
+      if (/^\{p\d+\}$/.test(part)) { names.push(part.slice(1, -1)); return "([\\s\\S]*?)"; }
+      return part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    }).join("");
+    return { key, names, pattern: new RegExp("^" + pattern + "$", "i") };
+  });
+
+// Only explicitly marked UI labels are translated; API values and user data stay intact.
+export function dashboardUi<T>(value: T, params?: Record<string, string | number>, language: AppLanguage = dashboardLanguage): T {
+  if (typeof value !== "string") return value;
+  const key = Object.prototype.hasOwnProperty.call(dashboardMessages.fr, value) ? value : dashboardKeys.get(normalizeUi(value));
+  if (!key) {
+    if (language === "en") {
+      for (const template of dashboardTemplates) {
+        const match = template.pattern.exec(value);
+        if (!match) continue;
+        const captures = Object.fromEntries(template.names.map((name, index) => [name, match[index + 1]]));
+        return (dashboardMessages.en[template.key] ?? value).replace(/\{(p\d+)\}/g, (token, name: string) => captures[name] ?? token) as T;
+      }
+    }
+    return value;
+  }
+  let result = dashboardMessages[language][key] ?? dashboardMessages.fr[key];
+  if (params) result = result.replace(/\{(\w+)\}/g, (match, name: string) =>
+    Object.prototype.hasOwnProperty.call(params, name) ? String(params[name]) : match);
+  return result as T;
+}
 
 type Pair = readonly [fr: string, en: string];
 type RegexTranslation = readonly [RegExp, string];
@@ -656,6 +702,8 @@ const applyRegexTranslations = (value: string, translations: RegexTranslation[])
 };
 
 export const translateValue = (value: string, language: AppLanguage) => {
+  const dashboardTranslation = dashboardUi(value, undefined, language);
+  if (dashboardTranslation !== value) return dashboardTranslation;
   const trimmed = value.trim();
   if (!trimmed) return value;
 

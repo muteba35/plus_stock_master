@@ -1,3 +1,5 @@
+
+import { dashboardUi as du, dashboardLocale } from "../../../../src/i18n/catalog";
 ﻿export const getCurrencyInfo = (devise?: string) => {
   const value = devise || "USD ($)";
 
@@ -26,5 +28,5 @@ export const getActiveBoutiqueCurrency = () => {
 export const formatMoney = (value: number | string | undefined | null, devise?: string) => {
   const amount = Number(value || 0);
   const { symbol } = getCurrencyInfo(devise);
-  return `${amount.toLocaleString("fr-FR")} ${symbol}`;
+  return `${amount.toLocaleString(dashboardLocale())} ${symbol}`;
 };
