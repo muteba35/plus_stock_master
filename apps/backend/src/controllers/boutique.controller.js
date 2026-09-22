@@ -250,7 +250,7 @@ export const updateBoutiqueAppearance = async (req, res) => {
     });
     if (!boutique) return res.status(404).json({ message: "Boutique introuvable pour ce compte." });
 
-    const fonts = ["Inter", "Roboto", "Poppins", "Montserrat", "Open Sans"];
+    const fonts = ["system", "Inter", "Roboto", "Poppins", "Montserrat", "Open Sans"];
     const sizes = ["small", "normal", "large", "xlarge"];
     const themes = ["light", "dark", "system"];
     const colorPattern = /^#[0-9A-Fa-f]{6}$/;

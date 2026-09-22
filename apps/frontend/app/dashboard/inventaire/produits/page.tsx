@@ -1,4 +1,5 @@
 "use client";
+import { useDashboardAccess } from "../../components/DashboardAccess";
 import { dashboardUi as du, dashboardLocale } from "../../../../src/i18n/catalog";
 import { useLanguage as useDashboardLanguage } from "../../../../src/components/LanguageRuntime";
 
@@ -113,16 +114,6 @@ const requestHeaders = () => {
   return { "Content-Type": "application/json", Authorization: token ? `Bearer ${token}` : "" };
 };
 
-const getStoredAccess = () => {
-  if (typeof window === "undefined") return { permissions: [] as string[], isOwner: false };
-  try {
-    const permissions = JSON.parse(localStorage.getItem("user_permissions") || "[]") as string[];
-    const profile = JSON.parse(localStorage.getItem("user_profile") || "{}") as { role?: string };
-    return { permissions, isOwner: profile.role === "Admin Général" };
-  } catch {
-    return { permissions: [] as string[], isOwner: false };
-  }
-};
 
 const compressProductImage = (file: File): Promise<string> => new Promise((resolve, reject) => {
   if (!file.type.startsWith("image/")) {
@@ -237,7 +228,7 @@ export default function ProduitsPage() {
   const [deleteError, setDeleteError] = useState("");
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [currency, setCurrency] = useState("USD ($)");
-  const [{ permissions, isOwner }] = useState(getStoredAccess);
+  const { permissions, isOwner } = useDashboardAccess();
   const filterRef = useRef<HTMLDivElement | null>(null);
 
   const canCreate = isOwner || permissions.includes("AJOUTER_PRODUIT");

@@ -1,4 +1,5 @@
 "use client";
+import { useDashboardAccess } from "../../components/DashboardAccess";
 import { dashboardUi as du, dashboardLocale } from "../../../../src/i18n/catalog";
 import { useLanguage as useDashboardLanguage } from "../../../../src/components/LanguageRuntime";
 
@@ -96,16 +97,6 @@ type ReportData = {
 const emptyMetrics: Metrics = { ventes: 0, caHT: 0, caTTC: 0, tva: 0, cout: 0, marge: 0, tauxMarge: 0, retours: 0, montantRetours: 0, netApresRetours: 0 };
 const emptyData: ReportData = { success: true, scope: "own", devise: "USD ($)", metrics: emptyMetrics, daily: [], cashiers: [], payments: [], salesDetails: [], returns: [] };
 
-const getStoredAccess = () => {
-  if (typeof window === "undefined") return { permissions: [] as string[], isOwner: false };
-  try {
-    const permissions = JSON.parse(localStorage.getItem("user_permissions") || "[]") as string[];
-    const profile = JSON.parse(localStorage.getItem("user_profile") || "{}") as { role?: string };
-    return { permissions, isOwner: String(profile.role || "").toLowerCase().includes("admin") };
-  } catch {
-    return { permissions: [] as string[], isOwner: false };
-  }
-};
 
 const compactMoney = (value: number, devise: string) => {
   if (Math.abs(value || 0) < 1000000) return formatMoney(value, devise);
@@ -147,7 +138,7 @@ export default function CashReportsPage() {
   const [page, setPage] = useState(1);
   const [metricOpen, setMetricOpen] = useState<null | { title: string; value: string; detail: string; formula?: string; calculation?: string; notes?: string[] }>(null);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [{ permissions, isOwner }] = useState(getStoredAccess);
+  const { permissions, isOwner } = useDashboardAccess();
 
   const canExport = isOwner || permissions.includes("EXPORTER_RAPPORTS_CAISSE") || permissions.includes("EXPORTER_RAPPORTS");
 

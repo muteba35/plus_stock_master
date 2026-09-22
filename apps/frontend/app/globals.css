@@ -22,14 +22,14 @@
 }
 
 body {
-  font-family: var(--movoora-font, Inter, Arial, sans-serif);
+  font-family: var(--movoora-font, Arial, Helvetica, sans-serif);
   font-size: var(--movoora-base-size, 16px);
   background: var(--background);
   color: var(--foreground);
 }
 
 /* Dashboard portals share the theme of the connected workspace. */
-html[data-dashboard] { --font-sans: var(--movoora-font, Inter, Arial, sans-serif); scrollbar-color: #94a3b8 transparent; }
+html[data-dashboard] { --font-sans: var(--movoora-font, var(--font-geist-sans)); scrollbar-color: #94a3b8 transparent; }
 html.dark[data-dashboard] { scrollbar-color: #475569 #111827; }
 html.dark[data-dashboard] :is([class~="bg-[#fcfdfe]"], [class~="bg-[#F8FAFC]"], [class~="bg-[#f8fafc]"], [class~="bg-[#FAFBFC]"], [class~="bg-gray-50"], [class~="bg-gray-100"]) { background-color: #172033 !important; }
 html.dark[data-dashboard] :is([class~="bg-indigo-50"], [class~="bg-blue-50"], [class~="bg-sky-50"]) { background-color: #182b46 !important; }
@@ -43,10 +43,22 @@ html.dark[data-dashboard] [class~="text-emerald-600"] { color: #6ee7b7 !importan
 html.dark[data-dashboard] :is([class~="divide-slate-100"], [class~="divide-slate-200"]) > :not(:last-child) { border-color: #334155; }
 html[data-dashboard] [class~="bg-indigo-600"] { background-color: var(--movoora-primary, #4f46e5); }
 html[data-dashboard] a[class~="text-indigo-600"] { color: var(--movoora-primary, #4f46e5); }
-html[data-dashboard] .font-sans { font-family: var(--movoora-font, Inter, Arial, sans-serif); }
-html[data-dashboard] aside[class*="bg-"] { background-color: var(--movoora-secondary, #0f172a); }
+html[data-dashboard] .font-sans { font-family: var(--movoora-font, var(--font-geist-sans), Arial, sans-serif); }
+html[data-dashboard] [data-dashboard-sidebar] { background-color: var(--movoora-secondary, #1c2434); }
+html[data-dashboard]:not(.dark) { --background: #ffffff; --foreground: #171717; color-scheme: light; }
 html[data-dashboard] input[type="checkbox"] { accent-color: var(--movoora-accent, #10b981); }
 html.dark[data-dashboard] [class~="bg-[#F1F5F9]"] { background-color: #0b1120 !important; }
+
+/* Movoora global dark mode */
+.appearance-settings fieldset > section { padding-bottom: 0.5rem; }
+.appearance-settings input:focus-visible,
+.appearance-settings select:focus-visible,
+.appearance-settings button:focus-visible {
+  outline: 2px solid var(--movoora-primary, #4f46e5);
+  outline-offset: 3px;
+}
+.appearance-settings button { transition: background-color 150ms, border-color 150ms; }
+.appearance-settings button:disabled { cursor: not-allowed; }
 
 /* Movoora global dark mode */
 html.dark {

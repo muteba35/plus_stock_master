@@ -1,4 +1,5 @@
 "use client";
+import { useDashboardAccess } from "../components/DashboardAccess";
 import { dashboardUi as du, dashboardLocale } from "../../../src/i18n/catalog";
 import { useLanguage as useDashboardLanguage } from "../../../src/components/LanguageRuntime";
 
@@ -45,16 +46,6 @@ type ExchangeRate = { source: string; cible: string; taux: number };
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://plus-stock-master.onrender.com/api";
 const TVA_RATE = 0.16;
 
-const getStoredPermissions = () => {
-  if (typeof window === "undefined") return { permissions: [] as string[], isOwner: false };
-  try {
-    const permissions = JSON.parse(localStorage.getItem("user_permissions") || "[]") as string[];
-    const profile = JSON.parse(localStorage.getItem("user_profile") || "{}") as { role?: string };
-    return { permissions, isOwner: profile.role === "Admin Général" };
-  } catch {
-    return { permissions: [] as string[], isOwner: false };
-  }
-};
 
 export default function CashRegisterPage() {
   const { ui: du } = useDashboardLanguage();
@@ -81,7 +72,7 @@ export default function CashRegisterPage() {
   const [selectedCameraId, setSelectedCameraId] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("Espèces");
   const [received, setReceived] = useState("");
-  const [{ permissions, isOwner }] = useState(getStoredPermissions);
+  const { permissions, isOwner } = useDashboardAccess();
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const scannerControlsRef = useRef<IScannerControls | null>(null);

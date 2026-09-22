@@ -1,4 +1,5 @@
 "use client";
+import { useDashboardAccess } from "../../components/DashboardAccess";
 import { dashboardUi as du, dashboardLocale } from "../../../../src/i18n/catalog";
 import { useLanguage as useDashboardLanguage } from "../../../../src/components/LanguageRuntime";
 
@@ -31,16 +32,6 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://plus-stock-master.on
 const COLORS = ["#6366f1", "#06b6d4", "#f59e0b", "#10b981", "#f43f5e", "#8b5cf6"];
 const EMPTY_FORM: CategoryForm = { nom: "", description: "", couleur: COLORS[0] };
 
-const getStoredAccess = () => {
-  if (typeof window === "undefined") return { permissions: [] as string[], isOwner: false };
-  try {
-    const permissions = JSON.parse(localStorage.getItem("user_permissions") || "[]") as string[];
-    const profile = JSON.parse(localStorage.getItem("user_profile") || "{}") as { role?: string };
-    return { permissions, isOwner: profile.role === "Admin Général" };
-  } catch {
-    return { permissions: [] as string[], isOwner: false };
-  }
-};
 
 const parseCsvLine = (line: string, separator: string) => {
   const values: string[] = [];
@@ -113,7 +104,7 @@ export default function CategoriesInventairePage() {
   const [formError, setFormError] = useState("");
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [currency, setCurrency] = useState("USD ($)");
-  const [{ permissions, isOwner }] = useState(getStoredAccess);
+  const { permissions, isOwner } = useDashboardAccess();
 
   const canCreate = isOwner || permissions.includes("CREER_CATEGORIE");
   const canEdit = isOwner || permissions.includes("MODIFIER_CATEGORIE");

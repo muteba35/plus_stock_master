@@ -254,9 +254,10 @@ export default function DashboardLayout({
 
   const applyAppearance = useCallback((appearance: BoutiqueAppearance = {}) => {
     const root = document.documentElement;
-    const font = appearance.fontFamily || "Inter";
+    const font = appearance.fontFamily || "system";
     const size = { small: "14px", normal: "16px", large: "17px", xlarge: "18px" }[appearance.textSize || "normal"];
-    root.style.setProperty("--movoora-font", `"${font}", Inter, Arial, sans-serif`);
+    if (font === "system") root.style.removeProperty("--movoora-font");
+    else root.style.setProperty("--movoora-font", `"${font}", Arial, sans-serif`);
     root.style.setProperty("--movoora-base-size", size);
     root.style.fontSize = size;
     root.style.setProperty("--movoora-primary", appearance.primaryColor || "#4F46E5");
@@ -288,7 +289,10 @@ export default function DashboardLayout({
         .then((response) => response.ok ? response.json() : null)
         .then((data) => {
           const active = data?.boutique;
-          if (!controller.signal.aborted && active?.id === user.boutiqueActive) applyAppearance(active.appearance || {});
+          if (!controller.signal.aborted && active?.id === user.boutiqueActive) {
+            window.clearTimeout(reset);
+            applyAppearance(active.appearance || {});
+          }
         })
         .catch(() => undefined);
     }
@@ -684,6 +688,7 @@ export default function DashboardLayout({
 
       {/* SIDEBAR */}
       <aside
+        data-dashboard-sidebar
         className={`
           fixed lg:static inset-y-0 left-0 z-50 h-[100dvh] lg:h-screen
           w-[min(18rem,calc(100vw-1rem))]

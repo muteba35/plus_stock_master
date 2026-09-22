@@ -1,5 +1,5 @@
 export const APPEARANCE_DEFAULTS = {
-  fontFamily: "Inter", textSize: "normal", theme: "system",
+  fontFamily: "system", textSize: "normal", theme: "system",
   primaryColor: "#4F46E5", secondaryColor: "#0F172A", accentColor: "#10B981", logo: "",
 };
 export type Appearance = typeof APPEARANCE_DEFAULTS;

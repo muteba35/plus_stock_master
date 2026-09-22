@@ -1,4 +1,5 @@
 "use client";
+import { useDashboardAccess } from "../../components/DashboardAccess";
 import { dashboardUi as du, dashboardLocale } from "../../../../src/i18n/catalog";
 import { useLanguage as useDashboardLanguage } from "../../../../src/components/LanguageRuntime";
 
@@ -24,14 +25,6 @@ const requestHeaders = () => {
   const token = localStorage.getItem("token");
   return { "Content-Type": "application/json", Authorization: token ? `Bearer ${token}` : "" };
 };
-const getStoredAccess = () => {
-  if (typeof window === "undefined") return { permissions: [] as string[], isOwner: false };
-  try {
-    const permissions = JSON.parse(localStorage.getItem("user_permissions") || "[]") as string[];
-    const profile = JSON.parse(localStorage.getItem("user_profile") || "{}") as { role?: string };
-    return { permissions, isOwner: profile.role === "Admin Général" };
-  } catch { return { permissions: [] as string[], isOwner: false }; }
-};
 
 export default function AlertesStockPage() {
   const { ui: du } = useDashboardLanguage();
@@ -51,7 +44,7 @@ export default function AlertesStockPage() {
   const [reference, setReference] = useState("");
   const [formError, setFormError] = useState("");
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-  const [{ permissions, isOwner }] = useState(getStoredAccess);
+  const { permissions, isOwner } = useDashboardAccess();
   const filterRef = useRef<HTMLDivElement | null>(null);
   const canRestock = isOwner || permissions.includes("REAPPROVISIONNER_STOCK");
 

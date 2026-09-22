@@ -1,4 +1,5 @@
 "use client";
+import { useDashboardAccess } from "../../components/DashboardAccess";
 import { dashboardUi as du, dashboardLocale } from "../../../../src/i18n/catalog";
 import { useLanguage as useDashboardLanguage } from "../../../../src/components/LanguageRuntime";
 
@@ -51,16 +52,6 @@ const emptyData: ProjectionData = {
   categories: [],
 };
 
-const getStoredAccess = () => {
-  if (typeof window === "undefined") return { permissions: [] as string[], isOwner: false };
-  try {
-    const permissions = JSON.parse(localStorage.getItem("user_permissions") || "[]") as string[];
-    const profile = JSON.parse(localStorage.getItem("user_profile") || "{}") as { role?: string };
-    return { permissions, isOwner: String(profile.role || "").toLowerCase().includes("admin") };
-  } catch {
-    return { permissions: [] as string[], isOwner: false };
-  }
-};
 
 const csvValue = (value: string | number | undefined) => '"' + String(value ?? "").replace(/"/g, '""') + '"';
 const escapeHtml = (value: string | number | undefined) => String(value ?? "").replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[char] || char));
@@ -77,7 +68,7 @@ export default function InventoryProjectionPage() {
   const [tab, setTab] = useState<"products" | "categories">("products");
   const [page, setPage] = useState(1);
   const [infoModal, setInfoModal] = useState<{ title: string; body: string; formula: string } | null>(null);
-  const [{ permissions, isOwner }] = useState(getStoredAccess);
+  const { permissions, isOwner } = useDashboardAccess();
   const canExport = isOwner || permissions.includes("EXPORTER_PROJECTION_PRODUITS");
 
   const fetchProjection = useCallback(async () => {
