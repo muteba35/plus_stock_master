@@ -262,6 +262,9 @@ export default function EmployeModal({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.98 }}
             transition={{ duration: 0.2 }}
+            role="dialog"
+            aria-modal="true"
+            aria-label={du("mcfb385378ec4")}
             className="relative z-10 w-full max-w-3xl bg-white rounded-2xl border border-slate-200/80 shadow-xl overflow-hidden flex flex-col max-h-[90vh]"
           >
             <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-[#fcfdfe] shrink-0">

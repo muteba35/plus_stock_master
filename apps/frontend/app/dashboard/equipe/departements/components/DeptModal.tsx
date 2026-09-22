@@ -104,7 +104,10 @@ export default function DeptModal({ isOpen, onClose, onSuccess }: DeptModalProps
             initial={{ opacity: 0, y: 20, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.98 }}
-            className="relative z-10 w-full max-w-lg bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden flex flex-col"
+            role="dialog"
+            aria-modal="true"
+            aria-label={du("m89ee85443942")}
+            className="relative z-10 w-full max-w-lg max-h-[92dvh] bg-white rounded-2xl border border-slate-200 shadow-xl overflow-y-auto flex flex-col"
           >
             <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-[#fcfdfe]">
               <div>

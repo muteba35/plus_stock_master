@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import axios from "axios";
 import { AuditLog, Boutique, Categorie, Departement, ExchangeRate, FinanceCharge, InventaireAudit, MouvementStock, Notification, NotificationPreference, Permission, Produit, RetourClient, Role, RolePermission, Utilisateur, Vente } from "../models/Utilisateur.js";
 import { sendEmail, emailBrand } from "../utils/sendEmail.js";
+import { normalizeLogo } from "../utils/appearanceValidation.js";
 
 const normalizeBoutique = (boutique, activeId) => ({
   id: boutique._id,
@@ -223,10 +224,25 @@ export const updateBoutique = async (req, res) => {
   }
 };
 
+export const getBoutiqueAppearance = async (req, res) => {
+  try {
+    const id = req.user.boutiqueActive || req.user.boutiqueId;
+    const boutique = id ? await Boutique.findOne({ _id: id, isDeleted: false }).select("nom appearance") : null;
+    if (!boutique) return res.status(404).json({ message: "Boutique active introuvable." });
+    return res.json({ success: true, boutique: { id: boutique._id, nom: boutique.nom, appearance: boutique.appearance || {} } });
+  } catch (error) {
+    console.error("getBoutiqueAppearance:", error);
+    return res.status(500).json({ message: "Chargement impossible." });
+  }
+};
+
 export const updateBoutiqueAppearance = async (req, res) => {
   try {
     const context = await resolveBoutiqueContext(req, res);
     if (!context) return;
+    if (String(req.params.id) !== String(context.activeBoutiqueId)) {
+      return res.status(403).json({ message: "Modifiez uniquement la boutique active." });
+    }
     const boutique = await Boutique.findOne({
       _id: req.params.id,
       userId: context.ownerId,
@@ -241,6 +257,10 @@ export const updateBoutiqueAppearance = async (req, res) => {
     const current = boutique.appearance?.toObject?.() || boutique.appearance || {};
     const next = { ...current };
     const body = req.body || {};
+    const allowedKeys = ["fontFamily", "textSize", "theme", "primaryColor", "secondaryColor", "accentColor", "logo"];
+    if (typeof body !== "object" || Array.isArray(body) || Object.keys(body).some((key) => !allowedKeys.includes(key))) {
+      return res.status(400).json({ message: "Parametres d'apparence invalides." });
+    }
     if (body.fontFamily !== undefined) {
       if (!fonts.includes(body.fontFamily)) return res.status(400).json({ message: "Police non autorisee." });
       next.fontFamily = body.fontFamily;
@@ -255,16 +275,16 @@ export const updateBoutiqueAppearance = async (req, res) => {
     }
     for (const key of ["primaryColor", "secondaryColor", "accentColor"]) {
       if (body[key] !== undefined) {
-        if (!colorPattern.test(body[key])) return res.status(400).json({ message: "Couleur invalide." });
+        if (typeof body[key] !== "string" || !colorPattern.test(body[key])) return res.status(400).json({ message: "Couleur invalide." });
         next[key] = body[key].toUpperCase();
       }
     }
     if (body.logo !== undefined) {
-      const logo = String(body.logo || "");
-      if (logo && (!/^data:image\/(png|jpeg|webp);base64,/i.test(logo) || logo.length > 900000)) {
+      try {
+        next.logo = await normalizeLogo(body.logo);
+      } catch {
         return res.status(400).json({ message: "Logo invalide. Utilisez PNG, JPEG ou WebP (500 Ko maximum)." });
       }
-      next.logo = logo;
     }
     boutique.appearance = next;
     await boutique.save();

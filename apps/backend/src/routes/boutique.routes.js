@@ -8,13 +8,13 @@ import {
   setActiveBoutique,
   updateBoutique,
   updateBoutiqueAppearance,
+  getBoutiqueAppearance,
   getCurrencySettings,
   syncCurrencySettings,
   updateCurrencySettings,
 } from "../controllers/boutique.controller.js";
 import { checkAnyPermission, checkPermission, protect } from "../middlewares/authMiddleware.js";
 import { boutiqueValidation } from "../middlewares/securityMiddleware.js";
-import { attachSubscription, enforceBoutiqueLimit } from "../middlewares/subscriptionMiddleware.js";
 
 const router = express.Router();
 
@@ -73,7 +73,7 @@ const confirmDeletionLimiter = createLimiter({
 });
 
 router.use(protect);
-router.use(attachSubscription);
+router.get("/settings/appearance", getBoutiqueAppearance);
 
 router.post("/settings/exchange-rates/sync", checkPermission("CHANGER_DEVISE"), currencyUpdateLimiter, syncCurrencySettings);
 
@@ -83,7 +83,7 @@ router.route("/settings/exchange-rates")
 
 router.route("/")
   .get(checkPermission("VOIR_BOUTIQUES"), getBoutiques)
-  .post(checkPermission("CREER_BOUTIQUE"), createBoutiqueLimiter, enforceBoutiqueLimit, boutiqueValidation.create, createBoutique);
+  .post(checkPermission("CREER_BOUTIQUE"), createBoutiqueLimiter, boutiqueValidation.create, createBoutique);
 
 router.post("/:id/delete-code", checkPermission("SUPPRIMER_BOUTIQUE"), requestDeletionCodeLimiter, requestBoutiqueDeletionCode);
 router.patch("/:id/appearance", checkPermission("MODIFIER_PERSONNALISATION"), updateBoutiqueAppearance);

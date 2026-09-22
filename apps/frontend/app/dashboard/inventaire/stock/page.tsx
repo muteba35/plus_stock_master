@@ -7,7 +7,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, CheckCircle2, Eye, FileSpreadsheet, FileText, History, Loader2, Plus, RotateCcw, Search, SlidersHorizontal, XCircle } from "lucide-react";
 import { InventoryModal, InventoryPagination, MetricCard, PageHeader, SearchInput, fieldClass, primaryButton, secondaryButton } from "../components/inventory-ui";
 import InventoryAuditTable, { type AuditEntry } from "./components/InventoryAuditTable";
-import { exportXlsxWorkbook } from "../../components/export-xlsx";
+import { exportTable, authorizedExportRows, type ExportFormat } from "../../components/export-table";
+import { useDashboardAccess } from "../../components/DashboardAccess";
 
 type ProductOption = { _id: string; nom: string; sku: string; stock: number; unite: string };
 type Movement = {
@@ -28,14 +29,7 @@ const requestHeaders = () => {
   const token = localStorage.getItem("token");
   return { "Content-Type": "application/json", Authorization: token ? `Bearer ${token}` : "" };
 };
-const getStoredAccess = () => {
-  if (typeof window === "undefined") return { permissions: [] as string[], isOwner: false };
-  try {
-    const permissions = JSON.parse(localStorage.getItem("user_permissions") || "[]") as string[];
-    const profile = JSON.parse(localStorage.getItem("user_profile") || "{}") as { role?: string };
-    return { permissions, isOwner: profile.role === "Admin Général" };
-  } catch { return { permissions: [] as string[], isOwner: false }; }
-};
+
 
 export default function MouvementsStockPage() {
   const { ui: du } = useDashboardLanguage();
@@ -63,7 +57,8 @@ export default function MouvementsStockPage() {
   const [form, setForm] = useState({ produitId: "", type: "ENTREE", quantite: "", motif: "", reference: "" });
   const [formError, setFormError] = useState("");
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-  const [{ permissions, isOwner }] = useState(getStoredAccess);
+  const { permissions, isOwner } = useDashboardAccess();
+  const [exporting, setExporting] = useState(false);
   const filterRef = useRef<HTMLDivElement | null>(null);
   const canCreateEntry = isOwner || permissions.includes("CREER_ENTREE_STOCK");
   const canCreateExit = isOwner || permissions.includes("CREER_SORTIE_STOCK");
@@ -170,32 +165,37 @@ export default function MouvementsStockPage() {
   const formatDate = (value: string) => new Intl.DateTimeFormat(dashboardLocale(), { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
   const typeLabel = (type: Movement["type"]) => type === "ENTREE" ? "Entrée" : type === "SORTIE" ? "Sortie" : "Ajustement";
   const compactNumber = (value: number) => Math.abs(value) < 1000000 ? value.toLocaleString(dashboardLocale()) : new Intl.NumberFormat(dashboardLocale(), { notation: "compact", maximumFractionDigits: 2 }).format(value);
-  const escapeHtml = (value: string | number) => String(value).replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[character] || character));
+  
 
-  const exportExcel = () => {
-    exportXlsxWorkbook("mouvements-stock-" + new Date().toISOString().slice(0, 10) + ".xlsx", [{
+  
+
+  
+  const runExport = async (format: ExportFormat) => {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      const rows = await authorizedExportRows(API_URL + "/inventaire/mouvements", filtered);
+      if (!rows.length) throw new Error(du("Aucune donnée à exporter."));
+      await exportTable(format, "mouvements-stock", {
       name: "Mouvements stock",
       columns: ["Reference", "Produit", "SKU", "Type", "Variation", "Stock avant", "Stock apres", "Motif", "Date", "Auteur"],
-      rows: filtered.map((movement) => [movement.reference, movement.produitId?.nom || "Produit archive", movement.produitId?.sku || "", typeLabel(movement.type), movement.variation, movement.stockAvant, movement.stockApres, movement.motif, formatDate(movement.createdAt), movement.utilisateurId ? `${movement.utilisateurId.prenom} ${movement.utilisateurId.nom}` : "Systeme"]),
-    }]);
+      rows: rows.map((movement) => [movement.reference, movement.produitId?.nom || "Produit archive", movement.produitId?.sku || "", typeLabel(movement.type), movement.variation, movement.stockAvant, movement.stockApres, movement.motif, formatDate(movement.createdAt), movement.utilisateurId ? `${movement.utilisateurId.prenom} ${movement.utilisateurId.nom}` : "Systeme"]),
+    });
+    } catch (error) {
+      showMessage("error", error instanceof Error ? error.message : du("Export impossible."));
+    } finally { setExporting(false); }
   };
-
-  const exportPdf = () => {
-    const popup = window.open("", "_blank", "width=1100,height=760");
-    if (!popup) {
-      showMessage("error", "Le navigateur a bloqué la fenêtre d'impression PDF.");
-      return;
-    }
-    const rows = filtered.map((movement) => `<tr><td>${escapeHtml(movement.reference)}</td><td><strong>${escapeHtml(movement.produitId?.nom || "Produit archivé")}</strong><br><small>${escapeHtml(movement.produitId?.sku || "")}</small></td><td>${escapeHtml(typeLabel(movement.type))}</td><td>${movement.variation > 0 ? "+" : ""}${escapeHtml(movement.variation)}</td><td>${escapeHtml(movement.stockAvant)} → ${escapeHtml(movement.stockApres)}</td><td>${escapeHtml(movement.motif)}</td><td>${escapeHtml(formatDate(movement.createdAt))}</td><td>${escapeHtml(movement.utilisateurId ? `${movement.utilisateurId.prenom} ${movement.utilisateurId.nom}` : "Système")}</td></tr>`).join("");
-    popup.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${du("m7c36560fce96")}</title><style>@page{size:A4 landscape;margin:12mm}body{font-family:Arial,sans-serif;color:#172033;margin:0}h1{font-size:20px;margin:0 0 4px}p{font-size:11px;color:#64748b;margin:0 0 18px}table{width:100%;border-collapse:collapse;font-size:9px}th{background:#f1f5f9;text-align:left;text-transform:uppercase;color:#64748b}th,td{padding:7px;border:1px solid #e2e8f0;vertical-align:top}small{color:#94a3b8}.footer{margin-top:12px;font-size:9px;color:#94a3b8}</style></head><body><h1>${du("m965b3465853e")}</h1><p>${du("m7289d99c0cec")} ${escapeHtml(new Date().toLocaleString(dashboardLocale()))} · ${filtered.length} mouvement(s)</p><table><thead><tr><th>${du("m393ca26ab12c")}</th><th>${du("ma0d3db2f0803")}</th><th>${du("mbaaddf70fb5d")}</th><th>${du("m8dc605f468e5")}</th><th>${du("md5cade7ef319")}</th><th>${du("mc89ac8f0d41a")}</th><th>${du("m99c40ab40592")}</th><th>${du("m5880e59e0c06")}</th></tr></thead><tbody>${rows}</tbody></table><div class="footer">${du("me4461ff35f0d")}</div><script>window.onload=()=>{window.print();}</script></body></html>`);
-    popup.document.close();
-  };
+  const exportCsv = () => void runExport("xlsx");
+  const exportExcel = exportCsv;
+  const exportWord = () => void runExport("docx");
+  const exportCurrentPdf = () => void runExport("pdf");
+  const exportPdf = exportCurrentPdf;
   const resetFilters = () => { setTypeFilter("all"); setPeriodFilter("all"); setDateFrom(""); setDateTo(""); };
   const activeFilterCount = Number(typeFilter !== "all") + Number(periodFilter !== "all") + Number(Boolean(dateFrom)) + Number(Boolean(dateTo));
 
   return (
     <div className="space-y-6 bg-[#f9fafd] p-3 sm:p-6 rounded-2xl sm:rounded-3xl min-h-screen text-slate-800 overflow-x-hidden">
-      <PageHeader title={du("m59080aa60d70")} subtitle={du("m0f5a46682173")} action={<div className="flex flex-wrap justify-end gap-2"><button onClick={exportExcel} disabled={!canExport || filtered.length === 0} className={`${secondaryButton} disabled:opacity-40 disabled:cursor-not-allowed`} title={canExport ? du("mbeaa61a07557") : du("mbdd7e3d96cfd")}><FileSpreadsheet size={15} /> {du("m48d53635551c")}</button><button onClick={exportPdf} disabled={!canExport || filtered.length === 0} className={`${secondaryButton} disabled:opacity-40 disabled:cursor-not-allowed`} title={canExport ? du("m751090542c11") : du("mbdd7e3d96cfd")}><FileText size={15} /> {du("m1d393b0081b6")}</button>{canCreateMovement && <button onClick={openCreate} className={primaryButton}><Plus size={15} /> {du("mf79a3da26c47")}</button>}</div>} />
+      <PageHeader title={du("m59080aa60d70")} subtitle={du("m0f5a46682173")} action={<div className="flex flex-wrap justify-end gap-2"><button onClick={exportExcel} disabled={exporting || !canExport || filtered.length === 0} className={`${secondaryButton} disabled:opacity-40 disabled:cursor-not-allowed`} title={canExport ? du("mbeaa61a07557") : du("mbdd7e3d96cfd")}><FileSpreadsheet size={15} /> {du("m48d53635551c")}</button><button onClick={exportPdf} disabled={exporting || !canExport || filtered.length === 0} className={`${secondaryButton} disabled:opacity-40 disabled:cursor-not-allowed`} title={canExport ? du("m751090542c11") : du("mbdd7e3d96cfd")}><FileText size={15} /> {du("m1d393b0081b6")}</button>{canCreateMovement && <button onClick={openCreate} className={primaryButton}><Plus size={15} /> {du("mf79a3da26c47")}</button>}</div>} />
       {operationScope === "own" && <div className="flex items-center gap-2 p-3 rounded-xl border border-indigo-100 bg-indigo-50 text-indigo-700 text-xs font-semibold"><History size={15} />{du("mcc8318640771")}</div>}
       {message && <div className={`flex items-center gap-2 p-3 rounded-xl border text-xs font-semibold ${message.type === "success" ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-rose-50 text-rose-700 border-rose-100"}`}>{message.type === "success" ? <CheckCircle2 size={15} /> : <XCircle size={15} />}{du(message.text)}</div>}
 

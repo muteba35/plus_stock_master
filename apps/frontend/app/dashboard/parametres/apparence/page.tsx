@@ -1,102 +1,110 @@
 "use client";
-import { dashboardUi as du, dashboardLocale } from "../../../../src/i18n/catalog";
+
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import { ImagePlus, Loader2, Monitor, Moon, RotateCcw, Save, Sun, Trash2, X } from "lucide-react";
+import toast from "react-hot-toast";
 import { useLanguage as useDashboardLanguage } from "../../../../src/components/LanguageRuntime";
-
-
-import { ChangeEvent, useEffect, useMemo, useState } from "react";
-import { ImagePlus, Palette, RotateCcw, Save, ShieldAlert, Trash2 } from "lucide-react";
-import { useLanguage } from "../../../../src/components/LanguageRuntime";
+import { useDashboardAccess } from "../../components/DashboardAccess";
+import ShopLogo from "../../components/ShopLogo";
+import { APPEARANCE_DEFAULTS as DEFAULTS, publishAppearance, type Appearance } from "../../components/appearance";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://plus-stock-master.onrender.com/api";
 const FONTS = ["Inter", "Roboto", "Poppins", "Montserrat", "Open Sans"];
-const DEFAULTS = { fontFamily: "Inter", textSize: "normal", theme: "system", primaryColor: "#4F46E5", secondaryColor: "#0F172A", accentColor: "#10B981", logo: "" };
-type Appearance = typeof DEFAULTS;
-type Store = { id: string; isActive?: boolean; appearance?: Partial<Appearance> };
+const inputClass = "mt-2 w-full min-w-0 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900";
+const buttonClass = "inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-semibold disabled:opacity-40";
 
 export default function AppearancePage() {
   const { ui: du } = useDashboardLanguage();
-  const { translate } = useLanguage();
-  const [store, setStore] = useState<Store | null>(null);
+  const { boutiqueId, permissions, isOwner } = useDashboardAccess();
+  const canEdit = isOwner || permissions.includes("MODIFIER_PERSONNALISATION");
   const [form, setForm] = useState<Appearance>(DEFAULTS);
-  const [permissions, setPermissions] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [saved, setSaved] = useState<Appearance>(DEFAULTS);
+  const [name, setName] = useState("");
+  const [loadedId, setLoadedId] = useState("");
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState("");
-  const canEdit = useMemo(() => permissions.includes("MODIFIER_PERSONNALISATION") || permissions.includes("MODIFIER_BOUTIQUE"), [permissions]);
+  const [error, setError] = useState("");
+  const snapshot = useRef({ id: "", value: DEFAULTS });
+  const imageInput = useRef<HTMLInputElement>(null);
+  const dirty = JSON.stringify(form) !== JSON.stringify(saved);
 
   useEffect(() => {
-    setPermissions(JSON.parse(localStorage.getItem("user_permissions") || "[]"));
-    const token = localStorage.getItem("token");
-    fetch(`${API_URL}/boutiques`, { headers: { Authorization: `Bearer ${token}` } })
+    if (!boutiqueId) return;
+    const controller = new AbortController();
+    fetch(`${API_URL}/boutiques/settings/appearance`, { signal: controller.signal, headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } })
       .then(async (response) => {
         const data = await response.json();
-        if (!response.ok) throw new Error(data.message || "Chargement impossible.");
-        const active = (data.boutiques || []).find((item: Store) => item.isActive) || data.boutiques?.[0];
-        setStore(active || null);
-        setForm({ ...DEFAULTS, ...(active?.appearance || {}) });
+        if (!response.ok || data.boutique?.id !== boutiqueId) throw new Error(data.message || "Chargement impossible.");
+        if (controller.signal.aborted) return;
+        const value = { ...DEFAULTS, ...data.boutique.appearance };
+        snapshot.current = { id: boutiqueId, value };
+        setSaved(value); setForm(value); setName(data.boutique.nom); setLoadedId(boutiqueId); setError("");
       })
-      .catch((error) => setMessage(error.message))
-      .finally(() => setLoading(false));
-  }, []);
+      .catch((err) => { if (!controller.signal.aborted) { setError(err.message); } });
+    return () => {
+      controller.abort();
+      if (snapshot.current.id === boutiqueId) publishAppearance(boutiqueId, snapshot.current.value);
+    };
+  }, [boutiqueId]);
 
-  const preview = (next: Appearance) => {
-    setForm(next);
-    window.dispatchEvent(new CustomEvent("movooraAppearancePreview", { detail: next }));
+  const preview = (value: Appearance) => {
+    if (!canEdit || saving) return;
+    setForm(value); setError(""); publishAppearance(boutiqueId, value);
   };
-
-  const chooseLogo = (event: ChangeEvent<HTMLInputElement>) => {
+  const chooseLogo = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
+    event.target.value = "";
     if (!file) return;
-    if (![/^image\/png$/, /^image\/jpeg$/, /^image\/webp$/].some((pattern) => pattern.test(file.type)) || file.size > 500 * 1024) {
-      setMessage(translate("Utilisez une image PNG, JPEG ou WebP de 500 Ko maximum."));
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => preview({ ...form, logo: String(reader.result || "") });
-    reader.readAsDataURL(file);
-  };
-
-  const save = async () => {
-    if (!store || !canEdit) return;
-    setSaving(true); setMessage("");
     try {
-      const response = await fetch(`${API_URL}/boutiques/${store.id}/appearance`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token")}` },
-        body: JSON.stringify(form),
+      if (!["image/png", "image/jpeg", "image/webp"].includes(file.type) || file.size > 500 * 1024) throw new Error(du("p3.imageLimit"));
+      const bitmap = await createImageBitmap(file);
+      if (bitmap.width > 4096 || bitmap.height > 4096) { bitmap.close(); throw new Error(du("p3.imageLimit")); }
+      bitmap.close();
+      const logo = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(new Error(du("p3.imageError")));
+        reader.readAsDataURL(file);
+      });
+      if (snapshot.current.id === boutiqueId) preview({ ...form, logo });
+    } catch (err) { setError(err instanceof Error ? err.message : du("p3.imageError")); }
+  };
+  const save = async () => {
+    if (!canEdit || saving || !dirty || snapshot.current.id !== boutiqueId) return;
+    setSaving(true); setError("");
+    try {
+      const response = await fetch(`${API_URL}/boutiques/${boutiqueId}/appearance`, {
+        method: "PATCH", headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token")}` }, body: JSON.stringify(form),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Enregistrement impossible.");
-      localStorage.setItem(`movoora_appearance_${store.id}`, JSON.stringify(form));
-      window.dispatchEvent(new CustomEvent("movooraAppearanceSaved", { detail: form }));
-      setMessage(translate("Modifications enregistrées"));
-    } catch (error) { setMessage(error instanceof Error ? translate(error.message) : translate("Une erreur est survenue.")); }
+      if (!response.ok) throw new Error(data.message || du("p3.saveError"));
+      const value = { ...DEFAULTS, ...data.boutique.appearance };
+      if (snapshot.current.id !== boutiqueId) return;
+      snapshot.current = { id: boutiqueId, value };
+      setSaved(value); setForm(value); publishAppearance(boutiqueId, value, true);
+      toast.success(du("p3.saved"));
+    } catch (err) { setError(err instanceof Error ? err.message : du("p3.saveError")); }
     finally { setSaving(false); }
   };
 
-  if (loading) return <div className="p-8 text-sm font-semibold text-slate-500">{translate("Chargement...")}</div>;
-
-  return (
-    <div className="mx-auto max-w-5xl space-y-6">
-      <div><h1 className="text-2xl font-black text-slate-950 dark:text-white">{translate("Apparence et personnalisation")}</h1><p className="mt-1 text-sm text-slate-500">{translate("Personnalisez l'apparence de la boutique active.")}</p></div>
-      {!canEdit && <div className="flex gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800"><ShieldAlert size={20}/>{translate("Vous n'avez pas la permission de modifier la personnalisation.")}</div>}
-      <div className="grid gap-5 lg:grid-cols-2">
-        <section className="space-y-5 rounded-3xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
-          <h2 className="flex items-center gap-2 font-black"><Palette size={19}/>{translate("Style de l'interface")}</h2>
-          <label className="block text-sm font-bold">{translate("Police")}<select disabled={!canEdit} value={form.fontFamily} onChange={(e) => preview({ ...form, fontFamily: e.target.value })} className="mt-2 w-full rounded-xl border p-3 dark:bg-slate-800">{FONTS.map((font) => <option key={font}>{font}</option>)}</select></label>
-          <label className="block text-sm font-bold">{translate("Taille du texte")}<select disabled={!canEdit} value={form.textSize} onChange={(e) => preview({ ...form, textSize: e.target.value })} className="mt-2 w-full rounded-xl border p-3 dark:bg-slate-800"><option value="small">{translate("Petite")}</option><option value="normal">{translate("Normale")}</option><option value="large">{translate("Grande")}</option><option value="xlarge">{translate("Très grande")}</option></select></label>
-          <label className="block text-sm font-bold">{translate("Thème")}<select disabled={!canEdit} value={form.theme} onChange={(e) => preview({ ...form, theme: e.target.value })} className="mt-2 w-full rounded-xl border p-3 dark:bg-slate-800"><option value="light">{translate("Clair")}</option><option value="dark">{translate("Sombre")}</option><option value="system">{translate("Système")}</option></select></label>
-          <div className="grid grid-cols-3 gap-3">{(["primaryColor", "secondaryColor", "accentColor"] as const).map((key) => <label key={key} className="text-xs font-bold">{translate(key === "primaryColor" ? "Principale" : key === "secondaryColor" ? "Secondaire" : "Accent")}<input disabled={!canEdit} type="color" value={form[key]} onChange={(e) => preview({ ...form, [key]: e.target.value })} className="mt-2 h-11 w-full rounded-lg"/></label>)}</div>
+  if (loadedId !== boutiqueId || !boutiqueId) return <div className="p-6">{error ? <p role="alert">{du(error)}</p> : <Loader2 className="animate-spin" aria-label={du("Chargement...")} />}</div>;
+  return <div className="mx-auto w-full min-w-0 max-w-6xl space-y-6 text-slate-900">
+    <header><h1 className="text-xl font-bold">{du("p3.title")}</h1><p className="mt-1 text-sm text-slate-500">{name}</p></header>
+    {error && <p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-600">{du(error)}</p>}
+    {!canEdit && <p className="text-sm text-slate-500">{du("p3.noPermission")}</p>}
+    <div className="grid min-w-0 gap-8 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+      {canEdit && <fieldset disabled={saving} className="min-w-0 space-y-7 disabled:opacity-60">
+        <section><h2 className="mb-3 text-sm font-bold">{du("p3.theme")}</h2>
+          <div className="grid grid-cols-3 gap-2">{[{ value: "light", icon: Sun }, { value: "dark", icon: Moon }, { value: "system", icon: Monitor }].map(({ value, icon: Icon }) => <button key={value} type="button" aria-pressed={form.theme === value} onClick={() => preview({ ...form, theme: value })} className={`flex min-w-0 flex-col items-center gap-2 rounded-lg border p-3 text-xs font-semibold ${form.theme === value ? "border-indigo-500 bg-indigo-50 text-indigo-700" : "border-slate-200 bg-white"}`}><Icon size={20} />{du(`p3.${value}`)}</button>)}</div>
         </section>
-        <section className="space-y-5 rounded-3xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
-          <h2 className="flex items-center gap-2 font-black"><ImagePlus size={19}/>{translate("Logo de la boutique")}</h2>
-          <div className="flex h-40 items-center justify-center rounded-2xl border border-dashed bg-slate-50 p-6 dark:bg-slate-800"><img src={form.logo || "/movoora-logo.svg?v=2"} alt={translate("Aperçu du logo")} className="max-h-full max-w-full object-contain"/></div>
-          <p className="text-xs text-slate-500">{translate("PNG, JPEG ou WebP, 500 Ko maximum.")}</p>
-          <div className="flex flex-wrap gap-2"><label className={`rounded-xl bg-indigo-600 px-4 py-2 text-xs font-black text-white ${!canEdit ? "pointer-events-none opacity-50" : "cursor-pointer"}`}><input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={chooseLogo}/>{translate("Choisir une image")}</label><button disabled={!canEdit || !form.logo} onClick={() => preview({ ...form, logo: "" })} className="flex items-center gap-2 rounded-xl border px-4 py-2 text-xs font-black disabled:opacity-40"><Trash2 size={14}/>{translate("Supprimer le logo")}</button></div>
+        <section className="grid gap-4 border-t border-slate-200 pt-5 sm:grid-cols-2">
+          <label className="min-w-0 text-sm font-semibold">{du("p3.font")}<select value={form.fontFamily} onChange={(e) => preview({ ...form, fontFamily: e.target.value })} className={inputClass}>{FONTS.map((font) => <option key={font}>{font}</option>)}</select></label>
+          <label className="min-w-0 text-sm font-semibold">{du("p3.size")}<select value={form.textSize} onChange={(e) => preview({ ...form, textSize: e.target.value })} className={inputClass}>{["small", "normal", "large", "xlarge"].map((size) => <option value={size} key={size}>{du(`p3.${size}`)}</option>)}</select></label>
         </section>
-      </div>
-      {message && <p className="text-sm font-bold text-indigo-600">{du(message)}</p>}
-      <div className="flex flex-wrap justify-end gap-3"><button disabled={!canEdit} onClick={() => preview(DEFAULTS)} className="flex items-center gap-2 rounded-xl border px-5 py-3 text-xs font-black disabled:opacity-40"><RotateCcw size={15}/>{translate("Réinitialiser")}</button><button disabled={!canEdit || saving} onClick={save} className="flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-xs font-black text-white disabled:opacity-40"><Save size={15}/>{saving ? translate("Enregistrement...") : translate("Enregistrer les modifications")}</button></div>
+        <section className="border-t border-slate-200 pt-5"><h2 className="mb-3 text-sm font-bold">{du("p3.colors")}</h2><div className="grid gap-3 sm:grid-cols-3">{(["primaryColor", "secondaryColor", "accentColor"] as const).map((key) => <label key={key} className="min-w-0 text-xs font-semibold">{du(`p3.${key}`)}<div className="mt-2 flex items-center gap-2"><input type="color" value={form[key]} onChange={(e) => preview({ ...form, [key]: e.target.value })} className="h-9 w-10 shrink-0 cursor-pointer rounded border border-slate-200"/><span className="text-xs text-slate-500">{form[key]}</span></div></label>)}</div></section>
+        <section className="border-t border-slate-200 pt-5"><h2 className="mb-3 text-sm font-bold">{du("p3.logo")}</h2><div className="flex flex-wrap items-center gap-4"><div className="flex h-20 w-20 items-center justify-center rounded-lg border border-slate-200 bg-white p-2"><ShopLogo logo={form.logo} className="h-full w-full" name={name} /></div><div className="space-y-2"><div className="flex flex-wrap gap-2"><button type="button" className={buttonClass} onClick={() => imageInput.current?.click()}><ImagePlus size={16}/>{du("p3.chooseLogo")}</button><button type="button" className={buttonClass} disabled={!form.logo} onClick={() => preview({ ...form, logo: "" })} title={du("p3.defaultLogo")} aria-label={du("p3.defaultLogo")}><Trash2 size={16}/></button></div><p className="text-xs text-slate-500">{du("p3.imageLimit")}</p></div></div><input ref={imageInput} type="file" accept="image/png,image/jpeg,image/webp" onChange={chooseLogo} className="hidden" /></section>
+      </fieldset>}
+      <aside className="min-w-0"><h2 className="mb-3 text-sm font-bold">{du("p3.preview")}</h2><div className="overflow-hidden rounded-lg border border-slate-200 bg-white" style={{ fontFamily: `"${form.fontFamily}", sans-serif` }}><div className="flex min-w-0 items-center gap-3 p-4" style={{ backgroundColor: form.secondaryColor, color: "#fff" }}><ShopLogo logo={form.logo} className="h-9 w-9 rounded bg-white p-1" name={name}/><span className="min-w-0 break-words font-semibold">{name}</span></div><div className="space-y-4 p-5"><p className="font-semibold">{du("p3.previewTitle")}</p><div className="flex items-center justify-between border-b border-slate-200 pb-3 text-sm"><span>{du("p3.previewProduct")}</span><span style={{ color: form.accentColor }}>24</span></div><button type="button" className="rounded-lg px-4 py-2 text-sm font-semibold text-white" style={{ backgroundColor: form.primaryColor }}>{du("p3.previewAction")}</button></div></div></aside>
     </div>
-  );
+    {canEdit && <footer className="flex flex-wrap justify-end gap-2 border-t border-slate-200 pt-5"><button type="button" onClick={() => preview(DEFAULTS)} disabled={saving} className={`${buttonClass} sm:mr-auto`}><RotateCcw size={16}/>{du("p3.reset")}</button><button type="button" onClick={() => preview(saved)} disabled={!dirty || saving} className={buttonClass}><X size={16}/>{du("p3.cancel")}</button><button type="button" onClick={save} disabled={!dirty || saving} className={`${buttonClass} bg-indigo-600 text-white`}>{saving ? <Loader2 size={16} className="animate-spin"/> : <Save size={16}/>} {du("p3.save")}</button></footer>}
+  </div>;
 }

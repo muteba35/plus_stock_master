@@ -43,10 +43,10 @@ export default function FinanceFormulasPage() {
 
     <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
       {glossary.map((item) => (
-        <div key={item.sigle} className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5">
+        <div key={item.sigle} className="min-w-0 break-words bg-white rounded-lg border border-slate-200/80 shadow-sm p-5">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center font-black text-xs">{du(item.sigle)}</div>
-            <div>
+            <div className="w-20 min-h-10 shrink-0 p-2 text-center rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center font-black text-xs">{du(item.sigle)}</div>
+            <div className="min-w-0">
               <h2 className="text-sm font-black text-slate-900">{du(item.name)}</h2>
               <p className="text-[11px] text-slate-400 mt-0.5">{du("me209f8b469f1")}</p>
             </div>
@@ -67,9 +67,9 @@ export default function FinanceFormulasPage() {
       <div className="divide-y divide-slate-100">
         {formulas.map((item) => {
           const Icon = item.icon;
-          return <div key={item.title} className="p-5 grid grid-cols-1 md:grid-cols-[220px_1fr] gap-4">
+          return <div key={item.title} className="min-w-0 break-words p-5 grid grid-cols-1 md:grid-cols-[minmax(0,220px)_minmax(0,1fr)] gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-slate-50 text-slate-500 border border-slate-100 flex items-center justify-center"><Icon size={16} /></div>
+              <div className="w-9 h-9 shrink-0 rounded-xl bg-slate-50 text-slate-500 border border-slate-100 flex items-center justify-center"><Icon size={16} /></div>
               <h3 className="text-xs font-black uppercase tracking-wider text-slate-800">{du(item.title)}</h3>
             </div>
             <div>

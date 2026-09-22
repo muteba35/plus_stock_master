@@ -60,9 +60,9 @@ export const protect = async (req, res, next) => {
 
     const permissions = await buildUserPermissions(user);
     const boutiqueId = user.boutiqueActive?._id || user.boutiqueActive || decoded.boutiqueId;
-    const isOwner = !user.roleId && (
-      !user.boutiqueActive || user.boutiqueActive.userId?.toString() === user._id.toString()
-    );
+    const isOwner = user.boutiqueActive
+      ? user.boutiqueActive.userId?.toString() === user._id.toString()
+      : !user.roleId;
 
     req.user = {
       ...decoded,

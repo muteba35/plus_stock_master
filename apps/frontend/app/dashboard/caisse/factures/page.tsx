@@ -7,7 +7,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Download, Eye, FileText, Loader2, Printer, ReceiptText, Send, WalletCards } from "lucide-react";
 import { formatMoney } from "../../inventaire/components/currency";
 import { CashBadge, CashHeader, CashMetric, CashModal, CashPagination, CashSearch, secondaryButton } from "../components/cashier-ui";
-import { exportXlsxWorkbook } from "../../components/export-xlsx";
+import { exportTable, authorizedExportRows, type ExportFormat } from "../../components/export-table";
+import { useDashboardAccess } from "../../components/DashboardAccess";
 
 type ApiUser = { nom?: string; prenom?: string };
 type InvoiceLine = {
@@ -62,31 +63,10 @@ const compactMoney = (value: number, devise: string) => {
   const label = new Intl.NumberFormat(dashboardLocale(), { notation: "compact", maximumFractionDigits: 2 }).format(amount);
   return `${label} ${devise.replace(/.*\\((.*)\\).*/, "$1")}`;
 };
-const downloadBlob = (content: string, filename: string, type: string) => {
-  const url = URL.createObjectURL(new Blob([content], { type }));
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  link.click();
-  URL.revokeObjectURL(url);
-};
-const exportPdf = (title: string, html: string) => {
-  const printWindow = window.open("", "_blank", "width=1100,height=760");
-  if (!printWindow) return;
-  printWindow.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${stripHtml(title)}</title><style>@page{size:A4 landscape;margin:12mm}body{font-family:Arial,sans-serif;color:#172033;margin:0}h1{font-size:20px;margin:0 0 4px}p{font-size:11px;color:#64748b;margin:0 0 18px}table{width:100%;border-collapse:collapse;font-size:9px}th{background:#f1f5f9;text-align:left;text-transform:uppercase;color:#64748b}th,td{padding:7px;border:1px solid #e2e8f0;vertical-align:top}.total{font-weight:800}.footer{margin-top:12px;font-size:9px;color:#94a3b8}</style></head><body><h1>${stripHtml(title)}</h1><p>${du("m7289d99c0cec")} ${new Date().toLocaleString(dashboardLocale())}</p>${html}<div class="footer">${du("me4461ff35f0d")}</div><script>window.onload=()=>{window.print();}</script></body></html>`);
-  printWindow.document.close();
-};
 
-const getStoredAccess = () => {
-  if (typeof window === "undefined") return { permissions: [] as string[], isOwner: false };
-  try {
-    const permissions = JSON.parse(localStorage.getItem("user_permissions") || "[]") as string[];
-    const profile = JSON.parse(localStorage.getItem("user_profile") || "{}") as { role?: string };
-    return { permissions, isOwner: profile.role === "Admin Général" || profile.role === "Admin Général" };
-  } catch {
-    return { permissions: [] as string[], isOwner: false };
-  }
-};
+
+
+
 
 const formatDate = (value: string) => {
   if (!value) return "";
@@ -194,7 +174,8 @@ export default function InvoicesPage() {
   const [page, setPage] = useState(1);
   const [businessName, setBusinessName] = useState("Movoora");
   const [metricOpen, setMetricOpen] = useState(false);
-  const [{ permissions, isOwner }] = useState(getStoredAccess);
+  const { permissions, isOwner } = useDashboardAccess();
+  const [exporting, setExporting] = useState(false);
 
   const fetchInvoices = useCallback(async () => {
     try {
@@ -226,15 +207,31 @@ export default function InvoicesPage() {
     );
   }, [invoices, search]);
 
+  const runExport = async (format: ExportFormat) => {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      const rows = await authorizedExportRows(API_URL + "/caisse/factures", filtered);
+      if (!rows.length) throw new Error(du("Aucune donnée à exporter."));
+      await exportTable(format, "factures", { name: "Factures", columns: ["Facture", "Vente", "Client", "Total TTC", "TVA", "Date", "Statut"], rows: rows.map((invoice) => [invoice.factureReference, invoice.reference, invoice.clientNom, invoice.totalTTC, invoice.tvaMontant, formatDate(invoice.createdAt), getInvoiceStatus(invoice)]) });
+    } catch (error) {
+      setError(error instanceof Error ? error.message : du("Export impossible."));
+    } finally { setExporting(false); }
+  };
+  const exportCsv = () => void runExport("xlsx");
+  const exportExcel = exportCsv;
+  const exportWord = () => void runExport("docx");
+  const exportCurrentPdf = () => void runExport("pdf");
+  
   const visibleInvoices = filtered.slice((page - 1) * pageSize, page * pageSize);
   const canExportInvoices = isOwner || permissions.includes("EXPORTER_FACTURES") || permissions.includes("EXPORTER_RAPPORTS");
   const canPrintInvoices = isOwner || permissions.includes("IMPRIMER_FACTURE");
   const invoiceCurrency = filtered[0]?.deviseReference || filtered[0]?.devise || "USD ($)";
   const totalAmount = filtered.reduce((sum, invoice) => sum + Number(invoice.totalTTC || 0), 0);
-  const invoiceRowsHtml = (items: InvoiceSale[]) => `<table><thead><tr><th>${du("m7ba96f08a0bf")}</th><th>${du("mee19f8d8fffd")}</th><th>${du("m0c77fe09ab33")}</th><th>${du("m7324c6571082")}</th><th>${du("mae5f52a29195")}</th><th>${du("m99c40ab40592")}</th><th>${du("mdee377cfd8cd")}</th></tr></thead><tbody>${items.map((invoice) => `<tr><td>${invoice.factureReference}</td><td>${invoice.reference}</td><td>${invoice.clientNom}</td><td class="total">${formatMoney(invoice.totalTTC, invoice.devise)}</td><td>${formatMoney(invoice.tvaMontant, invoice.devise)}</td><td>${formatDate(invoice.createdAt)}</td><td>${getInvoiceStatus(invoice)}</td></tr>`).join("")}</tbody></table>`;
-  const exportCsv = () => exportXlsxWorkbook("factures.xlsx", [{ name: "Factures", columns: ["Facture", "Vente", "Client", "Total TTC", "TVA", "Date", "Statut"], rows: filtered.map((invoice) => [invoice.factureReference, invoice.reference, invoice.clientNom, invoice.totalTTC, invoice.tvaMontant, formatDate(invoice.createdAt), getInvoiceStatus(invoice)]) }]);
-  const exportWord = () => downloadBlob(`<html><body><h1>${du("mcf728fa6fc3f")}</h1>${invoiceRowsHtml(filtered)}</body></html>`, "factures.doc", "application/msword;charset=utf-8");
-  const exportCurrentPdf = () => exportPdf("Factures", invoiceRowsHtml(filtered));
+  
+  
+  
+  
 
   const openPrint = (invoice: InvoiceSale) => {
     const printWindow = window.open("", "_blank", "width=980,height=720");
@@ -257,7 +254,7 @@ export default function InvoicesPage() {
 
   return (
     <div className="space-y-5 bg-[#f9fafd] p-3 sm:p-6 rounded-2xl sm:rounded-3xl min-h-screen text-slate-800">
-      <CashHeader title={du("mcf728fa6fc3f")} subtitle={scope === "all" ? du("m89d0d8d23b55") : du("m41a5b0ad015c")} action={canExportInvoices ? <div className="flex flex-wrap gap-2"><button onClick={exportCsv} disabled={filtered.length === 0} className={secondaryButton}><Download size={14} /> {du("m48d53635551c")}</button><button onClick={exportWord} disabled={filtered.length === 0} className={secondaryButton}><FileText size={14} /> {du("m3a2860ece5a4")}</button><button onClick={exportCurrentPdf} disabled={filtered.length === 0} className={secondaryButton}><Printer size={14} /> {du("m1d393b0081b6")}</button></div> : undefined} />
+      <CashHeader title={du("mcf728fa6fc3f")} subtitle={scope === "all" ? du("m89d0d8d23b55") : du("m41a5b0ad015c")} action={canExportInvoices ? <div className="flex flex-wrap gap-2"><button onClick={exportCsv} disabled={exporting || filtered.length === 0} className={secondaryButton}><Download size={14} /> {du("m48d53635551c")}</button><button onClick={exportWord} disabled={exporting || filtered.length === 0} className={secondaryButton}><FileText size={14} /> {du("m3a2860ece5a4")}</button><button onClick={exportCurrentPdf} disabled={exporting || filtered.length === 0} className={secondaryButton}><Printer size={14} /> {du("m1d393b0081b6")}</button></div> : undefined} />
 
       {error && <div className="p-3 rounded-xl bg-rose-50 border border-rose-100 text-xs font-semibold text-rose-700">{du(error)}</div>}
 

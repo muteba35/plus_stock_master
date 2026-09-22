@@ -7,7 +7,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { CalendarDays, Download, Eye, FileText, Loader2, Printer, ReceiptText, TrendingUp, WalletCards, XCircle } from "lucide-react";
 import { formatMoney, getActiveBoutiqueCurrency } from "../../inventaire/components/currency";
 import { CashBadge, CashHeader, CashMetric, CashModal, CashPagination, CashSearch, fieldClass, secondaryButton } from "../components/cashier-ui";
-import { exportXlsxWorkbook } from "../../components/export-xlsx";
+import { exportTable, authorizedExportRows, type ExportFormat } from "../../components/export-table";
+import { useDashboardAccess } from "../../components/DashboardAccess";
 
 type ApiUser = { nom?: string; prenom?: string };
 type SaleLine = {
@@ -74,31 +75,10 @@ const compactMoney = (value: number, devise: string) => {
   const label = new Intl.NumberFormat(dashboardLocale(), { notation: "compact", maximumFractionDigits: 2 }).format(amount);
   return `${label} ${devise.replace(/.*\\((.*)\\).*/, "$1")}`;
 };
-const downloadBlob = (content: string, filename: string, type: string) => {
-  const url = URL.createObjectURL(new Blob([content], { type }));
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  link.click();
-  URL.revokeObjectURL(url);
-};
-const exportPdf = (title: string, html: string) => {
-  const printWindow = window.open("", "_blank", "width=1100,height=760");
-  if (!printWindow) return;
-  printWindow.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${stripHtml(title)}</title><style>@page{size:A4 landscape;margin:12mm}body{font-family:Arial,sans-serif;color:#172033;margin:0}h1{font-size:20px;margin:0 0 4px}p{font-size:11px;color:#64748b;margin:0 0 18px}table{width:100%;border-collapse:collapse;font-size:9px}th{background:#f1f5f9;text-align:left;text-transform:uppercase;color:#64748b}th,td{padding:7px;border:1px solid #e2e8f0;vertical-align:top}.total{font-weight:800}.footer{margin-top:12px;font-size:9px;color:#94a3b8}</style></head><body><h1>${stripHtml(title)}</h1><p>${du("m7289d99c0cec")} ${new Date().toLocaleString(dashboardLocale())}</p>${html}<div class="footer">${du("me4461ff35f0d")}</div><script>window.onload=()=>{window.print();}</script></body></html>`);
-  printWindow.document.close();
-};
 
-const getStoredAccess = () => {
-  if (typeof window === "undefined") return { permissions: [] as string[], isOwner: false };
-  try {
-    const permissions = JSON.parse(localStorage.getItem("user_permissions") || "[]") as string[];
-    const profile = JSON.parse(localStorage.getItem("user_profile") || "{}") as { role?: string };
-    return { permissions, isOwner: profile.role === "Admin Général" || profile.role === "Admin Général" };
-  } catch {
-    return { permissions: [] as string[], isOwner: false };
-  }
-};
+
+
+
 
 export default function SalesHistoryPage() {
   const { ui: du } = useDashboardLanguage();
@@ -113,7 +93,8 @@ export default function SalesHistoryPage() {
   const [selectedSale, setSelectedSale] = useState<ApiSale | null>(null);
   const [metricOpen, setMetricOpen] = useState(false);
   const [averageOpen, setAverageOpen] = useState(false);
-  const [{ permissions, isOwner }] = useState(getStoredAccess);
+  const { permissions, isOwner } = useDashboardAccess();
+  const [exporting, setExporting] = useState(false);
   const [page, setPage] = useState(1);
 
   const fetchSales = useCallback(async () => {
@@ -150,23 +131,39 @@ export default function SalesHistoryPage() {
     });
   }, [sales, search, status, payment, date]);
 
+  const runExport = async (format: ExportFormat) => {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      const rows = await authorizedExportRows(API_URL + "/caisse/ventes", filtered);
+      if (!rows.length) throw new Error(du("Aucune donnée à exporter."));
+      await exportTable(format, "historique-ventes", { name: "Historique ventes", columns: ["Reference", "Client", "Total TTC", "TVA", "Paiement", "Caissier", "Date", "Statut"], rows: rows.map((sale) => [sale.reference, sale.clientNom, sale.totalTTC, sale.tvaMontant, sale.paiement, getCashierName(sale), formatDate(sale.createdAt), getStatusLabel(sale.statut)]) });
+    } catch (error) {
+      setError(error instanceof Error ? error.message : du("Export impossible."));
+    } finally { setExporting(false); }
+  };
+  const exportCsv = () => void runExport("xlsx");
+  const exportExcel = exportCsv;
+  const exportWord = () => void runExport("docx");
+  const exportCurrentPdf = () => void runExport("pdf");
+  
   const visibleSales = filtered.slice((page - 1) * pageSize, page * pageSize);
   const canExportSales = isOwner || permissions.includes("EXPORTER_HISTORIQUE_VENTES") || permissions.includes("EXPORTER_RAPPORTS");
   const paidSales = filtered.filter((sale) => sale.statut === "PAYEE");
   const reportCurrency = paidSales[0]?.deviseReference || paidSales[0]?.devise || getActiveBoutiqueCurrency();
   const totalPaid = paidSales.reduce((sum, sale) => sum + Number(sale.totalTTC || 0), 0);
   const averageSale = paidSales.length ? totalPaid / paidSales.length : 0;
-  const salesRowsHtml = (items: ApiSale[]) => `<table><thead><tr><th>${du("m393ca26ab12c")}</th><th>${du("m0c77fe09ab33")}</th><th>${du("m7324c6571082")}</th><th>${du("mae5f52a29195")}</th><th>${du("m5d9e9e44e18a")}</th><th>${du("mbe0e77f22f53")}</th><th>${du("m99c40ab40592")}</th><th>${du("mdee377cfd8cd")}</th></tr></thead><tbody>${items.map((sale) => `<tr><td>${sale.reference}</td><td>${sale.clientNom}</td><td class="total">${formatMoney(sale.totalTTC, sale.devise)}</td><td>${formatMoney(sale.tvaMontant, sale.devise)}</td><td>${sale.paiement}</td><td>${getCashierName(sale)}</td><td>${formatDate(sale.createdAt)}</td><td>${getStatusLabel(sale.statut)}</td></tr>`).join("")}</tbody></table>`;
-  const exportCsv = () => exportXlsxWorkbook("historique-ventes.xlsx", [{ name: "Historique ventes", columns: ["Reference", "Client", "Total TTC", "TVA", "Paiement", "Caissier", "Date", "Statut"], rows: filtered.map((sale) => [sale.reference, sale.clientNom, sale.totalTTC, sale.tvaMontant, sale.paiement, getCashierName(sale), formatDate(sale.createdAt), getStatusLabel(sale.statut)]) }]);
-  const exportWord = () => downloadBlob(`<html><body><h1>${du("m4af2a5b0dea5")}</h1>${salesRowsHtml(filtered)}</body></html>`, "historique-ventes.doc", "application/msword;charset=utf-8");
-  const exportCurrentPdf = () => exportPdf("Historique ventes", salesRowsHtml(filtered));
+  
+  
+  
+  
 
   return (
     <div className="space-y-5 bg-[#f9fafd] p-3 sm:p-6 rounded-2xl sm:rounded-3xl min-h-screen text-slate-800">
       <CashHeader
         title={du("mace92fb34113")}
         subtitle={scope === "all" ? du("md9750e26f7c1") : du("m75af14d737d7")}
-        action={canExportSales ? <div className="flex flex-wrap gap-2"><button onClick={exportCsv} disabled={filtered.length === 0} className={secondaryButton}><Download size={14} /> {du("m48d53635551c")}</button><button onClick={exportWord} disabled={filtered.length === 0} className={secondaryButton}><FileText size={14} /> {du("m3a2860ece5a4")}</button><button onClick={exportCurrentPdf} disabled={filtered.length === 0} className={secondaryButton}><Printer size={14} /> {du("m1d393b0081b6")}</button></div> : undefined}
+        action={canExportSales ? <div className="flex flex-wrap gap-2"><button onClick={exportCsv} disabled={exporting || filtered.length === 0} className={secondaryButton}><Download size={14} /> {du("m48d53635551c")}</button><button onClick={exportWord} disabled={exporting || filtered.length === 0} className={secondaryButton}><FileText size={14} /> {du("m3a2860ece5a4")}</button><button onClick={exportCurrentPdf} disabled={exporting || filtered.length === 0} className={secondaryButton}><Printer size={14} /> {du("m1d393b0081b6")}</button></div> : undefined}
       />
 
       {error && <div className="p-3 rounded-xl border border-rose-100 bg-rose-50 text-xs font-semibold text-rose-700">{du(error)}</div>}

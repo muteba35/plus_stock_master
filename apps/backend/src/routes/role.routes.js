@@ -10,20 +10,18 @@ import {
 
 // Middlewares de sécurité
 import { protect, checkPermission, checkAnyPermission } from '../middlewares/authMiddleware.js';
-import { attachSubscription, requireFeature } from '../middlewares/subscriptionMiddleware.js';
 
 const router = express.Router();
 
 // Toutes les routes ci-dessous nécessitent obligatoirement un token JWT valide
 router.use(protect);
-router.use(attachSubscription);
 
 // ==========================================
 // ROUTES POUR LES PERMISSIONS
 // ==========================================
 // On laisse "VOIR_ROLES" ici car pour afficher les détails d'un rôle, 
 // on a souvent besoin de charger la liste des permissions existantes.
-router.get('/permissions', requireFeature('ROLES_PERMISSIONS', 'Pro'), checkPermission('VOIR_ROLES'), getAvailablePermissions);
+router.get('/permissions', checkPermission('VOIR_ROLES'), getAvailablePermissions);
 
 // ==========================================
 // ROUTES POUR LES RÔLES
@@ -31,13 +29,13 @@ router.get('/permissions', requireFeature('ROLES_PERMISSIONS', 'Pro'), checkPerm
 
 // 1. Créer un rôle & Récupérer tous les rôles de la boutique active
 router.route('/')
-  .post(requireFeature('ROLES_PERMISSIONS', 'Pro'), checkPermission('CREER_ROLE'), createRole) // Granularité : Création
-  .get(requireFeature('ROLES_PERMISSIONS', 'Pro'), checkAnyPermission('VOIR_ROLES', 'VOIR_EQUIPE'), getRoles);
+  .post(checkPermission('CREER_ROLE'), createRole) // Granularité : Création
+  .get(checkAnyPermission('VOIR_ROLES', 'VOIR_EQUIPE'), getRoles);
 
 // 2. Récupérer, Modifier ou Supprimer un rôle spécifique via son ID
 router.route('/:id')
-  .get(requireFeature('ROLES_PERMISSIONS', 'Pro'), checkPermission('VOIR_ROLES'), getRoleById)
-  .put(requireFeature('ROLES_PERMISSIONS', 'Pro'), checkPermission('MODIFIER_ROLE'), updateRole) // Granularité : Modification
-  .delete(requireFeature('ROLES_PERMISSIONS', 'Pro'), checkPermission('SUPPRIMER_ROLE'), deleteRole); // Granularité : Suppression
+  .get(checkPermission('VOIR_ROLES'), getRoleById)
+  .put(checkPermission('MODIFIER_ROLE'), updateRole) // Granularité : Modification
+  .delete(checkPermission('SUPPRIMER_ROLE'), deleteRole); // Granularité : Suppression
 
 export default router;

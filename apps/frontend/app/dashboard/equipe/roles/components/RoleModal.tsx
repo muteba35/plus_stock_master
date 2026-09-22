@@ -222,6 +222,9 @@ function RoleModalContent({ role, mode, onSave, onClose, apiHeaders, apiUrl }: O
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 10, scale: 0.98 }}
       transition={{ duration: 0.2 }}
+      role="dialog"
+      aria-modal="true"
+      aria-label={du(modalTitle)}
       className="relative z-10 w-full max-w-5xl bg-white rounded-2xl border border-slate-200/80 shadow-2xl overflow-hidden flex flex-col max-h-[94vh]"
     >
       <div className="p-5 sm:p-6 border-b border-slate-100 flex justify-between items-start bg-[#fcfdfe] shrink-0">

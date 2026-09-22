@@ -3,9 +3,26 @@ import { dashboardUi as du, dashboardLocale } from "../../src/i18n/catalog";
 import { useLanguage as useDashboardLanguage } from "../../src/components/LanguageRuntime";
 
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
+import { DashboardAccessContext } from "./components/DashboardAccess";
+import ShopLogo from "./components/ShopLogo";
+import "@fontsource/inter/400.css";
+import "@fontsource/inter/600.css";
+import "@fontsource/inter/700.css";
+import "@fontsource/roboto/400.css";
+import "@fontsource/roboto/600.css";
+import "@fontsource/roboto/700.css";
+import "@fontsource/poppins/400.css";
+import "@fontsource/poppins/600.css";
+import "@fontsource/poppins/700.css";
+import "@fontsource/montserrat/400.css";
+import "@fontsource/montserrat/600.css";
+import "@fontsource/montserrat/700.css";
+import "@fontsource/open-sans/400.css";
+import "@fontsource/open-sans/600.css";
+import "@fontsource/open-sans/700.css";
 import { canUsePlan, fallbackSubscription, getRequiredPlanForPath, planNames, type PlanCode, type SubscriptionState } from "../../src/lib/subscriptionPlans";
 import { supportedLanguages, type AppLanguage } from "../../src/i18n/catalog";
 import { useLanguage } from "../../src/components/LanguageRuntime";
@@ -52,6 +69,7 @@ interface UserProfile {
   nom?: string;
   email?: string;
   roleId: string | null;
+  isOwner?: boolean;
   role?: string;
   avatar?: string;
   boutiqueActive?: string;
@@ -212,6 +230,7 @@ export default function DashboardLayout({
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const [subscription, setSubscription] = useState<SubscriptionState>(fallbackSubscription);
   const [boutiqueLogo, setBoutiqueLogo] = useState("");
+  const appearanceTheme = useRef("system");
 
   const [openSubMenus, setOpenSubMenus] = useState<Record<string, boolean>>({
     Caisse: false,
@@ -223,16 +242,14 @@ export default function DashboardLayout({
 
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem("movoora_theme");
-    const prefersDark = window.matchMedia?.("(prefers-color-scheme: dark)").matches;
-    const shouldUseDark = savedTheme ? savedTheme === "dark" : Boolean(prefersDark);
-    setDarkMode(shouldUseDark);
-
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const sync = () => { if (appearanceTheme.current === "system") setDarkMode(media.matches); };
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
   }, []);
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", darkMode);
-    localStorage.setItem("movoora_theme", darkMode ? "dark" : "light");
   }, [darkMode]);
 
   const applyAppearance = useCallback((appearance: BoutiqueAppearance = {}) => {
@@ -241,37 +258,56 @@ export default function DashboardLayout({
     const size = { small: "14px", normal: "16px", large: "17px", xlarge: "18px" }[appearance.textSize || "normal"];
     root.style.setProperty("--movoora-font", `"${font}", Inter, Arial, sans-serif`);
     root.style.setProperty("--movoora-base-size", size);
+    root.style.fontSize = size;
     root.style.setProperty("--movoora-primary", appearance.primaryColor || "#4F46E5");
     root.style.setProperty("--movoora-secondary", appearance.secondaryColor || "#0F172A");
     root.style.setProperty("--movoora-accent", appearance.accentColor || "#10B981");
     document.body.style.fontFamily = `var(--movoora-font)`;
     document.body.style.fontSize = "var(--movoora-base-size)";
-    if (appearance.theme) {
-      const useDark = appearance.theme === "dark" || (appearance.theme === "system" && window.matchMedia?.("(prefers-color-scheme: dark)").matches);
+    appearanceTheme.current = appearance.theme || "system";
+    {
+      const useDark = appearanceTheme.current === "dark" || (appearanceTheme.current === "system" && window.matchMedia?.("(prefers-color-scheme: dark)").matches);
       setDarkMode(Boolean(useDark));
     }
     setBoutiqueLogo(appearance.logo || "");
   }, []);
 
   useEffect(() => {
-    const receiveAppearance = (event: Event) => applyAppearance((event as CustomEvent<BoutiqueAppearance>).detail || {});
+    const receiveAppearance = (event: Event) => {
+      const detail = (event as CustomEvent<{ boutiqueId: string; appearance: BoutiqueAppearance }>).detail;
+      if (detail?.boutiqueId === user.boutiqueActive) applyAppearance(detail.appearance);
+    };
+    const controller = new AbortController();
+    const reset = window.setTimeout(() => applyAppearance({}), 0);
+    document.documentElement.dataset.dashboard = "true";
     window.addEventListener("movooraAppearancePreview", receiveAppearance);
     window.addEventListener("movooraAppearanceSaved", receiveAppearance);
     const token = localStorage.getItem("token");
     if (token) {
-      fetch(`${API_URL}/boutiques`, { headers: { Authorization: `Bearer ${token}` } })
+      fetch(`${API_URL}/boutiques/settings/appearance`, { signal: controller.signal, headers: { Authorization: `Bearer ${token}` } })
         .then((response) => response.ok ? response.json() : null)
         .then((data) => {
-          const active = data?.boutiques?.find((item: { isActive?: boolean }) => item.isActive) || data?.boutiques?.[0];
-          if (active?.appearance) applyAppearance(active.appearance);
+          const active = data?.boutique;
+          if (!controller.signal.aborted && active?.id === user.boutiqueActive) applyAppearance(active.appearance || {});
         })
         .catch(() => undefined);
     }
     return () => {
+      window.clearTimeout(reset);
+      controller.abort();
       window.removeEventListener("movooraAppearancePreview", receiveAppearance);
       window.removeEventListener("movooraAppearanceSaved", receiveAppearance);
     };
-  }, [applyAppearance]);
+  }, [applyAppearance, user.boutiqueActive]);
+
+  useEffect(() => () => {
+    delete document.documentElement.dataset.dashboard;
+    document.documentElement.classList.remove("dark");
+    for (const key of ["font", "base-size", "primary", "secondary", "accent"]) document.documentElement.style.removeProperty("--movoora-" + key);
+    document.body.style.removeProperty("font-family");
+    document.body.style.removeProperty("font-size");
+    document.documentElement.style.removeProperty("font-size");
+  }, []);
 
   // ==========================================
   // EFFECT 1 : Gestion du montage (Asynchrone pour éviter le linter)
@@ -319,6 +355,7 @@ export default function DashboardLayout({
             email: userData.email || DEFAULT_PROFILE.email,
             roleId: userData.roleId !== undefined ? userData.roleId : null,
             role: userData.role || DEFAULT_PROFILE.role,
+            isOwner: userData.isOwner === true,
             avatar: userData.avatar || DEFAULT_PROFILE.avatar,
             boutiqueActive: userData.boutiqueActive || "",
             boutique: userData.boutique || null,
@@ -381,6 +418,7 @@ export default function DashboardLayout({
           email: userData.email || DEFAULT_PROFILE.email,
           roleId: userData.roleId !== undefined ? userData.roleId : null,
           role: userData.role || DEFAULT_PROFILE.role,
+            isOwner: userData.isOwner === true,
           avatar: userData.avatar || DEFAULT_PROFILE.avatar,
           boutiqueActive: userData.boutiqueActive || "",
           boutique: userData.boutique || null,
@@ -423,7 +461,7 @@ export default function DashboardLayout({
   // ==========================================
   const hasPermission = (permission?: string) => {
     if (user.roleId === "__loading__") return false;
-    if (user.roleId === null || user.roleId === "") {
+    if (user.isOwner === true) {
       return true;
     }
     if (!permission) return true;
@@ -432,7 +470,7 @@ export default function DashboardLayout({
 
   const hasAnyPermission = (permissions?: string[]) => {
     if (user.roleId === "__loading__") return false;
-    if (user.roleId === null || user.roleId === "") return true;
+    if (user.isOwner === true) return true;
     if (!permissions || permissions.length === 0) return true;
     return permissions.some((permission) => userPermissions.includes(permission));
   };
@@ -621,10 +659,6 @@ export default function DashboardLayout({
     "/dashboard/parametres/boutique",
     "/dashboard/parametres/aide",
   ];
-  const isSubscriptionExpired = subscription.status === "expired";
-  const canRenderExpiredRoute = !isSubscriptionExpired || expiredAllowedRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`));
-  const subscriptionRequirement = getRequiredPlanForPath(pathname);
-  const canRenderSubscriptionRoute = canUsePlan(subscription.planCode, subscriptionRequirement?.plan);
 
   const canRenderCurrentRoute =
     !isEmployeeWithNoPermission &&
@@ -668,7 +702,7 @@ export default function DashboardLayout({
           <div className="p-6 border-b border-slate-800/60 bg-[#141C2F] h-20 flex items-center justify-between shrink-0">
             <div className="flex items-center space-x-3 overflow-hidden">
               <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-600/20 shrink-0">
-                <img src={boutiqueLogo || "/movoora-mark.svg?v=2"} alt={du("m21b13396785f")} className="bg-white rounded-sm p-0.5 w-5 h-5 object-contain" />
+                <ShopLogo logo={boutiqueLogo} name={du("m21b13396785f")} className="bg-white rounded-sm p-0.5 w-5 h-5" />
               </div>
 
               {(isSidebarOpen || isMobileSidebarOpen) && (
@@ -807,7 +841,6 @@ export default function DashboardLayout({
                               className={isSubActive ? "text-indigo-400" : "text-slate-600"}
                             />
                             <span>{du(sub.name)}</span>
-                            {sub.requiredPlan && !canUsePlan(subscription.planCode, sub.requiredPlan) && <span className="ml-auto inline-flex items-center gap-1 rounded-md border border-amber-400/20 bg-amber-400/10 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wide text-amber-300"><LockKeyhole size={9} /> {du("m957b0b874524")}</span>}
                           </Link>
                         );
                       })}
@@ -1097,7 +1130,7 @@ export default function DashboardLayout({
 
         {/* MAIN CONTENT */}
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-[#F1F5F9]">
-          {canRenderCurrentRoute ? (canRenderExpiredRoute ? (canRenderSubscriptionRoute ? children : <LockedSubscriptionState requiredPlan={subscriptionRequirement!.plan} feature={subscriptionRequirement!.feature} />) : <ExpiredSubscriptionState />) : <EmptyPermissionState />}
+          {canRenderCurrentRoute ? <DashboardAccessContext.Provider value={{ permissions: userPermissions, isOwner: user.isOwner === true, boutiqueId: user.boutiqueActive || "" }}>{children}</DashboardAccessContext.Provider> : <EmptyPermissionState />}
         </main>
       </div>
     </div>

@@ -7,7 +7,8 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { AlertCircle, ArrowDownLeft, CheckCircle2, Download, Eye, FileText, Loader2, Plus, Printer, RotateCcw, WalletCards, XCircle } from "lucide-react";
 import { formatMoney, getActiveBoutiqueCurrency } from "../../inventaire/components/currency";
 import { CashBadge, CashHeader, CashMetric, CashModal, CashPagination, CashSearch, fieldClass, primaryButton, secondaryButton } from "../components/cashier-ui";
-import { exportXlsxWorkbook } from "../../components/export-xlsx";
+import { exportTable, authorizedExportRows, type ExportFormat } from "../../components/export-table";
+import { useDashboardAccess } from "../../components/DashboardAccess";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://plus-stock-master.onrender.com/api";
 
@@ -18,31 +19,10 @@ const compactMoney = (value: number, devise: string) => {
   const label = new Intl.NumberFormat(dashboardLocale(), { notation: "compact", maximumFractionDigits: 2 }).format(amount);
   return `${label} ${devise.replace(/.*\\((.*)\\).*/, "$1")}`;
 };
-const downloadBlob = (content: string, filename: string, type: string) => {
-  const url = URL.createObjectURL(new Blob([content], { type }));
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  link.click();
-  URL.revokeObjectURL(url);
-};
-const exportPdf = (title: string, html: string) => {
-  const printWindow = window.open("", "_blank", "width=1100,height=760");
-  if (!printWindow) return;
-  printWindow.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${stripHtml(title)}</title><style>@page{size:A4 landscape;margin:12mm}body{font-family:Arial,sans-serif;color:#172033;margin:0}h1{font-size:20px;margin:0 0 4px}p{font-size:11px;color:#64748b;margin:0 0 18px}table{width:100%;border-collapse:collapse;font-size:9px}th{background:#f1f5f9;text-align:left;text-transform:uppercase;color:#64748b}th,td{padding:7px;border:1px solid #e2e8f0;vertical-align:top}.total{font-weight:800}.footer{margin-top:12px;font-size:9px;color:#94a3b8}</style></head><body><h1>${stripHtml(title)}</h1><p>${du("m7289d99c0cec")} ${new Date().toLocaleString(dashboardLocale())}</p>${html}<div class="footer">${du("me4461ff35f0d")}</div><script>window.onload=()=>{window.print();}</script></body></html>`);
-  printWindow.document.close();
-};
 
-const getStoredAccess = () => {
-  if (typeof window === "undefined") return { permissions: [] as string[], isOwner: false };
-  try {
-    const permissions = JSON.parse(localStorage.getItem("user_permissions") || "[]") as string[];
-    const profile = JSON.parse(localStorage.getItem("user_profile") || "{}") as { role?: string };
-    return { permissions, isOwner: profile.role === "Admin Général" || profile.role === "Admin Général" };
-  } catch {
-    return { permissions: [] as string[], isOwner: false };
-  }
-};
+
+
+
 
 type SaleLine = {
   produitId: string;
@@ -127,7 +107,8 @@ export default function CustomerReturnsPage() {
   const [success, setSuccess] = useState("");
   const [page, setPage] = useState(1);
   const [metricOpen, setMetricOpen] = useState(false);
-  const [{ permissions, isOwner }] = useState(getStoredAccess);
+  const { permissions, isOwner } = useDashboardAccess();
+  const [exporting, setExporting] = useState(false);
   const pageSize = 8;
 
   const fetchReturns = async () => {
@@ -166,6 +147,22 @@ export default function CustomerReturnsPage() {
     });
   }, [returnsData, search, status]);
 
+  const runExport = async (format: ExportFormat) => {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      const rows = await authorizedExportRows(API_URL + "/caisse/retours", filtered);
+      if (!rows.length) throw new Error(du("Aucune donnée à exporter."));
+      await exportTable(format, "retours-clients", { name: "Retours clients", columns: ["Retour", "Vente", "Client", "Type", "Montant", "Statut"], rows: rows.map((item) => [item.reference, item.venteReference, item.clientNom, typeLabel(item.typeRetour), item.montantTotalTTC, statusLabel(item.statut)]) });
+    } catch (error) {
+      setError(error instanceof Error ? error.message : du("Export impossible."));
+    } finally { setExporting(false); }
+  };
+  const exportCsv = () => void runExport("xlsx");
+  const exportExcel = exportCsv;
+  const exportWord = () => void runExport("docx");
+  const exportCurrentPdf = () => void runExport("pdf");
+  
   const visibleReturns = filtered.slice((page - 1) * pageSize, page * pageSize);
   const canExportReturns = isOwner || permissions.includes("EXPORTER_RETOURS_CLIENTS") || permissions.includes("EXPORTER_RAPPORTS");
   const canCreateReturn = isOwner || permissions.includes("CREER_RETOUR_CLIENT") || permissions.includes("ANNULER_VENTE");
@@ -173,10 +170,10 @@ export default function CustomerReturnsPage() {
   const exchanges = filtered.filter((item) => item.typeRetour === "ECHANGE").length;
   const returnCurrency = validReturns[0]?.deviseReference || validReturns[0]?.devise || getActiveBoutiqueCurrency();
   const totalReturned = validReturns.reduce((sum, item) => sum + Number(item.montantTotalTTC || 0), 0);
-  const returnsRowsHtml = (items: ReturnItem[]) => `<table><thead><tr><th>${du("mef23a5940244")}</th><th>${du("mee19f8d8fffd")}</th><th>${du("m0c77fe09ab33")}</th><th>${du("mbaaddf70fb5d")}</th><th>${du("m947cc07e2b3e")}</th><th>${du("mdee377cfd8cd")}</th></tr></thead><tbody>${items.map((item) => `<tr><td>${item.reference}</td><td>${item.venteReference}</td><td>${item.clientNom}</td><td>${typeLabel(item.typeRetour)}</td><td class="total">${formatMoney(item.montantTotalTTC, item.deviseReference || item.devise || returnCurrency)}</td><td>${statusLabel(item.statut)}</td></tr>`).join("")}</tbody></table>`;
-  const exportCsv = () => exportXlsxWorkbook("retours-clients.xlsx", [{ name: "Retours clients", columns: ["Retour", "Vente", "Client", "Type", "Montant", "Statut"], rows: filtered.map((item) => [item.reference, item.venteReference, item.clientNom, typeLabel(item.typeRetour), item.montantTotalTTC, statusLabel(item.statut)]) }]);
-  const exportWord = () => downloadBlob(`<html><body><h1>${du("me44b386d4c1e")}</h1>${returnsRowsHtml(filtered)}</body></html>`, "retours-clients.doc", "application/msword;charset=utf-8");
-  const exportCurrentPdf = () => exportPdf("Retours clients", returnsRowsHtml(filtered));
+  
+  
+  
+  
 
   const openCreateModal = () => {
     const firstSale = sales[0];
@@ -234,7 +231,7 @@ export default function CustomerReturnsPage() {
         title={du("me44b386d4c1e")}
         subtitle={du("m686404ba99aa")}
         action={
-          <div className="flex flex-wrap gap-2">{canExportReturns && <><button onClick={exportCsv} disabled={filtered.length === 0} className={secondaryButton}><Download size={14} /> {du("m48d53635551c")}</button><button onClick={exportWord} disabled={filtered.length === 0} className={secondaryButton}><FileText size={14} /> {du("m3a2860ece5a4")}</button><button onClick={exportCurrentPdf} disabled={filtered.length === 0} className={secondaryButton}><Printer size={14} /> {du("m1d393b0081b6")}</button></>}{canCreateReturn && <button onClick={openCreateModal} className={primaryButton}>
+          <div className="flex flex-wrap gap-2">{canExportReturns && <><button onClick={exportCsv} disabled={exporting || filtered.length === 0} className={secondaryButton}><Download size={14} /> {du("m48d53635551c")}</button><button onClick={exportWord} disabled={exporting || filtered.length === 0} className={secondaryButton}><FileText size={14} /> {du("m3a2860ece5a4")}</button><button onClick={exportCurrentPdf} disabled={exporting || filtered.length === 0} className={secondaryButton}><Printer size={14} /> {du("m1d393b0081b6")}</button></>}{canCreateReturn && <button onClick={openCreateModal} className={primaryButton}>
             <Plus size={15} />
             {du("m55b74cb23ae1")}{" "}</button>}</div>
         }
