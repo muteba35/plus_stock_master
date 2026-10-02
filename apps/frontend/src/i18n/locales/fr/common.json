@@ -1834,7 +1834,7 @@
     "p3.imageError": "Image invalide ou illisible.",
     "p3.imageUploadLimit": "PNG, JPEG ou WebP, jusqu'a 5 Mo et 4096 x 4096 pixels. Le logo est optimise automatiquement.",
     "p3.saveError": "Enregistrement impossible.",
-    "p3.saved": "Modifications enregistrées",
+    "p3.saved": "Mise à jour réalisée avec succès.",
     "p3.noPermission": "Vous ne pouvez pas modifier cette apparence.",
     "p3.preview": "Aperçu",
     "p3.previewTitle": "Ma boutique",

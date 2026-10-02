@@ -1834,7 +1834,7 @@
     "p3.imageError": "Invalid or unreadable image.",
     "p3.imageUploadLimit": "PNG, JPEG or WebP, up to 5 MB and 4096 x 4096 pixels. The logo is optimized automatically.",
     "p3.saveError": "Unable to save.",
-    "p3.saved": "Changes saved",
+    "p3.saved": "Updated successfully.",
     "p3.noPermission": "You cannot edit this appearance.",
     "p3.preview": "Preview",
     "p3.previewTitle": "My store",

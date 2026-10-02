@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState, type ChangeEvent } from "react";
-import { ImagePlus, Loader2, Monitor, Moon, RotateCcw, Save, Sun, Trash2, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { CheckCircle2, Loader2, Monitor, Moon, RotateCcw, Save, Sun, X } from "lucide-react";
 import toast from "react-hot-toast";
 import { useLanguage as useDashboardLanguage } from "../../../../src/components/LanguageRuntime";
 import { useDashboardAccess } from "../../components/DashboardAccess";
@@ -23,8 +23,8 @@ export default function AppearancePage() {
   const [loadedId, setLoadedId] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
   const snapshot = useRef({ id: "", value: DEFAULTS });
-  const imageInput = useRef<HTMLInputElement>(null);
   const dirty = JSON.stringify(form) !== JSON.stringify(saved);
 
   useEffect(() => {
@@ -37,7 +37,7 @@ export default function AppearancePage() {
         if (controller.signal.aborted) return;
         const value = { ...DEFAULTS, ...data.boutique.appearance };
         snapshot.current = { id: boutiqueId, value };
-        setSaved(value); setForm(value); setName(data.boutique.nom); setLoadedId(boutiqueId); setError("");
+        setSaved(value); setForm(value); setName(data.boutique.nom); setLoadedId(boutiqueId); setError(""); setSuccess(false);
       })
       .catch((err) => { if (!controller.signal.aborted) { setError(err.message); } });
     return () => {
@@ -48,32 +48,12 @@ export default function AppearancePage() {
 
   const preview = (value: Appearance) => {
     if (!canEdit || saving) return;
-    setForm(value); setError(""); publishAppearance(boutiqueId, value);
-  };
-  const chooseLogo = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) return;
-    try {
-      if (!["image/png", "image/jpeg", "image/webp"].includes(file.type) || file.size > 5 * 1024 * 1024) throw new Error(du("p3.imageUploadLimit"));
-      const bitmap = await createImageBitmap(file);
-      if (bitmap.width > 4096 || bitmap.height > 4096) { bitmap.close(); throw new Error(du("p3.imageLimit")); }
-      const scale = Math.min(1, 512 / Math.max(bitmap.width, bitmap.height));
-      const canvas = document.createElement("canvas");
-      canvas.width = Math.max(1, Math.round(bitmap.width * scale));
-      canvas.height = Math.max(1, Math.round(bitmap.height * scale));
-      const context = canvas.getContext("2d");
-      if (!context) { bitmap.close(); throw new Error(du("p3.imageError")); }
-      context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-      bitmap.close();
-      const logo = canvas.toDataURL("image/webp", 0.85);
-      if (logo.length > 680000) throw new Error(du("p3.imageLimit"));
-      if (snapshot.current.id === boutiqueId) preview({ ...form, logo });
-    } catch (err) { setError(err instanceof Error ? err.message : du("p3.imageError")); }
+    value = { ...value, logo: saved.logo };
+    setForm(value); setError(""); setSuccess(false); publishAppearance(boutiqueId, value);
   };
   const save = async () => {
     if (!canEdit || saving || !dirty || snapshot.current.id !== boutiqueId) return;
-    setSaving(true); setError("");
+    setSaving(true); setError(""); setSuccess(false);
     try {
       const response = await fetch(`${API_URL}/boutiques/${boutiqueId}/appearance`, {
         method: "PATCH", headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token")}` }, body: JSON.stringify(form),
@@ -85,6 +65,7 @@ export default function AppearancePage() {
       snapshot.current = { id: boutiqueId, value };
       setSaved(value); setForm(value); publishAppearance(boutiqueId, value, true);
       toast.success(du("p3.saved"));
+      setSuccess(true);
     } catch (err) { setError(err instanceof Error ? err.message : du("p3.saveError")); }
     finally { setSaving(false); }
   };
@@ -93,6 +74,7 @@ export default function AppearancePage() {
   return <div className="mx-auto w-full min-w-0 max-w-6xl space-y-6 text-slate-900 appearance-settings">
     <header><h1 className="text-xl font-bold">{du("p3.title")}</h1><p className="mt-1 text-sm text-slate-500">{name}</p></header>
     {error && <p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-600">{du(error)}</p>}
+    {success && <p role="status" className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700"><CheckCircle2 size={18} className="shrink-0" />{du("p3.saved")}</p>}
     {!canEdit && <p className="text-sm text-slate-500">{du("p3.noPermission")}</p>}
     <div className="grid min-w-0 items-start gap-8 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
       {canEdit && <fieldset disabled={saving} className="min-w-0 space-y-7 disabled:opacity-60">
@@ -104,7 +86,6 @@ export default function AppearancePage() {
           <label className="min-w-0 text-sm font-semibold">{du("p3.size")}<select value={form.textSize} onChange={(e) => preview({ ...form, textSize: e.target.value })} className={inputClass}>{["small", "normal", "large", "xlarge"].map((size) => <option value={size} key={size}>{du(`p3.${size}`)}</option>)}</select></label>
         </section>
         <section className="border-t border-slate-200 pt-5"><h2 className="mb-3 text-sm font-bold">{du("p3.colors")}</h2><div className="grid gap-3 sm:grid-cols-3">{(["primaryColor", "secondaryColor", "accentColor"] as const).map((key) => <label key={key} className="min-w-0 text-xs font-semibold">{du(`p3.${key}`)}<div className="mt-2 flex items-center gap-2"><input type="color" value={form[key]} onChange={(e) => preview({ ...form, [key]: e.target.value })} className="h-9 w-10 shrink-0 cursor-pointer rounded border border-slate-200"/><span className="text-xs text-slate-500">{form[key]}</span></div></label>)}</div></section>
-        <section className="border-t border-slate-200 pt-5"><h2 className="mb-3 text-sm font-bold">{du("p3.logo")}</h2><div className="flex flex-wrap items-center gap-4"><div className="flex h-20 w-20 items-center justify-center rounded-lg border border-slate-200 bg-white p-2"><ShopLogo logo={form.logo} className="h-full w-full" name={name} /></div><div className="space-y-2"><div className="flex flex-wrap gap-2"><button type="button" className={buttonClass} onClick={() => imageInput.current?.click()}><ImagePlus size={16}/>{du("p3.chooseLogo")}</button><button type="button" className={buttonClass} disabled={!form.logo} onClick={() => preview({ ...form, logo: "" })} title={du("p3.defaultLogo")} aria-label={du("p3.defaultLogo")}><Trash2 size={16}/></button></div><p className="text-xs text-slate-500">{du("p3.imageUploadLimit")}</p></div></div><input ref={imageInput} type="file" accept="image/png,image/jpeg,image/webp" onChange={chooseLogo} className="hidden" /></section>
       </fieldset>}
       <aside className="min-w-0 lg:sticky lg:top-6"><h2 className="mb-3 text-sm font-bold">{du("p3.preview")}</h2><div className="overflow-hidden rounded-lg border border-slate-200 bg-white" style={{ fontFamily: form.fontFamily === "system" ? "Arial, Helvetica, sans-serif" : `"${form.fontFamily}", sans-serif` }}><div className="flex min-w-0 items-center gap-3 p-4" style={{ backgroundColor: form.secondaryColor, color: "#fff" }}><ShopLogo logo={form.logo} className={form.logo ? "h-9 w-9" : "h-9 w-9 rounded bg-white p-1"} name={name}/><span className="min-w-0 break-words font-semibold">{name}</span></div><div className="space-y-4 p-5"><p className="font-semibold">{du("p3.previewTitle")}</p><div className="flex items-center justify-between border-b border-slate-200 pb-3 text-sm"><span>{du("p3.previewProduct")}</span><span style={{ color: form.accentColor }}>24</span></div><button type="button" className="rounded-lg px-4 py-2 text-sm font-semibold text-white" style={{ backgroundColor: form.primaryColor }}>{du("p3.previewAction")}</button></div></div></aside>
     </div>
