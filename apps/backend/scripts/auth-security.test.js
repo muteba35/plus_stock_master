@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
-import { Utilisateur, Permission, RolePermission } from "../src/models/Utilisateur.js";
+import { Utilisateur, Permission, RolePermission, Role } from "../src/models/Utilisateur.js";
 import { createLoginChallenge, invalidatePasswordSessions, sessionIsCurrent } from "../src/utils/authSecurity.js";
 
 process.env.JWT_SECRET = "isolated-auth-regression-test-secret";
@@ -37,6 +37,7 @@ test("authentication regression checks without database or email delivery", asyn
   t.mock.method(Utilisateur, "findOne", () => query(user));
   t.mock.method(Utilisateur, "findById", () => query(user));
   t.mock.method(Permission, "find", async () => []);
+  t.mock.method(Role, "exists", async filter => filter._id === user.roleId && filter.boutiqueId === user.boutiqueActive?._id);
   t.mock.method(RolePermission, "find", () => ({
     populate: async () => [{ permissionId: { nom: "CONNEXION_SANS_OTP" } }],
   }));

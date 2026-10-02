@@ -105,6 +105,9 @@ export const getCurrentSubscription = async (req, res) => {
 };
 
 export const activateMockSubscription = async (req, res) => {
+  if (process.env.NODE_ENV === "production") {
+    return res.status(403).json({ success: false, message: "Activation test indisponible en production." });
+  }
   try {
     const boutiqueId = getActiveBoutiqueId(req);
     const planCode = String(req.body?.planCode || "").toUpperCase();

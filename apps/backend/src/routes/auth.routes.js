@@ -117,6 +117,14 @@ const profileUpdateLimiter = createLimiter({
   message: "Trop de mises à jour de profil. Réessayez plus tard.",
 });
 
+// Bound unauthenticated traffic even when the caller rotates email addresses.
+const publicAuthLimiter = createLimiter({
+  windowMs: fifteenMinutes,
+  max: 100,
+  message: "Trop de demandes d'authentification. Reessayez dans 15 minutes.",
+});
+router.use(["/register", "/login", "/verify-otp", "/resend-otp", "/forgot-password", "/resend-forgot-password", "/reset-password", "/resend-verification"], publicAuthLimiter);
+
 router.post("/register", registerLimiter, authValidation.register, register);
 router.post("/login", loginLimiter, authValidation.login, login);
 

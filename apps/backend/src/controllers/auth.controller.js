@@ -5,7 +5,7 @@ import { createLoginChallenge, validLoginChallenge } from "../utils/authSecurity
 import { ensureBoutiqueSubscription } from "./subscription.controller.js";
 import { Utilisateur, Boutique } from "../models/Utilisateur.js"; 
 import { sendEmail, sendSecurityAlertEmail, emailBrand } from "../utils/sendEmail.js";
-import { Permission, RolePermission } from "../models/Utilisateur.js";
+import { Permission, RolePermission, Role } from "../models/Utilisateur.js";
 
 const strongPasswordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,128}$/;
 const generateOtp = () => crypto.randomInt(100000, 1000000).toString();
@@ -306,6 +306,7 @@ const resolveLoginPermissions = async (user) => {
   }
 
   if (!user.roleId) return [];
+  if (!(await Role.exists({ _id: user.roleId?._id || user.roleId, boutiqueId: user.boutiqueActive._id }))) return [];
 
   const rolePermissions = await RolePermission.find({ roleId: user.roleId }).populate("permissionId");
   return rolePermissions
@@ -1301,7 +1302,7 @@ export const getMe = async (req, res) => {
           tailleBusiness: user.boutiqueActive.tailleBusiness
         } : null
       },
-      permissions: sesPermissions 
+      permissions: req.user.permissions
     });
 
   } catch (error) {

@@ -58,7 +58,7 @@ export default function PreferenceControls({ compact = false }: { compact?: bool
         aria-label={t("language.change")}
       >
         <FlagIcon language={language} />
-        <span>{currentLanguage.label}</span>
+        <span className={compact ? "hidden sm:inline" : undefined}>{currentLanguage.label}</span>
         <ChevronDown size={13} className={open ? "rotate-180 transition-transform" : "transition-transform"} />
       </button>
 

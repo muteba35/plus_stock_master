@@ -4,6 +4,22 @@ import { dashboardUi as du, dashboardLocale } from "../../../src/i18n/catalog";
 import { exportXlsxWorkbook, type XlsxSheet } from "./export-xlsx";
 
 export type ExportFormat = "xlsx" | "docx" | "pdf";
+export type ExportContext = { boutiqueId: string; name: string; logo: string; currency: string; generatedAt: string; period?: string };
+
+async function reportLogo(source: string) {
+  const image = new Image();
+  image.src = /^data:image\/(png|jpeg|webp);base64,/.test(source) ? source : "/movoora-mark.svg";
+  await image.decode();
+  const scale = Math.min(160 / image.naturalWidth, 64 / image.naturalHeight);
+  const width = Math.max(1, Math.round(image.naturalWidth * scale));
+  const height = Math.max(1, Math.round(image.naturalHeight * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = width; canvas.height = height;
+  canvas.getContext("2d")!.drawImage(image, 0, 0, width, height);
+  const dataUrl = canvas.toDataURL("image/png");
+  const bytes = Uint8Array.from(atob(dataUrl.split(",")[1]), (c) => c.charCodeAt(0));
+  return { dataUrl, bytes, width, height };
+}
 
 const download = (blob: Blob, filename: string) => {
   const url = URL.createObjectURL(blob);
@@ -16,23 +32,32 @@ const download = (blob: Blob, filename: string) => {
   window.setTimeout(() => URL.revokeObjectURL(url), 30000);
 };
 
-export async function exportTable(format: ExportFormat, filename: string, sheet: XlsxSheet) {
+export async function exportTable(format: ExportFormat, filename: string, sheet: XlsxSheet, context?: ExportContext) {
   const title = du(sheet.name);
   const columns = sheet.columns.map((column) => du(column));
   const rows = sheet.rows.map((row) => row.map((cell) => String(cell ?? "")));
-  const date = new Date().toLocaleString(dashboardLocale());
+  const date = new Date(context?.generatedAt || Date.now()).toLocaleString(dashboardLocale());
+  const shopName = context?.name || "Movoora";
+  const english = dashboardLocale().startsWith("en");
+  const details = [date, context?.period, `${rows.length} ${english ? "rows" : "lignes"}`].filter(Boolean).join(" | ");
   const name = `${filename}-${new Date().toISOString().slice(0, 10)}.${format}`;
-  if (format === "xlsx") return exportXlsxWorkbook(name, [{ ...sheet, name: title, columns }]);
+  if (format === "xlsx") return exportXlsxWorkbook(name, [{ ...sheet, name: title, columns, branding: { name: shopName, details } }]);
+  const logo = await reportLogo(context?.logo || "");
   if (format === "pdf") {
     const { jsPDF } = await import("jspdf");
     const { autoTable } = await import("jspdf-autotable");
     const doc = new jsPDF({ orientation: "landscape", format: "a4" });
     doc.setFontSize(17);
-    doc.text(`Movoora | ${title}`, 14, 17);
+    doc.addImage(logo.dataUrl, "PNG", 14, 10, logo.width / 4, logo.height / 4);
+    const shopLines = doc.splitTextToSize(shopName, 220);
+    doc.text(shopLines, 58, 16);
+    const headingY = Math.max(36, 20 + shopLines.length * 7);
+    doc.setFontSize(12);
+    doc.text(title, 14, headingY);
     doc.setFontSize(9);
-    doc.text(date, 14, 24);
+    doc.text(details, 14, headingY + 7);
     autoTable(doc, {
-      head: [columns], body: rows, startY: 31, margin: { top: 16, bottom: 18 },
+      head: [columns], body: rows, startY: headingY + 13, margin: { top: 16, bottom: 18 },
       styles: { fontSize: 8, cellPadding: 3, overflow: "linebreak" },
       headStyles: { fillColor: [30, 64, 175] }, alternateRowStyles: { fillColor: [245, 247, 250] },
       didDrawPage: ({ pageNumber }) => { doc.setFontSize(8); doc.text(`Movoora | ${pageNumber}`, 14, 202); },
@@ -40,7 +65,7 @@ export async function exportTable(format: ExportFormat, filename: string, sheet:
     download(doc.output("blob"), name);
     return;
   }
-  const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, PageOrientation } = await import("docx");
+  const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, PageOrientation, ImageRun } = await import("docx");
   const table = new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },
     rows: [columns, ...rows].map((row, index) => new TableRow({
@@ -53,18 +78,27 @@ export async function exportTable(format: ExportFormat, filename: string, sheet:
   });
   const doc = new Document({ sections: [{
     properties: { page: { size: { orientation: PageOrientation.LANDSCAPE }, margin: { top: 720, bottom: 720, left: 720, right: 720 } } },
-    children: [new Paragraph({ children: [new TextRun({ text: `Movoora | ${title}`, bold: true, size: 30 })] }), new Paragraph(date), table],
+    children: [
+      new Paragraph({ children: [new ImageRun({ type: "png", data: logo.bytes, transformation: { width: logo.width, height: logo.height } })] }),
+      new Paragraph({ children: [new TextRun({ text: shopName, bold: true, size: 30 })] }),
+      new Paragraph({ children: [new TextRun({ text: title, bold: true, size: 24 })] }),
+      new Paragraph(details), table,
+    ],
   }] });
   download(await Packer.toBlob(doc), name);
 }
 
 // Fetch again so revoked permissions and own/all scope are checked at export time.
-export async function authorizedExportRows<T extends { _id: string }>(url: string, selected: T[]): Promise<T[]> {
+export async function authorizedExportRows<T extends { _id: string; createdAt?: string }>(url: string, selected: T[]): Promise<T[] & { exportContext: ExportContext }> {
   const response = await fetch(`${url}${url.includes("?") ? "&" : "?"}export=1`, {
     headers: { Authorization: `Bearer ${localStorage.getItem("token") || ""}` }, cache: "no-store",
   });
   const data = await response.json();
   if (!response.ok || !data.success) throw new Error(data.message || du("Export impossible."));
+  if (!data.exportContext?.boutiqueId || !data.exportContext?.name) throw new Error(du("Identité de la boutique indisponible. Actualisez la page."));
   const ids = new Set(selected.map((row) => String(row._id)));
-  return (Array.isArray(data.data) ? data.data : []).filter((row: T) => ids.has(String(row._id)));
+  const rows: T[] = (Array.isArray(data.data) ? data.data : []).filter((row: T) => ids.has(String(row._id)));
+  const dates = rows.map((row) => Date.parse(row.createdAt || "")).filter(Number.isFinite).sort((a, b) => a - b);
+  const period = dates.length ? [dates[0], dates[dates.length - 1]].map((time) => new Date(time).toLocaleDateString(dashboardLocale())).join(" - ") : undefined;
+  return Object.assign(rows, { exportContext: { ...data.exportContext, period } });
 }

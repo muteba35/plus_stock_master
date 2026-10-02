@@ -2,6 +2,7 @@ import express from "express";
 import { createMouvement, getMouvements } from "../controllers/mouvementStock.controller.js";
 import { protect } from "../middlewares/authMiddleware.js";
 import { checkExportPermission } from "../middlewares/exportPermission.js";
+import { attachExportContext } from "../middlewares/exportContext.js";
 
 const router = express.Router();
 const permissionByMovementType = {
@@ -39,7 +40,7 @@ const checkMovementReadPermission = (req, res, next) => {
 
 router.use(protect);
 router.route("/")
-  .get(checkMovementReadPermission, checkExportPermission("EXPORTER_MOUVEMENTS_STOCK"), getMouvements)
+  .get(checkMovementReadPermission, checkExportPermission("EXPORTER_MOUVEMENTS_STOCK"), attachExportContext, getMouvements)
   .post(checkMovementPermission, createMouvement);
 
 export default router;

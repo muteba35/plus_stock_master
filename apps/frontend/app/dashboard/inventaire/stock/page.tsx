@@ -175,12 +175,12 @@ export default function MouvementsStockPage() {
     setExporting(true);
     try {
       const rows = await authorizedExportRows(API_URL + "/inventaire/mouvements", filtered);
-      if (!rows.length) throw new Error(du("Aucune donnée à exporter."));
+
       await exportTable(format, "mouvements-stock", {
       name: "Mouvements stock",
       columns: ["Reference", "Produit", "SKU", "Type", "Variation", "Stock avant", "Stock apres", "Motif", "Date", "Auteur"],
       rows: rows.map((movement) => [movement.reference, movement.produitId?.nom || "Produit archive", movement.produitId?.sku || "", typeLabel(movement.type), movement.variation, movement.stockAvant, movement.stockApres, movement.motif, formatDate(movement.createdAt), movement.utilisateurId ? `${movement.utilisateurId.prenom} ${movement.utilisateurId.nom}` : "Systeme"]),
-    });
+    }, rows.exportContext);
     } catch (error) {
       showMessage("error", error instanceof Error ? error.message : du("Export impossible."));
     } finally { setExporting(false); }
@@ -195,7 +195,7 @@ export default function MouvementsStockPage() {
 
   return (
     <div className="space-y-6 bg-[#f9fafd] p-3 sm:p-6 rounded-2xl sm:rounded-3xl min-h-screen text-slate-800 overflow-x-hidden">
-      <PageHeader title={du("m59080aa60d70")} subtitle={du("m0f5a46682173")} action={<div className="flex flex-wrap justify-end gap-2"><button onClick={exportExcel} disabled={exporting || !canExport || filtered.length === 0} className={`${secondaryButton} disabled:opacity-40 disabled:cursor-not-allowed`} title={canExport ? du("mbeaa61a07557") : du("mbdd7e3d96cfd")}><FileSpreadsheet size={15} /> {du("m48d53635551c")}</button><button onClick={exportPdf} disabled={exporting || !canExport || filtered.length === 0} className={`${secondaryButton} disabled:opacity-40 disabled:cursor-not-allowed`} title={canExport ? du("m751090542c11") : du("mbdd7e3d96cfd")}><FileText size={15} /> {du("m1d393b0081b6")}</button>{canCreateMovement && <button onClick={openCreate} className={primaryButton}><Plus size={15} /> {du("mf79a3da26c47")}</button>}</div>} />
+      <PageHeader title={du("m59080aa60d70")} subtitle={du("m0f5a46682173")} action={<div className="flex flex-wrap justify-end gap-2"><button onClick={exportExcel} disabled={exporting || !canExport || loading} className={`${secondaryButton} disabled:opacity-40 disabled:cursor-not-allowed`} title={canExport ? du("mbeaa61a07557") : du("mbdd7e3d96cfd")}><FileSpreadsheet size={15} /> {du("m48d53635551c")}</button><button onClick={exportPdf} disabled={exporting || !canExport || loading} className={`${secondaryButton} disabled:opacity-40 disabled:cursor-not-allowed`} title={canExport ? du("m751090542c11") : du("mbdd7e3d96cfd")}><FileText size={15} /> {du("m1d393b0081b6")}</button>{canCreateMovement && <button onClick={openCreate} className={primaryButton}><Plus size={15} /> {du("mf79a3da26c47")}</button>}</div>} />
       {operationScope === "own" && <div className="flex items-center gap-2 p-3 rounded-xl border border-indigo-100 bg-indigo-50 text-indigo-700 text-xs font-semibold"><History size={15} />{du("mcc8318640771")}</div>}
       {message && <div className={`flex items-center gap-2 p-3 rounded-xl border text-xs font-semibold ${message.type === "success" ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-rose-50 text-rose-700 border-rose-100"}`}>{message.type === "success" ? <CheckCircle2 size={15} /> : <XCircle size={15} />}{du(message.text)}</div>}
 

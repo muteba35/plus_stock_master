@@ -33,7 +33,7 @@ export default function AuthNavbar() {
         style={{ width, y, borderRadius, boxShadow: shadow }}
         className="bg-white/95 backdrop-blur-md border border-slate-200/60 pointer-events-auto overflow-visible transition-colors"
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between gap-4">
+        <div className="max-w-7xl mx-auto px-2 sm:px-6 h-16 sm:h-20 flex items-center justify-between gap-2 sm:gap-4">
           
           {/* --- LOGO --- */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
@@ -78,12 +78,13 @@ export default function AuthNavbar() {
             <PreferenceControls compact />
             <button 
               onClick={() => router.back()}
-              className="group flex items-center gap-2 px-3.5 py-2 sm:px-6 sm:py-3 bg-slate-900 text-[9px] sm:text-[11px] uppercase font-black text-white rounded-xl hover:bg-indigo-600 shadow-lg shadow-slate-900/20 transition-all"
+              aria-label={translate("Retour")}
+              title={translate("Retour")}
+              className="group inline-flex h-9 w-9 shrink-0 items-center justify-center gap-2 sm:h-auto sm:w-auto sm:px-6 sm:py-3 bg-slate-900 text-[9px] sm:text-[11px] uppercase font-black text-white rounded-lg sm:rounded-xl hover:bg-indigo-600 shadow-lg shadow-slate-900/20 transition-all"
             >
               {/* Icône ArrowLeft à gauche */}
               <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
-              <span className="hidden xs:inline">{translate("Retour")}</span>
-              <span className="xs:hidden">{translate("Retour")}</span>
+              <span className="hidden sm:inline">{translate("Retour")}</span>
             </button>
           </div>
         </div>

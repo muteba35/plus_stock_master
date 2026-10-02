@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 import { sessionIsCurrent } from "../utils/authSecurity.js";
-import { Utilisateur, Permission, RolePermission } from "../models/Utilisateur.js";
+import { Utilisateur, Permission, RolePermission, Role } from "../models/Utilisateur.js";
 
 const buildUserPermissions = async (user) => {
   const boutiqueActive = user.boutiqueActive;
@@ -11,7 +11,8 @@ const buildUserPermissions = async (user) => {
     return permissions.map((permission) => permission.nom);
   }
 
-  if (!user.roleId) return [];
+  if (!user.roleId || !boutiqueActive?._id) return [];
+  if (!(await Role.exists({ _id: user.roleId, boutiqueId: boutiqueActive._id }))) return [];
 
   const rolePermissions = await RolePermission.find({ roleId: user.roleId }).populate("permissionId");
   return rolePermissions
@@ -59,10 +60,10 @@ export const protect = async (req, res, next) => {
     }
 
     const permissions = await buildUserPermissions(user);
-    const boutiqueId = user.boutiqueActive?._id || user.boutiqueActive || decoded.boutiqueId;
-    const isOwner = user.boutiqueActive
-      ? user.boutiqueActive.userId?.toString() === user._id.toString()
-      : !user.roleId;
+    // Shop authority is resolved from the current database state, never stale JWT claims.
+    const boutiqueId = user.boutiqueActive?._id;
+    const isOwner = Boolean(boutiqueId && user.boutiqueActive.userId?.toString() === user._id.toString());
+    const canCreateFirstBoutique = !user.boutiqueActive && !user.roleId;
 
     req.user = {
       ...decoded,
@@ -71,6 +72,7 @@ export const protect = async (req, res, next) => {
       boutiqueId,
       boutiqueActive: boutiqueId,
       isOwner,
+      canCreateFirstBoutique,
       mustChangePassword: Boolean(user.mustChangePassword),
       permissions,
     };
@@ -95,7 +97,8 @@ export const checkPermission = (requiredPermission) => {
       return res.status(401).json({ message: "Action non autorisee. Profil non identifie." });
     }
 
-    const hasAccess = req.user.isOwner || req.user.permissions.includes(requiredPermission);
+    const hasAccess = req.user.isOwner || req.user.permissions.includes(requiredPermission) ||
+      (requiredPermission === "CREER_BOUTIQUE" && req.user.canCreateFirstBoutique === true);
 
     if (!hasAccess) {
       return res.status(403).json({

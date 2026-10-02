@@ -136,8 +136,8 @@ export default function SalesHistoryPage() {
     setExporting(true);
     try {
       const rows = await authorizedExportRows(API_URL + "/caisse/ventes", filtered);
-      if (!rows.length) throw new Error(du("Aucune donnée à exporter."));
-      await exportTable(format, "historique-ventes", { name: "Historique ventes", columns: ["Reference", "Client", "Total TTC", "TVA", "Paiement", "Caissier", "Date", "Statut"], rows: rows.map((sale) => [sale.reference, sale.clientNom, sale.totalTTC, sale.tvaMontant, sale.paiement, getCashierName(sale), formatDate(sale.createdAt), getStatusLabel(sale.statut)]) });
+
+      await exportTable(format, "historique-ventes", { name: "Historique ventes", columns: ["Reference", "Client", "Total TTC", "TVA", "Devise", "Paiement", "Caissier", "Date", "Statut"], rows: rows.map((sale) => [sale.reference, sale.clientNom, sale.totalTTC, sale.tvaMontant, sale.devise, sale.paiement, getCashierName(sale), formatDate(sale.createdAt), getStatusLabel(sale.statut)]) }, rows.exportContext);
     } catch (error) {
       setError(error instanceof Error ? error.message : du("Export impossible."));
     } finally { setExporting(false); }
@@ -163,7 +163,7 @@ export default function SalesHistoryPage() {
       <CashHeader
         title={du("mace92fb34113")}
         subtitle={scope === "all" ? du("md9750e26f7c1") : du("m75af14d737d7")}
-        action={canExportSales ? <div className="flex flex-wrap gap-2"><button onClick={exportCsv} disabled={exporting || filtered.length === 0} className={secondaryButton}><Download size={14} /> {du("m48d53635551c")}</button><button onClick={exportWord} disabled={exporting || filtered.length === 0} className={secondaryButton}><FileText size={14} /> {du("m3a2860ece5a4")}</button><button onClick={exportCurrentPdf} disabled={exporting || filtered.length === 0} className={secondaryButton}><Printer size={14} /> {du("m1d393b0081b6")}</button></div> : undefined}
+        action={canExportSales ? <div className="flex flex-wrap gap-2"><button onClick={exportCsv} disabled={exporting || loading} className={secondaryButton}><Download size={14} /> {du("m48d53635551c")}</button><button onClick={exportWord} disabled={exporting || loading} className={secondaryButton}><FileText size={14} /> {du("m3a2860ece5a4")}</button><button onClick={exportCurrentPdf} disabled={exporting || loading} className={secondaryButton}><Printer size={14} /> {du("m1d393b0081b6")}</button></div> : undefined}
       />
 
       {error && <div className="p-3 rounded-xl border border-rose-100 bg-rose-50 text-xs font-semibold text-rose-700">{du(error)}</div>}

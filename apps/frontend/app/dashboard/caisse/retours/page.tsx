@@ -152,8 +152,8 @@ export default function CustomerReturnsPage() {
     setExporting(true);
     try {
       const rows = await authorizedExportRows(API_URL + "/caisse/retours", filtered);
-      if (!rows.length) throw new Error(du("Aucune donnée à exporter."));
-      await exportTable(format, "retours-clients", { name: "Retours clients", columns: ["Retour", "Vente", "Client", "Type", "Montant", "Statut"], rows: rows.map((item) => [item.reference, item.venteReference, item.clientNom, typeLabel(item.typeRetour), item.montantTotalTTC, statusLabel(item.statut)]) });
+
+      await exportTable(format, "retours-clients", { name: "Retours clients", columns: ["Retour", "Vente", "Client", "Type", "Montant", "Devise", "Statut"], rows: rows.map((item) => [item.reference, item.venteReference, item.clientNom, typeLabel(item.typeRetour), item.montantTotalTTC, item.devise, statusLabel(item.statut)]) }, rows.exportContext);
     } catch (error) {
       setError(error instanceof Error ? error.message : du("Export impossible."));
     } finally { setExporting(false); }
@@ -231,7 +231,7 @@ export default function CustomerReturnsPage() {
         title={du("me44b386d4c1e")}
         subtitle={du("m686404ba99aa")}
         action={
-          <div className="flex flex-wrap gap-2">{canExportReturns && <><button onClick={exportCsv} disabled={exporting || filtered.length === 0} className={secondaryButton}><Download size={14} /> {du("m48d53635551c")}</button><button onClick={exportWord} disabled={exporting || filtered.length === 0} className={secondaryButton}><FileText size={14} /> {du("m3a2860ece5a4")}</button><button onClick={exportCurrentPdf} disabled={exporting || filtered.length === 0} className={secondaryButton}><Printer size={14} /> {du("m1d393b0081b6")}</button></>}{canCreateReturn && <button onClick={openCreateModal} className={primaryButton}>
+          <div className="flex flex-wrap gap-2">{canExportReturns && <><button onClick={exportCsv} disabled={exporting || loading} className={secondaryButton}><Download size={14} /> {du("m48d53635551c")}</button><button onClick={exportWord} disabled={exporting || loading} className={secondaryButton}><FileText size={14} /> {du("m3a2860ece5a4")}</button><button onClick={exportCurrentPdf} disabled={exporting || loading} className={secondaryButton}><Printer size={14} /> {du("m1d393b0081b6")}</button></>}{canCreateReturn && <button onClick={openCreateModal} className={primaryButton}>
             <Plus size={15} />
             {du("m55b74cb23ae1")}{" "}</button>}</div>
         }

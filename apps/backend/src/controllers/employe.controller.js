@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import mongoose from "mongoose";
-import { Utilisateur, Role, Departement, Boutique } from "../models/Utilisateur.js";
+import { Utilisateur, Role, RolePermission, Departement, Boutique } from "../models/Utilisateur.js";
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
@@ -13,7 +13,7 @@ const getTargetBoutiqueId = (req) => {
   return getBoutiqueId(req);
 };
 
-const formatEmploye = (employe) => ({
+const formatEmploye = (employe, canViewTemporaryAccess = false) => ({
   id: employe._id,
   firstName: employe.prenom,
   lastName: employe.nom,
@@ -31,7 +31,7 @@ const formatEmploye = (employe) => ({
   boutique: employe.boutiqueActive?.nom || "",
 
   status: employe.isBlocked ? "Suspendu" : "Actif",
-  temporaryAccess: employe.mustChangePassword
+  temporaryAccess: canViewTemporaryAccess && employe.mustChangePassword
     ? {
         temporaryPassword: employe.temporaryAccessPassword || ""
       }
@@ -46,7 +46,8 @@ const assertBoutique = (boutiqueId) => {
 const assertRoleAndDepartementBelongToBoutique = async ({
   roleId,
   departementId,
-  boutiqueId
+  boutiqueId,
+  actor
 }) => {
   if (!isValidObjectId(roleId)) {
     return { valid: false, message: "Role invalide." };
@@ -59,6 +60,14 @@ const assertRoleAndDepartementBelongToBoutique = async ({
   const role = await Role.findOne({ _id: roleId, boutiqueId });
   if (!role) {
     return { valid: false, message: "Ce role n'existe pas dans votre boutique." };
+  }
+
+  if (!actor?.isOwner) {
+    const grants = await RolePermission.find({ roleId }).populate("permissionId");
+    const owned = new Set(actor?.permissions || []);
+    if (grants.some((grant) => !grant.permissionId?.nom || !owned.has(grant.permissionId.nom))) {
+      return { valid: false, status: 403, message: "Vous ne pouvez pas attribuer un role avec des permissions que vous ne possedez pas." };
+    }
   }
 
   const departement = await Departement.findOne({ _id: departementId, boutiqueId });
@@ -146,11 +155,12 @@ export const createEmploye = async (req, res) => {
     const validation = await assertRoleAndDepartementBelongToBoutique({
       roleId,
       departementId,
-      boutiqueId
+      boutiqueId,
+      actor: req.user
     });
 
     if (!validation.valid) {
-      return res.status(400).json({
+      return res.status(validation.status || 400).json({
         success: false,
         message: validation.message
       });
@@ -217,6 +227,10 @@ export const getEmployes = async (req, res) => {
       });
     }
 
+    if (req.user?.isOwner && !(await Boutique.exists({ _id: boutiqueId, userId: req.user.id, isDeleted: false }))) {
+      return res.status(403).json({ success: false, message: "Cette boutique n'appartient pas a votre compte." });
+    }
+    const canViewTemporaryAccess = req.user?.isOwner || req.user?.permissions?.includes("RESET_PASSWORD_EMPLOYE");
     const employes = await Utilisateur.find({
       boutiqueActive: boutiqueId,
       roleId: { $ne: null }
@@ -229,7 +243,7 @@ export const getEmployes = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      employes: employes.map(formatEmploye)
+      employes: employes.map((employe) => formatEmploye(employe, canViewTemporaryAccess))
     });
   } catch (error) {
     console.error("getEmployes:", error);
@@ -270,7 +284,7 @@ export const getEmployeById = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      employe: formatEmploye(employe)
+      employe: formatEmploye(employe, req.user?.isOwner || req.user?.permissions?.includes("RESET_PASSWORD_EMPLOYE"))
     });
   } catch (error) {
     console.error("getEmployeById:", error);
@@ -365,11 +379,12 @@ export const updateEmploye = async (req, res) => {
       const validation = await assertRoleAndDepartementBelongToBoutique({
         roleId: nextRoleId,
         departementId: nextDepartementId,
-        boutiqueId: targetBoutiqueId
+        boutiqueId: targetBoutiqueId,
+        actor: req.user
       });
 
       if (!validation.valid) {
-        return res.status(400).json({
+        return res.status(validation.status || 400).json({
           success: false,
           message: validation.message
         });

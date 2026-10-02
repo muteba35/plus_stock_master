@@ -212,8 +212,8 @@ export default function InvoicesPage() {
     setExporting(true);
     try {
       const rows = await authorizedExportRows(API_URL + "/caisse/factures", filtered);
-      if (!rows.length) throw new Error(du("Aucune donnée à exporter."));
-      await exportTable(format, "factures", { name: "Factures", columns: ["Facture", "Vente", "Client", "Total TTC", "TVA", "Date", "Statut"], rows: rows.map((invoice) => [invoice.factureReference, invoice.reference, invoice.clientNom, invoice.totalTTC, invoice.tvaMontant, formatDate(invoice.createdAt), getInvoiceStatus(invoice)]) });
+
+      await exportTable(format, "factures", { name: "Factures", columns: ["Facture", "Vente", "Client", "Total TTC", "TVA", "Devise", "Date", "Statut"], rows: rows.map((invoice) => [invoice.factureReference, invoice.reference, invoice.clientNom, invoice.totalTTC, invoice.tvaMontant, invoice.devise, formatDate(invoice.createdAt), getInvoiceStatus(invoice)]) }, rows.exportContext);
     } catch (error) {
       setError(error instanceof Error ? error.message : du("Export impossible."));
     } finally { setExporting(false); }
@@ -254,7 +254,7 @@ export default function InvoicesPage() {
 
   return (
     <div className="space-y-5 bg-[#f9fafd] p-3 sm:p-6 rounded-2xl sm:rounded-3xl min-h-screen text-slate-800">
-      <CashHeader title={du("mcf728fa6fc3f")} subtitle={scope === "all" ? du("m89d0d8d23b55") : du("m41a5b0ad015c")} action={canExportInvoices ? <div className="flex flex-wrap gap-2"><button onClick={exportCsv} disabled={exporting || filtered.length === 0} className={secondaryButton}><Download size={14} /> {du("m48d53635551c")}</button><button onClick={exportWord} disabled={exporting || filtered.length === 0} className={secondaryButton}><FileText size={14} /> {du("m3a2860ece5a4")}</button><button onClick={exportCurrentPdf} disabled={exporting || filtered.length === 0} className={secondaryButton}><Printer size={14} /> {du("m1d393b0081b6")}</button></div> : undefined} />
+      <CashHeader title={du("mcf728fa6fc3f")} subtitle={scope === "all" ? du("m89d0d8d23b55") : du("m41a5b0ad015c")} action={canExportInvoices ? <div className="flex flex-wrap gap-2"><button onClick={exportCsv} disabled={exporting || loading} className={secondaryButton}><Download size={14} /> {du("m48d53635551c")}</button><button onClick={exportWord} disabled={exporting || loading} className={secondaryButton}><FileText size={14} /> {du("m3a2860ece5a4")}</button><button onClick={exportCurrentPdf} disabled={exporting || loading} className={secondaryButton}><Printer size={14} /> {du("m1d393b0081b6")}</button></div> : undefined} />
 
       {error && <div className="p-3 rounded-xl bg-rose-50 border border-rose-100 text-xs font-semibold text-rose-700">{du(error)}</div>}
 

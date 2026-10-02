@@ -1832,6 +1832,7 @@
     "p3.defaultLogo": "Restaurer le logo par défaut",
     "p3.imageLimit": "PNG, JPEG ou WebP. Maximum 500 Ko et 4096 × 4096 pixels.",
     "p3.imageError": "Image invalide ou illisible.",
+    "p3.imageUploadLimit": "PNG, JPEG ou WebP, jusqu'a 5 Mo et 4096 x 4096 pixels. Le logo est optimise automatiquement.",
     "p3.saveError": "Enregistrement impossible.",
     "p3.saved": "Modifications enregistrées",
     "p3.noPermission": "Vous ne pouvez pas modifier cette apparence.",

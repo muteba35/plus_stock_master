@@ -19,7 +19,7 @@ const normalizePermissionIds = (permissions = []) => {
   )];
 };
 
-const validatePermissionIds = async (permissionIds) => {
+const validatePermissionIds = async (permissionIds, actor) => {
   const invalidFormatIds = permissionIds.filter((permissionId) => !isValidObjectId(permissionId));
 
   if (invalidFormatIds.length > 0) {
@@ -33,7 +33,7 @@ const validatePermissionIds = async (permissionIds) => {
     return { isValid: true, validIds: [] };
   }
 
-  const existingPermissions = await Permission.find({ _id: { $in: permissionIds } }).select("_id");
+  const existingPermissions = await Permission.find({ _id: { $in: permissionIds } }).select("_id nom");
   const existingIds = new Set(existingPermissions.map((permission) => permission._id.toString()));
   const missingIds = permissionIds.filter((permissionId) => !existingIds.has(permissionId));
 
@@ -44,6 +44,9 @@ const validatePermissionIds = async (permissionIds) => {
     };
   }
 
+  if (!actor?.isOwner && existingPermissions.some((permission) => !actor?.permissions?.includes(permission.nom))) {
+    return { isValid: false, status: 403, message: "Vous ne pouvez pas attribuer une permission que vous ne possedez pas." };
+  }
   return { isValid: true, validIds: permissionIds };
 };
 
@@ -94,9 +97,9 @@ export const createRole = async (req, res) => {
       return res.status(400).json({ message: "Le nom du role est requis." });
     }
 
-    const permissionValidation = await validatePermissionIds(permissionIds);
+    const permissionValidation = await validatePermissionIds(permissionIds, req.user);
     if (!permissionValidation.isValid) {
-      return res.status(400).json({ message: permissionValidation.message });
+      return res.status(permissionValidation.status || 400).json({ message: permissionValidation.message });
     }
 
     const roleExistant = await Role.findOne({
@@ -254,10 +257,10 @@ export const updateRole = async (req, res) => {
       }
 
       const permissionIds = normalizePermissionIds(permissions);
-      const permissionValidation = await validatePermissionIds(permissionIds);
+      const permissionValidation = await validatePermissionIds(permissionIds, req.user);
 
       if (!permissionValidation.isValid) {
-        return res.status(400).json({ message: permissionValidation.message });
+        return res.status(permissionValidation.status || 400).json({ message: permissionValidation.message });
       }
 
       await RolePermission.deleteMany({ roleId: id });

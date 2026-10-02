@@ -214,6 +214,8 @@ export default function DashboardLayout({
   // STATES
   // ==========================================
   const [userPermissions, setUserPermissions] = useState<string[]>([]);
+  const signingOut = useRef(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const [user, setUser] = useState<UserProfile>(DEFAULT_PROFILE);
   const [isMounted, setIsMounted] = useState(false);
 
@@ -374,6 +376,7 @@ export default function DashboardLayout({
     };
 
     const syncSessionFromBackend = async () => {
+      if (signingOut.current) return;
       loadDataFromStorage();
 
       const token = localStorage.getItem("token");
@@ -393,6 +396,8 @@ export default function DashboardLayout({
         });
 
         const data = await response.json();
+
+        if (signingOut.current || localStorage.getItem("token") !== token) return;
 
         if (response.status === 428 && data.mustChangePassword) {
           router.replace("/first-login"); 
@@ -428,6 +433,7 @@ export default function DashboardLayout({
           boutique: userData.boutique || null,
         });
       } catch (error) {
+        if (signingOut.current || localStorage.getItem("token") !== token) return;
         console.error("Erreur synchronisation session:", error);
         document.cookie = "stockmaster_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
         localStorage.removeItem("token");
@@ -536,11 +542,15 @@ export default function DashboardLayout({
   }, []);
 
   const handleLogout = () => {
+    if (signingOut.current) return;
+    signingOut.current = true;
+    setIsSigningOut(true);
     document.cookie = "stockmaster_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     localStorage.removeItem("token");
     localStorage.removeItem("user_permissions");
     localStorage.removeItem("user_profile");
-    router.push("/login");
+    localStorage.removeItem("subscription_state");
+    window.location.replace("/login");
   };
 
   // ==========================================
@@ -652,6 +662,7 @@ export default function DashboardLayout({
     .filter((item) => pathname === item.href || pathname.startsWith(`${item.href}/`))
     .sort((a, b) => b.href.length - a.href.length)[0];
   const isEmployeeWithNoPermission =
+    user.isOwner !== true &&
     user.roleId !== "__loading__" &&
     user.roleId !== null &&
     user.roleId !== "" &&
@@ -672,7 +683,7 @@ export default function DashboardLayout({
         : hasPermission("permission" in currentRoute ? currentRoute.permission : undefined)
       : true);
 
-  if (!isMounted) {
+  if (!isMounted || isSigningOut) {
     return <div className="flex h-screen bg-[#F1F5F9] items-center justify-center font-sans">{du("mbc0bbf18ceef")}</div>;
   }
 
@@ -706,8 +717,8 @@ export default function DashboardLayout({
           {/* LOGO */}
           <div className="p-6 border-b border-slate-800/60 bg-[#141C2F] h-20 flex items-center justify-between shrink-0">
             <div className="flex items-center space-x-3 overflow-hidden">
-              <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-600/20 shrink-0">
-                <ShopLogo logo={boutiqueLogo} name={du("m21b13396785f")} className="bg-white rounded-sm p-0.5 w-5 h-5" />
+              <div className={boutiqueLogo ? "w-9 h-9 flex items-center justify-center shrink-0" : "w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-600/20 shrink-0"}>
+                <ShopLogo logo={boutiqueLogo} name={du("m21b13396785f")} className={boutiqueLogo ? "w-full h-full" : "bg-white rounded-sm p-0.5 w-5 h-5"} />
               </div>
 
               {(isSidebarOpen || isMobileSidebarOpen) && (
