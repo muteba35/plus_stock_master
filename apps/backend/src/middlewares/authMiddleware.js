@@ -1,4 +1,6 @@
 import jwt from "jsonwebtoken";
+import RevokedToken from "../models/RevokedToken.js";
+import { tokenDigest } from "../controllers/logout.controller.js";
 import { sessionIsCurrent } from "../utils/authSecurity.js";
 import { Utilisateur, Permission, RolePermission, Role } from "../models/Utilisateur.js";
 
@@ -30,7 +32,10 @@ export const protect = async (req, res, next) => {
   const token = authHeader.split(" ")[1];
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ["HS256"] });
+    if (await RevokedToken.exists({ digest: tokenDigest(token) })) {
+      return res.status(401).json({ message: "Session revoquee. Reconnectez-vous." });
+    }
     const user = await Utilisateur.findById(decoded.id)
       .select("+isPermanentlyBlocked +mustChangePassword")
       .populate("boutiqueActive");

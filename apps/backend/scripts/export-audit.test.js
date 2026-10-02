@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import jwt from "jsonwebtoken";
+import RevokedToken from "../src/models/RevokedToken.js";
 import { Boutique, Utilisateur, Permission, Role, RolePermission } from "../src/models/Utilisateur.js";
 import { protect, checkPermission } from "../src/middlewares/authMiddleware.js";
 import { attachExportContext } from "../src/middlewares/exportContext.js";
@@ -94,6 +95,7 @@ test("export permission remains mandatory for a direct API request", () => {
 });
 
 test("database context overrides forged owner claims and stale shop claims", async t => {
+  t.mock.method(RevokedToken, "exists", async () => null);
   const previous = process.env.JWT_SECRET;
   process.env.JWT_SECRET = "test-only-export-audit-secret";
   t.after(() => { if (previous === undefined) delete process.env.JWT_SECRET; else process.env.JWT_SECRET = previous; });

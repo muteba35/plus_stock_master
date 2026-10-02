@@ -541,10 +541,25 @@ export default function DashboardLayout({
     }
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (signingOut.current) return;
     signingOut.current = true;
     setIsSigningOut(true);
+    const token = localStorage.getItem("token");
+    try {
+      if (token) {
+        const response = await fetch(`${API_URL}/auth/logout`, {
+          method: "POST", headers: { Authorization: `Bearer ${token}` },
+          signal: AbortSignal.timeout(8000),
+        });
+        if (!response.ok && response.status !== 401) throw new Error("logout");
+      }
+    } catch {
+      signingOut.current = false;
+      setIsSigningOut(false);
+      window.alert(language === "en" ? "Server sign-out failed. Please try again." : "La deconnexion serveur a echoue. Veuillez reessayer.");
+      return;
+    }
     document.cookie = "stockmaster_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     localStorage.removeItem("token");
     localStorage.removeItem("user_permissions");

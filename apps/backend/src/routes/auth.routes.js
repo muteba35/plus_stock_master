@@ -1,4 +1,5 @@
 import express from "express";
+import { logout } from "../controllers/logout.controller.js";
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import { protect } from "../middlewares/authMiddleware.js";
 import { authValidation } from "../middlewares/securityMiddleware.js";
@@ -127,6 +128,7 @@ router.use(["/register", "/login", "/verify-otp", "/resend-otp", "/forgot-passwo
 
 router.post("/register", registerLimiter, authValidation.register, register);
 router.post("/login", loginLimiter, authValidation.login, login);
+router.post("/logout", meLimiter, logout);
 
 router.get("/verify-email/:token", verifyEmail);
 router.post("/resend-verification", registerLimiter, authValidation.email, resendVerification);

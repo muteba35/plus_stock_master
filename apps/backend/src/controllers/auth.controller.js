@@ -323,7 +323,7 @@ const buildLoginSession = (user, permissions) => {
       permissions,
     },
     process.env.JWT_SECRET,
-    { expiresIn: "7d" }
+    { expiresIn: "7d", jwtid: crypto.randomUUID() }
   );
 
   return {
@@ -780,7 +780,7 @@ export const verifyOTP = async (req, res) => {
         permissions: finalPermissions 
       },
       process.env.JWT_SECRET,
-      { expiresIn: "7d" }
+      { expiresIn: "7d", jwtid: crypto.randomUUID() }
     );
 
     // 9. Réponse Réussie

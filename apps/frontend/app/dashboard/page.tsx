@@ -3,7 +3,7 @@ import { dashboardUi as du, dashboardLocale } from "../../src/i18n/catalog";
 import { useLanguage as useDashboardLanguage } from "../../src/components/LanguageRuntime";
 
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -126,11 +126,19 @@ export default function OverviewPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showStockAlertsModal, setShowStockAlertsModal] = useState(false);
+  const overviewRequest = useRef<AbortController | null>(null);
 
   const fetchOverview = useCallback(async () => {
+    overviewRequest.current?.abort();
+    const controller = new AbortController();
+    overviewRequest.current = controller;
     try {
       setLoading(true);
       setError("");
+      if (period === "custom" && (!customStart || !customEnd || customStart > customEnd)) {
+        setData(emptyData);
+        throw new Error("Choisissez une date de debut et de fin valides.");
+      }
       const token = localStorage.getItem("token");
       const params = new URLSearchParams({ period });
       if (period === "custom") {
@@ -138,20 +146,25 @@ export default function OverviewPage() {
         if (customEnd) params.set("endDate", customEnd);
       }
       const response = await fetch(`${API_URL}/dashboard/overview?${params.toString()}`, {
+        signal: controller.signal, cache: "no-store",
         headers: { Authorization: token ? `Bearer ${token}` : "" },
       });
       const result = await response.json();
+      if (controller.signal.aborted) return;
       if (!response.ok || !result.success) throw new Error(result.message || "Impossible de charger la vue d'ensemble.");
       setData({ ...emptyData, ...result });
     } catch (fetchError) {
+      if (controller.signal.aborted) return;
+      setData(emptyData);
       setError(fetchError instanceof Error ? fetchError.message : "Erreur de connexion au serveur.");
     } finally {
-      setLoading(false);
+      if (!controller.signal.aborted) setLoading(false);
     }
   }, [customEnd, customStart, period]);
 
   useEffect(() => {
     void fetchOverview();
+    return () => overviewRequest.current?.abort();
   }, [fetchOverview]);
 
   const onlineUsers = useMemo(() => data.activeUsers.filter((user) => user.status === "online").length, [data.activeUsers]);

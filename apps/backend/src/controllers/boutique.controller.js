@@ -37,7 +37,7 @@ const createSessionPayload = async (userId, boutiqueId, permissionsOverride = nu
       permissions,
     },
     process.env.JWT_SECRET,
-    { expiresIn: "7d" }
+    { expiresIn: "7d", jwtid: crypto.randomUUID() }
   );
 
   return { token, permissions };

@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { expirationIsFuture } from "../utils/productDates.js";
 import { Boutique, Categorie, MouvementStock, Notification, Produit } from "../models/Utilisateur.js";
 import { logInventoryAction } from "../utils/inventoryAudit.js";
 
@@ -36,7 +37,8 @@ const parseOptionalDate = (value) => {
   if (!value) return null;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return undefined;
-  date.setHours(0, 0, 0, 0);
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) && date.toISOString().slice(0, 10) !== value) return undefined;
+  date.setUTCHours(0, 0, 0, 0);
   return date;
 };
 
@@ -202,6 +204,9 @@ export const createProduit = async (req, res) => {
     if (dateProduction === undefined || dateExpiration === undefined) {
       return res.status(400).json({ success: false, message: "Date de production ou date d'expiration invalide." });
     }
+    if (!expirationIsFuture(dateExpiration)) {
+      return res.status(400).json({ success: false, message: "La date d'expiration doit etre apres aujourd'hui." });
+    }
     if (dateProduction && dateExpiration && dateExpiration <= dateProduction) {
       return res.status(400).json({ success: false, message: "La date d'expiration doit etre posterieure a la date de production." });
     }
@@ -326,6 +331,7 @@ export const importProduits = async (req, res) => {
       if (!nom || !sku || !categoryName) reason = "Nom, SKU ou categorie manquant";
       else if (!category) reason = "Categorie inexistante ou inactive";
       else if (dateProduction === undefined || dateExpiration === undefined) reason = "Date de production ou expiration invalide";
+      else if (!expirationIsFuture(dateExpiration)) reason = "La date d'expiration doit etre apres aujourd'hui";
       else if (dateProduction && dateExpiration && dateExpiration <= dateProduction) reason = "Date d expiration anterieure a la production";
       else if (!numbers.every(Number.isFinite) || numbers.some((value) => value < 0)) reason = "Prix, stock ou seuil invalide";
       else if (modeApprovisionnement === "GROS" && (!Number.isFinite(nombreConditionnements) || !Number.isFinite(quantiteParConditionnement) || nombreConditionnements <= 0 || quantiteParConditionnement <= 0)) reason = "Conditionnement gros invalide";
@@ -436,6 +442,7 @@ export const updateProduit = async (req, res) => {
     if (req.body.dateExpiration !== undefined) {
       const dateExpiration = parseOptionalDate(req.body.dateExpiration);
       if (dateExpiration === undefined) return res.status(400).json({ success: false, message: "Date d'expiration invalide." });
+      if (!expirationIsFuture(dateExpiration)) return res.status(400).json({ success: false, message: "La date d'expiration doit etre apres aujourd'hui." });
       product.dateExpiration = dateExpiration;
       product.isExpired = false;
       product.expiredAt = null;

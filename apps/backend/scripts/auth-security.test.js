@@ -27,6 +27,8 @@ const query = user => ({
 });
 
 test("authentication regression checks without database or email delivery", async t => {
+  const { default: RevokedToken } = await import("../src/models/RevokedToken.js");
+  t.mock.method(RevokedToken, "exists", async () => null);
   let user;
   let mails = 0;
   let smtpOptions;
