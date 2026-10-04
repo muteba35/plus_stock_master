@@ -58,7 +58,7 @@ export const ensureBoutiqueSubscription = async (boutiqueId) => {
   const boutique = await Boutique.findById(boutiqueId);
   if (!boutique) return null;
 
-  const trialEnd = boutique.trialExpiresAt || new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+  const trialEnd = boutique.trialExpiresAt || new Date(Date.now() + getPlanByCode("TRIAL").durationDays * 24 * 60 * 60 * 1000);
   subscription = await Subscription.create({
     boutiqueId,
     planCode: "TRIAL",

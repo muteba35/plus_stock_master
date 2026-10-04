@@ -3,12 +3,13 @@
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import Navbar from "../src/components/Navbar";
 import Hero from "../src/components/Hero";
+import { LandingDemo, LandingPlans, LandingHelp } from "../src/components/LandingDetails";
 import { useLanguage } from "../src/components/LanguageRuntime";
 import { useEffect, useState } from "react";
 import { 
-  CheckCircle2, Smartphone, Facebook, Linkedin, Instagram, ArrowUp,
+  CheckCircle2, Smartphone, ArrowUp,
   Zap, ShieldCheck, WifiOff, LayoutDashboard, Lock, CreditCard, Users,
-  BarChart3, Store, History, Eye, Check, Mail, MapPin, Phone
+  BarChart3, Store, History, Eye, Phone
 } from "lucide-react";
 
 // --- CONFIG ANIMATIONS ---
@@ -44,6 +45,7 @@ export default function LandingPage() {
     <motion.main style={{ backgroundColor }} className="min-h-screen transition-colors duration-1000 relative font-sans">
       <Navbar />
       <Hero />
+      <LandingDemo />
 
       {/* --- SECTION 1 : ACCESSIBILITÉ & MOBILITÉ --- */}
       <section id="Fonctionnalités" className="py-20 px-6 max-w-6xl mx-auto">
@@ -56,7 +58,7 @@ export default function LandingPage() {
 
         <div className="grid md:grid-cols-3 gap-6">
           {[
-            { icon: <Smartphone size={20} />, t: "Application Mobile", d: "Installez Movoora sur votre téléphone et gérez vos stocks comme une application native." },
+            { icon: <Smartphone size={20} />, t: "Application Mobile", d: "Accédez à Movoora depuis le navigateur de votre téléphone pour consulter votre activité." },
             { icon: <Zap size={20} />, t: "Vente Instantanée", d: "Une interface fluide conçue pour encaisser vos clients en quelques secondes sans attente." },
             { icon: <Store size={20} />, t: "Multi-Points de Vente", d: "Pilotez toutes vos boutiques depuis un compte unique, peu importe leur emplacement géographique." }
           ].map((s, i) => (
@@ -84,13 +86,13 @@ export default function LandingPage() {
             <motion.div {...slideIn("left")} className="relative z-10">
               <div className="inline-block px-3 py-1 rounded-full border border-indigo-200 text-indigo-600 text-[9px] font-bold uppercase tracking-widest mb-4">Continuité de Service</div>
               <motion.h2 style={{ color: textColor }} className="text-3xl md:text-4xl font-extrabold uppercase mb-6 leading-tight tracking-tighter">
-                Zéro interruption <br/><span className="text-indigo-600">Hors Connexion.</span>
+                Votre activité <br/><span className="text-indigo-600">Au même endroit.</span>
               </motion.h2>
               <p className="text-slate-500 text-xs font-bold uppercase tracking-tight leading-relaxed max-w-md mb-8">
-                L`internet tombe ? Votre commerce continue. Enregistrez vos ventes et mouvements de stock en mode hors-ligne. Le système se synchronise automatiquement dès le retour du réseau.
+                Consultez vos produits, vos ventes et vos mouvements de stock depuis votre navigateur. Une connexion internet est nécessaire pour accéder aux données de votre boutique.
               </p>
               <div className="flex items-center gap-3 text-indigo-600 font-bold uppercase text-[10px] tracking-widest">
-                <ShieldCheck size={14} /> Fiabilité garantie 24h/7j
+                <ShieldCheck size={14} /> Accès selon les permissions
               </div>
             </motion.div>
             
@@ -118,7 +120,7 @@ export default function LandingPage() {
             </motion.div>
 
             <motion.div {...slideIn("right")} className="order-1 lg:order-2 lg:text-right flex flex-col lg:items-end">
-              <div className="inline-block px-3 py-1 rounded-full border border-indigo-200 text-indigo-600 text-[9px] font-bold uppercase tracking-widest mb-4">Sécurité Maximale</div>
+              <div className="inline-block px-3 py-1 rounded-full border border-indigo-200 text-indigo-600 text-[9px] font-bold uppercase tracking-widest mb-4">Contrôle des accès</div>
               <motion.h2 style={{ color: textColor }} className="text-3xl md:text-4xl font-extrabold uppercase mb-6 leading-tight tracking-tighter">
                 Protection & <br/><span className="text-indigo-600">Confidentialité.</span>
               </motion.h2>
@@ -126,9 +128,9 @@ export default function LandingPage() {
                 Vos informations commerciales sont précieuses. Choisissez qui accède à quoi : définissez des rôles précis pour vos vendeurs, gérants et administrateurs.
               </p>
               <ul className="space-y-3 text-slate-500 text-[10px] font-bold uppercase tracking-tighter">
-                <li className="flex items-center gap-2 lg:flex-row-reverse"><CheckCircle2 size={14} className="text-indigo-500"/> Historique complet de chaque action</li>
+                <li className="flex items-center gap-2 lg:flex-row-reverse"><CheckCircle2 size={14} className="text-indigo-500"/> Journal des actions sensibles</li>
                 <li className="flex items-center gap-2 lg:flex-row-reverse"><CheckCircle2 size={14} className="text-indigo-500"/> Accès sécurisé par mot de passe</li>
-                <li className="flex items-center gap-2 lg:flex-row-reverse"><CheckCircle2 size={14} className="text-indigo-500"/> Sauvegarde automatique sécurisée</li>
+                <li className="flex items-center gap-2 lg:flex-row-reverse"><CheckCircle2 size={14} className="text-indigo-500"/> Permissions vérifiées côté serveur</li>
               </ul>
             </motion.div>
           </div>
@@ -169,58 +171,8 @@ export default function LandingPage() {
       {/* --- SÉPARATEUR 2 --- */}
       <div className="w-full flex justify-center px-6"><div className="w-full max-w-4xl h-[1px] bg-gradient-to-r from-transparent via-slate-200 to-transparent opacity-40" /></div>
 
-       {/* --- SECTION 5 : ABONNEMENTS & TARIFS --- */}
-      <section id="pricing" className="py-24 px-6 max-w-6xl mx-auto scroll-mt-24">
-        <motion.div {...reveal} className="text-center mb-16">
-          <h2 className="text-indigo-500 font-bold uppercase text-[9px] tracking-[0.4em] mb-3">Abonnements</h2>
-          <p className="text-2xl md:text-4xl font-extrabold uppercase tracking-tighter text-white leading-none mb-4">
-            Des offres pour chaque <span className="text-indigo-600">niveau de croissance.</span>
-          </p>
-          <p className="text-slate-400 text-xs font-bold uppercase tracking-tight max-w-2xl mx-auto">
-            {translate("Commencez avec l'essai gratuit, puis debloquez les modules avances selon la taille de votre boutique.")}
-          </p>
-        </motion.div>
-
-        <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-5">
-          {[
-            { name: "Essai gratuit", price: "0$", desc: "Tester Movoora", features: ["1 boutique", "2 utilisateurs", "50 produits", "Caisse simple", "7 à 14 jours"] },
-            { name: "Starter", price: "15$", desc: "Stock + caisse", features: ["1 boutique", "3 utilisateurs", "Produits & catégories", "Mouvements stock", "Exports limites"] },
-            { name: "Pro", price: "39$", desc: "Équipe + rapports", features: ["3 boutiques", "10 utilisateurs", "Finance complète", "Audit global", "Exports complets"], popular: true },
-            { name: "Business", price: "99$", desc: "Réseaux & croissance", features: ["Boutiques hautes limites", "Utilisateurs hautes limites", "Rapports consolidés", "Support prioritaire", "API future"] }
-          ].map((plan, i) => (
-            <motion.div
-              key={plan.name} {...reveal} transition={{delay: i*0.1}}
-              whileHover={{ scale: 1.03, translateY: -10 }}
-              className={`relative p-6 rounded-[2rem] border transition-all duration-500 cursor-default ${plan.popular ? 'border-indigo-500 bg-indigo-500/10 shadow-[0_0_40px_-15px_rgba(79,70,229,0.3)]' : 'border-white/10 bg-white/5 hover:bg-white/[0.08]'} flex flex-col`}
-            >
-              {plan.popular && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-indigo-600 text-white text-[8px] font-black uppercase px-4 py-1 rounded-full tracking-[0.2em]">
-                  Recommandé
-                </div>
-              )}
-              <div className="mb-7">
-                <h3 className="text-white text-sm font-black uppercase mb-2">{translate(plan.name)}</h3>
-                <div className="flex items-baseline gap-1 mb-2">
-                  <span className="text-3xl font-black text-white">{plan.price}</span>
-                  <span className="text-slate-500 text-xs font-bold">/mois</span>
-                </div>
-                <p className="text-slate-400 text-[10px] font-bold uppercase tracking-tight">{translate(plan.desc)}</p>
-              </div>
-              <div className="space-y-3 mb-8 flex-grow">
-                {plan.features.map((f) => (
-                  <div key={f} className="flex items-center gap-3">
-                    <Check size={12} className="text-indigo-500" />
-                    <span className="text-slate-300 text-[10px] font-bold uppercase tracking-tight">{translate(f)}</span>
-                  </div>
-                ))}
-              </div>
-              <button className={`w-full py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all ${plan.popular ? 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-lg shadow-indigo-600/20' : 'bg-white/10 text-white hover:bg-white/20'}`}>
-                {translate("Voir l'offre")}
-              </button>
-            </motion.div>
-          ))}
-        </div>
-      </section>
+      <LandingPlans />
+      <LandingHelp />
 
       {/* --- SEPARATEUR 2 --- */}
       <div className="w-full flex justify-center px-6"><div className="w-full max-w-4xl h-[1px] bg-gradient-to-r from-transparent via-slate-200 to-transparent opacity-40" /></div>
@@ -246,9 +198,9 @@ export default function LandingPage() {
                 </div>
                 <div className="group">
                   <div className="text-white font-bold uppercase text-sm mb-1 flex items-center gap-2 group-hover:text-indigo-400 transition-colors">
-                    <ShieldCheck className="text-indigo-500" size={14}/> 100% Sécurisé
+                    <ShieldCheck className="text-indigo-500" size={14}/> Accès contrôlés
                   </div>
-                  <p className="text-slate-500 text-[9px] font-bold uppercase">Vos informations sont protégées par les plus hauts standards de sécurité.</p>
+                  <p className="text-slate-500 text-[9px] font-bold uppercase">Mots de passe hachés, tentatives limitées et révocation des sessions.</p>
                 </div>
               </div>
             </motion.div>
@@ -257,8 +209,8 @@ export default function LandingPage() {
               <div className="w-48 h-48 border border-indigo-600/20 rounded-full flex items-center justify-center relative">
                 <div className="absolute inset-0 border border-dashed border-indigo-600/30 rounded-full animate-[spin_30s_linear_infinite]" />
                 <div className="text-center">
-                    <div className="text-indigo-500 font-black text-2xl italic">STOCK</div>
-                    <div className="text-[8px] text-slate-500 uppercase font-bold">Master Pro</div>
+                    <div className="text-indigo-500 font-black text-2xl">Movoora</div>
+                    <div className="text-[8px] text-slate-500 uppercase font-bold">Gestion commerciale</div>
                 </div>
               </div>
             </motion.div>
@@ -287,13 +239,7 @@ export default function LandingPage() {
               <p className="text-slate-500 text-xs font-bold uppercase leading-relaxed tracking-tight">
                 La solution de gestion intelligente pour les commerçants ambitieux. Performance, simplicité et sécurité au service de votre croissance.
               </p>
-              <div className="flex gap-4">
-                {[<Facebook key="fb" size={18}/>, <Linkedin key="li" size={18}/>, <Instagram key="in" size={18}/>].map((icon, i) => (
-                  <motion.a key={i} href="#" whileHover={{ y: -3, color: "#6366f1" }} className="text-slate-500 transition-colors">
-                    {icon}
-                  </motion.a>
-                ))}
-              </div>
+
             </div>
 
             {/* Colonne 2: Navigation */}
@@ -318,9 +264,9 @@ export default function LandingPage() {
             <div>
               <h4 className="text-white text-[10px] font-black uppercase tracking-[0.3em] mb-6">Assistance</h4>
               <ul className="space-y-4">
-                {['Centre d\'aide', 'Documentation', 'Statut du serveur', 'Contact'].map((item) => (
-                  <li key={item}>
-                    <a href="#" className="text-slate-500 hover:text-indigo-400 text-[10px] font-bold uppercase transition-colors tracking-widest">{translate(item)}</a>
+                {[{ name: "FAQ", href: "#faq" }, { name: "Contact", href: "#contact" }].map((item) => (
+                  <li key={item.name}>
+                    <a href={item.href} className="text-slate-500 hover:text-indigo-400 text-[10px] font-bold uppercase transition-colors tracking-widest">{translate(item.name)}</a>
                   </li>
                 ))}
               </ul>
@@ -330,18 +276,7 @@ export default function LandingPage() {
             <div className="space-y-6">
               <h4 className="text-white text-[10px] font-black uppercase tracking-[0.3em] mb-6">Nous trouver</h4>
               <div className="space-y-4">
-                <div className="flex items-start gap-3 text-slate-500">
-                  <MapPin size={16} className="text-indigo-500 shrink-0" />
-                  <span className="text-[10px] font-bold uppercase tracking-tight">75008 Avenue de la Croissance, Paris, France</span>
-                </div>
-                <div className="flex items-center gap-3 text-slate-500">
-                  <Phone size={16} className="text-indigo-500 shrink-0" />
-                  <span className="text-[10px] font-bold uppercase tracking-tight">+33 1 23 45 67 89</span>
-                </div>
-                <div className="flex items-center gap-3 text-slate-500">
-                  <Mail size={16} className="text-indigo-500 shrink-0" />
-                  <span className="text-[10px] font-bold uppercase tracking-tight">contact@movoora.app</span>
-                </div>
+                <a href="tel:+243990835638" className="flex items-center gap-3 text-slate-300 hover:text-white"><Phone size={16} className="shrink-0" />+243 990 835 638</a>
               </div>
             </div>
           </div>

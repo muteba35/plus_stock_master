@@ -76,9 +76,9 @@ export default function Hero() {
               <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
             </Link>
 
-            <button className="px-7 py-3.5 bg-transparent text-slate-900 border border-slate-200 rounded-full font-black text-[11px] uppercase tracking-widest hover:bg-slate-50 transition flex items-center gap-3">
+            <a href="#demo" className="px-7 py-3.5 bg-transparent text-slate-900 border border-slate-200 rounded-full font-black text-[11px] uppercase tracking-widest hover:bg-slate-50 transition flex items-center gap-3">
               <PlayCircle size={16} /> {translate("Voir la démo")}
-            </button>
+            </a>
           </motion.div>
         </motion.div>
 

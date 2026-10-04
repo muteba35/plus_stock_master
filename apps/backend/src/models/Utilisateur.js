@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { getPlanByCode } from "../config/subscriptionPlans.js";
 import { invalidatePasswordSessions } from "../utils/authSecurity.js";
 
 
@@ -1011,7 +1012,7 @@ const boutiqueSchema = new mongoose.Schema(
       type: Date,
 
 
-      default: () => new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      default: () => new Date(Date.now() + getPlanByCode("TRIAL").durationDays * 24 * 60 * 60 * 1000),
 
 
     },
