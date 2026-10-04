@@ -157,7 +157,7 @@ export const register = async (req, res) => {
               <table align="center" border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto;">
                 <tr>
                   <td align="center" bgcolor="#6366f1" style="border-radius: 8px;">
-                    <a href="${activationLink}" target="_blank" style="font-size: 14px; font-weight: bold; color: #ffffff; text-decoration: none; padding: 18px 35px; display: inline-block; border-radius: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
+                    <a href="${activationLink}" style="display:block;background-color:#6366f1;border:16px solid #6366f1;border-radius:8px;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:24px;font-weight:bold;color:#ffffff;text-decoration:underline;text-align:center;">
                       Vérifier mon identité
                     </a>
                   </td>
@@ -165,6 +165,10 @@ export const register = async (req, res) => {
               </table>
               <p style="font-size: 12px; color: #94a3b8; margin: 30px 0 0 0; text-align: center;">
                 Ce lien est valable 24h. Si vous n'avez pas créé de compte, ignorez ce message.
+              </p>
+              <p style="font-size:12px;line-height:1.6;color:#475569;word-break:break-all;overflow-wrap:anywhere;">
+                Si le bouton ne fonctionne pas, ouvrez ou copiez ce lien dans votre navigateur :<br>
+                <a href="${activationLink}" target="_blank" style="color:#4f46e5;text-decoration:underline;word-break:break-all;">${activationLink}</a>
               </p>
             </td>
           </tr>
@@ -612,7 +616,7 @@ export const resendVerification = async (req, res) => {
           <table align="center" border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto;">
             <tr>
               <td align="center" bgcolor="#6366f1" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);">
-                <a href="${activationLink}" target="_blank" style="font-size: 14px; font-weight: bold; color: #ffffff; text-decoration: none; padding: 20px 40px; display: inline-block; border-radius: 12px; text-transform: uppercase; letter-spacing: 1px;">
+                <a href="${activationLink}" style="display:block;background-color:#6366f1;border:16px solid #6366f1;border-radius:8px;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:24px;font-weight:bold;color:#ffffff;text-decoration:underline;text-align:center;">
                   Activer mon compte
                 </a>
               </td>
@@ -621,6 +625,7 @@ export const resendVerification = async (req, res) => {
 
           <div style="margin-top: 40px; padding-top: 30px; border-top: 1px solid #f1f5f9;">
             <p style="font-size: 12px; color: #94a3b8; margin: 0; text-align: center; line-height: 1.5;">
+              <a href="${activationLink}" style="color:#4f46e5;text-decoration:underline;word-break:break-all;">${activationLink}</a><br><br>
               <strong>Note de sécurité :</strong> Ce lien expirera dans 24 heures.<br>
               Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet email en toute sécurité.
             </p>

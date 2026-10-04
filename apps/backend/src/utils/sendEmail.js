@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 
 const brandImage = readFileSync(new URL("../assets/movoora-mark.png", import.meta.url));
 const brandContentId = "movoora-brand";
-export const emailBrand = '<img src="cid:movoora-brand" width="44" height="44" alt="Movoora" style="display:inline-block;vertical-align:middle;margin-right:12px;background:#ffffff;border-radius:8px;padding:6px;">Movoora';
+export const emailBrand = '<img src="cid:movoora-brand" width="44" height="44" alt="Logo Movoora" style="display:block;width:44px;height:44px;margin:0 auto 12px;border:0;background:#ffffff;border-radius:8px;">Movoora';
 
 const getDefaultEmailTemplate = ({ title, alertColor, iconUrl, bodyMessage, showButton, frontendUrl }) => `
   <div style="background-color: #F4F7FA; padding: 50px 15px; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
@@ -244,7 +244,7 @@ export const sendEmail = async (options) => {
     showButton = false;
   }
 
-  const htmlContent = options.html || getDefaultEmailTemplate({
+  let htmlContent = options.html || getDefaultEmailTemplate({
     title,
     alertColor,
     iconUrl,
@@ -252,6 +252,17 @@ export const sendEmail = async (options) => {
     showButton,
     frontendUrl,
   });
+
+  // A public PNG avoids Gmail showing the brand only as an attachment.
+  let useHostedLogo = false;
+  try {
+    const origin = new URL(frontendUrl);
+    if (origin.protocol === "https:" && !origin.username && !origin.password) {
+      const logoUrl = new URL("/movoora-mark.png", origin).href;
+      htmlContent = htmlContent.replaceAll("cid:movoora-brand", logoUrl);
+      useHostedLogo = true;
+    }
+  } catch { /* Local email previews retain the embedded image. */ }
 
   try {
     if (process.env.RESEND_API_KEY) {
@@ -261,7 +272,7 @@ export const sendEmail = async (options) => {
         to: options.email,
         subject: options.subject || "Notification Movoora",
         html: htmlContent,
-        attachments: [{ filename: "movoora-mark.png", content: brandImage.toString("base64"), contentId: brandContentId }],
+        ...(useHostedLogo ? {} : { attachments: [{ filename: "movoora-mark.png", content: brandImage.toString("base64"), contentId: brandContentId }] }),
       });
 
       console.log(`Email Resend envoye a ${options.email}`);
@@ -274,7 +285,7 @@ export const sendEmail = async (options) => {
       to: options.email,
       subject: options.subject || "Notification Movoora",
       html: htmlContent,
-      attachments: [{ filename: "movoora-mark.png", content: brandImage, cid: brandContentId }],
+      ...(useHostedLogo ? {} : { attachments: [{ filename: "movoora-mark.png", content: brandImage, cid: brandContentId, contentType: "image/png", contentDisposition: "inline" }] }),
     });
 
     console.log(`Email SMTP envoye a ${options.email}`);
