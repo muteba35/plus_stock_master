@@ -30,6 +30,7 @@ export default function VerifyCode() {
   const [email, setEmail] = useState("");
 
   const inputs = useRef<(HTMLInputElement | null)[]>([]);
+  const verifying = useRef(false);
 
   // Vérification email temporaire
   useEffect(() => {
@@ -112,6 +113,10 @@ export default function VerifyCode() {
   // Fonction de vérification OTP modifiée avec gestion du Rate Limiter (429)
   const handleVerify = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (verifying.current || isResending || isBlocked) return;
+    if (!/^\d{6}$/.test(otp.join(""))) return;
+    verifying.current = true;
+    let authenticated = false;
 
     setIsLoading(true);
     setError("");
@@ -212,19 +217,21 @@ export default function VerifyCode() {
       localStorage.removeItem("temp_must_change_password");
 
       setSuccessMessage("Vérification réussie. Redirection...");
-
-      setTimeout(() => {
-        router.push(mustChangePassword ? "/first-login" : "/dashboard");
-      }, 1200);
+      authenticated = true;
+      router.replace(mustChangePassword ? "/first-login" : "/dashboard");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erreur de vérification";
       setError(msg);
     } finally {
-      setIsLoading(false);
+      if (!authenticated) {
+        verifying.current = false;
+        setIsLoading(false);
+      }
     }
   };
 
   const handleResend = async () => {
+    if (verifying.current || isResending || isBlocked || timer > 0) return;
     setIsResending(true);
     setError("");
 
