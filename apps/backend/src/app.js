@@ -13,6 +13,7 @@ import notificationRoutes from "./routes/notification.routes.js";
 import auditRoutes from "./routes/audit.routes.js";
 import financeRoutes from "./routes/finance.routes.js";
 import subscriptionRoutes from "./routes/subscription.routes.js";
+import contactRoutes from "./routes/contact.routes.js";
 import { SUBSCRIPTION_PLANS } from "./config/subscriptionPlans.js";
 import { auditLogger } from "./middlewares/auditMiddleware.js";
 import { attachSubscription } from "./middlewares/subscriptionMiddleware.js";
@@ -28,6 +29,8 @@ app.options(/.*/, cors(corsOptions));
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
 app.use(requestPayloadGuard);
+// Public inquiries are not authenticated shop operations and must not be attributed by email.
+app.use("/api/public/contact", contactRoutes);
 app.use(auditLogger);
 
 // Public catalogue only: no account, payment or subscription records.

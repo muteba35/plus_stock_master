@@ -20,6 +20,7 @@ const content = {
     confidentialite: {
       title: "Confidentialité",
       sections: [
+        ["Formulaire de contact", "Votre nom, votre adresse email, l'objet et le contenu du message sont transmis à juniormuteba10@gmail.com via notre prestataire email pour traiter votre demande. N'envoyez pas de mot de passe ni de code de vérification. Vous pouvez écrire à cette adresse pour demander la suppression de votre correspondance."],
         ["Informations enregistrées", "Le service utilise les informations du compte, de la boutique et de ses opérations pour permettre la gestion commerciale. Les journaux peuvent contenir l'identité de l'utilisateur, la date, l'adresse IP et le navigateur."],
         ["Authentification", "Les mots de passe sont hachés. Les codes de vérification et les liens de récupération servent à sécuriser l'accès au compte. Ne communiquez jamais ces codes à une personne non autorisée."],
         ["Stockage dans le navigateur", "Le navigateur conserve des informations de session, des préférences de langue et d'affichage. Une preuve temporaire de connexion est conservée dans l'onglet pendant la vérification OTP."],
@@ -43,6 +44,7 @@ const content = {
     confidentialite: {
       title: "Privacy",
       sections: [
+        ["Contact form", "Your name, email address, subject and message are sent to juniormuteba10@gmail.com through our email provider to handle your inquiry. Do not send passwords or verification codes. You can write to this address to request deletion of your correspondence."],
         ["Stored information", "The service uses account, shop and transaction information to provide business management. Logs may include the user identity, date, IP address and browser."],
         ["Authentication", "Passwords are hashed. Verification codes and recovery links help secure account access. Never share these codes with an unauthorised person."],
         ["Browser storage", "The browser stores session information, language and display preferences. Temporary proof of login is stored in the tab during OTP verification."],

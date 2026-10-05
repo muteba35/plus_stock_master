@@ -272,9 +272,11 @@ export const sendEmail = async (options) => {
         to: options.email,
         subject: options.subject || "Notification Movoora",
         html: htmlContent,
+        ...(options.replyTo ? { replyTo: options.replyTo } : {}),
         ...(useHostedLogo ? {} : { attachments: [{ filename: "movoora-mark.png", content: brandImage.toString("base64"), contentId: brandContentId }] }),
       });
 
+      if (info.error) throw new Error("Email provider rejected the message.");
       console.log(`Email Resend envoye a ${options.email}`);
       return info;
     }
@@ -285,6 +287,7 @@ export const sendEmail = async (options) => {
       to: options.email,
       subject: options.subject || "Notification Movoora",
       html: htmlContent,
+      ...(options.replyTo ? { replyTo: options.replyTo } : {}),
       ...(useHostedLogo ? {} : { attachments: [{ filename: "movoora-mark.png", content: brandImage, cid: brandContentId, contentType: "image/png", contentDisposition: "inline" }] }),
     });
 
