@@ -14,4 +14,8 @@ for (const bad of [{ email: "x\r\nBcc:spam@example.com" }, { consent: false }, {
 }
 res = response(); await handler({ body: { ...valid, website: "spam" } }, res); assert.equal(deliveries.length, 1);
 res = response(); await createContactHandler(async () => { throw new Error("provider failure"); })({ body: valid }, res); assert.equal(res.statusCode, 503);
+assert.equal(res.body.code, "CONTACT_UNAVAILABLE");
+res = response(); await createContactHandler(async () => { throw Object.assign(new Error("restricted"), { code: "EMAIL_TEST_RECIPIENT_RESTRICTED" }); })({ body: valid }, res);
+assert.equal(res.statusCode, 503);
+assert.equal(res.body.code, "EMAIL_TEST_RECIPIENT_RESTRICTED");
 console.log("Contact: validation, fixed recipient, HTML escaping, honeypot and provider errors OK. No email sent.");

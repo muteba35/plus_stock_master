@@ -276,7 +276,15 @@ export const sendEmail = async (options) => {
         ...(useHostedLogo ? {} : { attachments: [{ filename: "movoora-mark.png", content: brandImage.toString("base64"), contentId: brandContentId }] }),
       });
 
-      if (info.error) throw new Error("Email provider rejected the message.");
+      if (info.error) {
+        const error = new Error("Email provider rejected the message.");
+        error.code = /only send testing emails|own email address/i.test(info.error.message || "")
+          ? "EMAIL_TEST_RECIPIENT_RESTRICTED" : "EMAIL_PROVIDER_REJECTED";
+        error.providerStatus = info.error.statusCode;
+        // Keep diagnostics without logging the message body, credentials or recipient.
+        console.error("Email provider rejection", { code: error.code, status: error.providerStatus, name: info.error.name });
+        throw error;
+      }
       console.log(`Email Resend envoye a ${options.email}`);
       return info;
     }

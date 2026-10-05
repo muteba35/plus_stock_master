@@ -8,7 +8,7 @@ import { useLanguage } from "../src/components/LanguageRuntime";
 import { useEffect, useState } from "react";
 import { 
   CheckCircle2, Smartphone, ArrowUp,
-  Zap, ShieldCheck, WifiOff, LayoutDashboard, Lock, CreditCard, Users,
+  Zap, ShieldCheck, LayoutDashboard, Lock, CreditCard, Users,
   BarChart3, Store, History, Eye, Phone
 } from "lucide-react";
 
@@ -84,7 +84,7 @@ export default function LandingPage() {
         <section className="px-6 max-w-6xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <motion.div {...slideIn("left")} className="relative z-10">
-              <div className="inline-block px-3 py-1 rounded-full border border-indigo-200 text-indigo-600 text-[9px] font-bold uppercase tracking-widest mb-4">Continuité de Service</div>
+              <div className="inline-block px-3 py-1 rounded-full border border-indigo-200 text-indigo-600 text-[9px] font-bold uppercase tracking-widest mb-4">{translate("Gestion centralisée")}</div>
               <motion.h2 style={{ color: textColor }} className="text-3xl md:text-4xl font-extrabold uppercase mb-6 leading-tight tracking-tighter">
                 Votre activité <br/><span className="text-indigo-600">Au même endroit.</span>
               </motion.h2>
@@ -97,12 +97,9 @@ export default function LandingPage() {
             </motion.div>
             
             <motion.div {...slideIn("right")} className="relative">
-              <div className="relative overflow-hidden rounded-2xl border border-white/10 shadow-xl bg-slate-900 p-2">
-                <motion.img whileHover={{scale: 1.02}} src="https://images.unsplash.com/photo-1556742044-3c52d6e88c62?auto=format&fit=crop&q=80&w=800" className="w-full object-cover h-[350px] rounded-xl opacity-80" alt="Vente continue" />
-                <div className="absolute inset-0 flex items-center justify-center bg-indigo-900/20 backdrop-blur-[2px]">
-                    <WifiOff size={48} className="text-white opacity-80" />
-                </div>
-              </div>
+              <figure className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg">
+                <img src="/shop-management.png" width="1536" height="1024" loading="lazy" className="aspect-[3/2] w-full object-cover" alt={translate("Une commerçante gère sa boutique sur ordinateur, avec son équipe et ses produits au même endroit.")} />
+              </figure>
             </motion.div>
           </div>
         </section>
