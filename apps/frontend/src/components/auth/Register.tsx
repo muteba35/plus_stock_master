@@ -414,27 +414,28 @@ export default function Register() {
         {showTermsModal && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[250] flex items-center justify-center p-4">
             <button type="button" aria-label="Fermer" onClick={() => setShowTermsModal(false)} className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm" />
-            <motion.div initial={{ opacity: 0, y: 16, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8, scale: 0.98 }} className="relative z-10 w-full max-w-2xl max-h-[88vh] overflow-hidden bg-white rounded-3xl border border-slate-200 shadow-2xl">
-              <div className="p-5 border-b border-slate-100 bg-slate-50 flex items-start justify-between gap-4">
+            <motion.div initial={{ opacity: 0, y: 16, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8, scale: 0.98 }} role="dialog" aria-modal="true" aria-labelledby="registration-terms-title" className="relative z-10 flex w-full max-w-3xl max-h-[90dvh] flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-2xl">
+              <div className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-200 bg-blue-50/60 p-5 sm:p-7">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">Movoora</p>
-                  <h2 className="text-lg font-black text-slate-950 mt-1">{translate("Conditions générales d'inscription")}</h2>
-                  <p className="text-xs text-slate-500 mt-1">Résumé des règles acceptées lors de la création du compte.</p>
+                  <p className="mb-3 text-xs font-bold uppercase tracking-normal text-blue-700">Movoora</p>
+                  <h2 id="registration-terms-title" className="text-xl font-bold leading-snug tracking-normal text-slate-950 sm:text-2xl">{translate("Conditions générales d'inscription")}</h2>
+                  <p className="mt-3 max-w-lg text-sm leading-6 text-slate-600">{translate("Résumé des règles acceptées lors de la création du compte.")}</p>
                 </div>
-                <button type="button" onClick={() => setShowTermsModal(false)} className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-white">
+                <button type="button" onClick={() => setShowTermsModal(false)} aria-label={translate("Fermer")} className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 focus-visible:outline-blue-600">
                   <X size={18} />
                 </button>
               </div>
-              <div className="p-6 overflow-y-auto max-h-[calc(88vh-92px)] space-y-4 text-sm text-slate-600 leading-relaxed">
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 sm:px-7 divide-y divide-slate-200 text-sm text-slate-600 leading-relaxed">
                 <TermsBlock title="Responsabilité du compte" text="Le propriétaire de boutique garantit l'exactitude des informations fournies et reste responsable des actions réalisées depuis son espace Movoora." />
                 <TermsBlock title="Sécurité des accès" text="Les mots de passe, codes temporaires et permissions doivent rester confidentiels. Les accès employés doivent être attribués uniquement aux personnes autorisées." />
                 <TermsBlock title="Données de gestion" text="Movoora conserve les données nécessaires au fonctionnement de la boutique : utilisateurs, produits, ventes, mouvements, audit, notifications et paramètres." />
                 <TermsBlock title="Traçabilité" text="Les actions sensibles peuvent être enregistrées dans le journal d'audit afin d'identifier qui a fait quoi, quand, depuis quelle adresse IP et quel navigateur." />
                 <TermsBlock title="Utilisation conforme" text="L'application doit être utilisée pour une gestion commerciale légale. Toute tentative de contournement de sécurité peut entraîner une restriction d'accès." />
               </div>
-              <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end">
-                <button type="button" onClick={() => { setAcceptedTerms(true); setShowTermsModal(false); }} className="px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-black hover:bg-indigo-700">
-                  Accepter et continuer
+              <div className="flex shrink-0 flex-col gap-3 border-t border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between sm:px-7">
+                <Link href="/conditions" target="_blank" rel="noopener noreferrer" className="text-center text-sm font-medium text-blue-700 underline underline-offset-4">{translate("Conditions d'utilisation")}</Link>
+                <button type="button" onClick={() => { setAcceptedTerms(true); setShowTermsModal(false); }} className="min-h-11 rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700 focus-visible:outline-blue-600">
+                  {translate("Accepter et continuer")}
                 </button>
               </div>
             </motion.div>
@@ -446,10 +447,11 @@ export default function Register() {
 }
 
 function TermsBlock({ title, text }: { title: string; text: string }) {
+  const { translate } = useLanguage();
   return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-      <h3 className="text-xs font-black uppercase tracking-wider text-slate-900">{title}</h3>
-      <p className="text-xs font-semibold text-slate-500 mt-2">{text}</p>
+    <div className="py-6">
+      <h3 className="border-l-2 border-blue-600 pl-3 text-base font-semibold tracking-normal text-slate-900">{translate(title)}</h3>
+      <p className="mt-3 text-sm leading-7 text-slate-600">{translate(text)}</p>
     </div>
   );
 }
