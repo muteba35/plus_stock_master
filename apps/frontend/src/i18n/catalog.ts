@@ -89,6 +89,8 @@ const pairs: Pair[] = [
   ["Consulter", "View"],
   ["Détails", "Details"],
   ["Actions", "Actions"],
+  ["9 chiffres, sans le préfixe +243.", "9 digits, without the +243 prefix."],
+  ["Deux commerçantes organisent leurs produits et travaillent sur ordinateur.", "Two shop owners organise their products and work on a laptop."],
   ["Statut", "Status"],
   ["Type", "Type"],
   ["Date", "Date"],

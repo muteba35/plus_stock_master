@@ -5,7 +5,7 @@ import Navbar from "../src/components/Navbar";
 import Hero from "../src/components/Hero";
 import { LandingDemo, LandingPlans, LandingHelp } from "../src/components/LandingDetails";
 import { useLanguage } from "../src/components/LanguageRuntime";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { 
   CheckCircle2, Smartphone, ArrowUp,
   Zap, ShieldCheck, LayoutDashboard, Lock, CreditCard, Users,
@@ -31,6 +31,27 @@ export default function LandingPage() {
   const { translate } = useLanguage();
   const { scrollYProgress } = useScroll();
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const scrollFrame = useRef<number | null>(null);
+  const stopScroll = () => { if (scrollFrame.current !== null) cancelAnimationFrame(scrollFrame.current); scrollFrame.current = null; };
+  const scrollToTop = () => {
+    stopScroll();
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) { window.scrollTo({ top: 0, behavior: "instant" }); return; }
+    const startY = window.scrollY;
+    const startTime = performance.now();
+    const duration = Math.min(1100, Math.max(500, startY / 4));
+    const step = (time: number) => {
+      const progress = Math.min(1, (time - startTime) / duration);
+      window.scrollTo({ top: startY * Math.pow(1 - progress, 3), behavior: "instant" });
+      scrollFrame.current = progress < 1 ? requestAnimationFrame(step) : null;
+    };
+    scrollFrame.current = requestAnimationFrame(step);
+  };
+  useEffect(() => {
+    window.addEventListener("wheel", stopScroll, { passive: true });
+    window.addEventListener("touchstart", stopScroll, { passive: true });
+    window.addEventListener("keydown", stopScroll);
+    return () => { stopScroll(); window.removeEventListener("wheel", stopScroll); window.removeEventListener("touchstart", stopScroll); window.removeEventListener("keydown", stopScroll); };
+  }, []);
   
   const backgroundColor = useTransform(scrollYProgress, [0, 0.2, 0.4, 0.8], ["#ffffff", "#ffffff", "#020617", "#020617"]);
   const textColor = useTransform(scrollYProgress, [0, 0.2, 0.4], ["#0f172a", "#0f172a", "#f8fafc"]);
@@ -98,7 +119,8 @@ export default function LandingPage() {
             
             <motion.div {...slideIn("right")} className="relative">
               <figure className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg">
-                <img src="/shop-management.png" width="1536" height="1024" loading="lazy" className="aspect-[3/2] w-full object-cover" alt={translate("Une commerçante gère sa boutique sur ordinateur, avec son équipe et ses produits au même endroit.")} />
+                <img src="https://images.pexels.com/photos/7857528/pexels-photo-7857528.jpeg?auto=compress&cs=tinysrgb&w=1260" width="1260" height="840" loading="lazy" className="aspect-[3/2] w-full object-cover" alt={translate("Deux commerçantes organisent leurs produits et travaillent sur ordinateur.")} />
+                <figcaption className="px-3 py-2 text-right text-xs text-slate-500"><a href="https://www.pexels.com/photo/women-doing-an-online-store-7857528/" target="_blank" rel="noopener noreferrer" className="hover:underline">Kampus Production / Pexels</a></figcaption>
               </figure>
             </motion.div>
           </div>
@@ -295,7 +317,9 @@ export default function LandingPage() {
         {showScrollTop && (
           <motion.button
             initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }}
-            onClick={() => window.scrollTo({top: 0, behavior: "smooth"})}
+            onClick={scrollToTop}
+            aria-label={translate("Retour en haut")}
+            title={translate("Retour en haut")}
             className="fixed bottom-6 right-6 z-50 w-10 h-10 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-xl hover:bg-indigo-500 transition-colors"
           >
             <ArrowUp size={18} />

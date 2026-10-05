@@ -239,7 +239,14 @@ export default function Register() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <InputGroup label={translate("Email Pro")} name="email" type="email" icon={Mail} placeholder="jean@boutique.cd" required onChange={handleChange} />
-                  <InputGroup label={translate("Téléphone")} name="telephone" type="tel" maxLength={9} icon={Phone} placeholder="099123456" onChange={handleChange} />
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="register-phone" className="ml-1 text-[10px] font-black uppercase text-slate-400">{translate("Téléphone")} <span className="text-rose-600">*</span></label>
+                    <div className="flex min-w-0 items-center overflow-hidden rounded-lg border border-slate-100 bg-slate-50/50 focus-within:border-indigo-600">
+                      <span className="flex shrink-0 items-center gap-2 border-r border-slate-200 px-3 py-3 text-sm font-semibold text-slate-700"><Phone size={16} aria-hidden="true"/>+243</span>
+                      <input id="register-phone" name="telephone" type="tel" inputMode="numeric" autoComplete="tel-national" required pattern="[0-9]{9}" minLength={9} maxLength={9} value={formData.telephone} placeholder="990835638" aria-describedby="register-phone-help" onChange={e => { const value = e.target.value.replace(/\D/g, "").slice(0, 9); setFormData(prev => ({ ...prev, telephone: value })); setError(null); }} className="w-full min-w-0 bg-transparent px-3 py-3 text-sm font-bold text-slate-900 outline-none"/>
+                    </div>
+                    <p id="register-phone-help" className="ml-1 text-xs text-slate-500">{translate("9 chiffres, sans le préfixe +243.")}</p>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -258,7 +265,6 @@ export default function Register() {
                         <option>Commerce Général</option>
                         <option>Supermarché</option>
                         <option>Pharmacie</option>
-                        <option>Restaurant</option>
                         <option>Autre</option>
                       </select>
                       <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={14} />
