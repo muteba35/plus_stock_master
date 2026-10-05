@@ -119,10 +119,7 @@ export default function LandingPage() {
             </motion.div>
             
             <motion.div {...slideIn("right")} className="relative">
-              <figure className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg">
                 <img src="https://images.unsplash.com/photo-1783115259399-3a5a3e0e4592?auto=format&fit=crop&q=80&w=1000" width="1000" height="667" loading="lazy" className="aspect-[3/2] w-full object-cover" alt={en ? "Managing a product inventory spreadsheet on a laptop." : "Gestion d'un inventaire de produits sur ordinateur."} />
-                <figcaption className="px-3 py-2 text-right text-xs text-slate-500"><a href="https://unsplash.com/photos/9fZuqBYlV1w" target="_blank" rel="noopener noreferrer" className="hover:underline">Gorilla ROI Data Connector / Unsplash</a></figcaption>
-              </figure>
             </motion.div>
           </div>
         </section>
