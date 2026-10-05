@@ -28,7 +28,8 @@ const slideIn = (direction: "left" | "right") => ({
 });
 
 export default function LandingPage() {
-  const { translate } = useLanguage();
+  const { translate, language } = useLanguage();
+  const en = language === "en";
   const { scrollYProgress } = useScroll();
   const [showScrollTop, setShowScrollTop] = useState(false);
   const scrollFrame = useRef<number | null>(null);
@@ -197,42 +198,20 @@ export default function LandingPage() {
       <div className="w-full flex justify-center px-6"><div className="w-full max-w-4xl h-[1px] bg-gradient-to-r from-transparent via-slate-200 to-transparent opacity-40" /></div>
 
         {/* --- SECTION VISION : POURQUOI NOUS ? --- */}
-      <section id="apropos" className="py-20 px-6 relative overflow-hidden">
-        <div className="max-w-6xl mx-auto border border-white/10 bg-white/[0.02] rounded-[2rem] p-10 md:p-16 relative overflow-hidden">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <motion.div {...reveal}>
-              <h2 className="text-indigo-500 font-bold uppercase text-[9px] tracking-[0.5em] mb-4">Notre Engagement</h2>
-              <p className="text-2xl md:text-4xl font-extrabold text-white uppercase tracking-tighter leading-tight mb-6">
-                Une solution pensée <span className="text-indigo-600">Pour Vous.</span>
-              </p>
-              <p className="text-slate-400 text-xs font-medium leading-relaxed mb-8 max-w-md">
-                Nous avons conçu Movoora pour répondre aux défis quotidiens des entrepreneurs. Simplicité, sécurité et efficacité sont les fondations de notre service.
-              </p>
-              <div className="grid grid-cols-2 gap-6">
-                <div className="group">
-                  <div className="text-white font-bold uppercase text-sm mb-1 flex items-center gap-2 group-hover:text-indigo-400 transition-colors">
-                    <CheckCircle2 className="text-indigo-500" size={14}/> Support Dédié
-                  </div>
-                  <p className="text-slate-500 text-[9px] font-bold uppercase">Une équipe à votre écoute pour vous accompagner au quotidien.</p>
-                </div>
-                <div className="group">
-                  <div className="text-white font-bold uppercase text-sm mb-1 flex items-center gap-2 group-hover:text-indigo-400 transition-colors">
-                    <ShieldCheck className="text-indigo-500" size={14}/> Accès contrôlés
-                  </div>
-                  <p className="text-slate-500 text-[9px] font-bold uppercase">Mots de passe hachés, tentatives limitées et révocation des sessions.</p>
-                </div>
-              </div>
-            </motion.div>
-            
-            <motion.div {...reveal} className="flex justify-center">
-              <div className="w-48 h-48 border border-indigo-600/20 rounded-full flex items-center justify-center relative">
-                <div className="absolute inset-0 border border-dashed border-indigo-600/30 rounded-full animate-[spin_30s_linear_infinite]" />
-                <div className="text-center">
-                    <div className="text-indigo-500 font-black text-2xl">Movoora</div>
-                    <div className="text-[8px] text-slate-500 uppercase font-bold">Gestion commerciale</div>
-                </div>
-              </div>
-            </motion.div>
+      <section id="apropos" data-no-translate className="bg-slate-950 px-6 py-20 text-white sm:py-24">
+        <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-2 lg:gap-20">
+          <div>
+            <p className="mb-5 flex items-center gap-2 text-sm font-semibold text-blue-400"><Store size={18} />{en ? "About Movoora" : "À propos de Movoora"}</p>
+            <h2 className="text-3xl font-bold leading-tight tracking-normal sm:text-4xl">{en ? "Your shop. A clearer view of every day." : "Votre boutique. Une vision plus claire, chaque jour."}</h2>
+            <p className="mt-6 max-w-lg text-base leading-8 text-slate-300">{en ? "Movoora brings stock, sales and team management together. Less scattered information, more time to focus on your business." : "Movoora réunit la gestion du stock, des ventes et de votre équipe. Moins d'informations dispersées, plus de temps pour vous concentrer sur votre activité."}</p>
+            <a href="#contact" className="mt-8 inline-flex items-center gap-2 border-b border-blue-400 pb-2 text-sm font-semibold text-blue-300 transition-colors hover:text-white">{en ? "Let's talk about your shop" : "Parlons de votre boutique"}<Phone size={16} /></a>
+          </div>
+          <div className="divide-y divide-white/15 border-y border-white/15">
+            {[
+              { icon: LayoutDashboard, title: en ? "Everything in context" : "L'essentiel au même endroit", text: en ? "Track products, sales and stock movements from a shared workspace." : "Retrouvez vos produits, vos ventes et vos mouvements de stock dans un espace commun." },
+              { icon: Users, title: en ? "A place for your team" : "Une place pour votre équipe", text: en ? "Assign access according to each person's responsibilities in your shop." : "Attribuez les accès en fonction des responsabilités de chacun dans votre boutique." },
+              { icon: ShieldCheck, title: en ? "Clearer oversight" : "Une gestion plus lisible", text: en ? "Use reports and activity history to understand what happens in your business." : "Appuyez-vous sur les rapports et l'historique des opérations pour comprendre votre activité." },
+            ].map(({ icon: Icon, title, text }) => <div key={title} className="flex gap-4 py-7"><Icon size={23} className="mt-1 shrink-0 text-blue-400" /><div><h3 className="text-lg font-semibold">{title}</h3><p className="mt-2 text-sm leading-7 text-slate-400">{text}</p></div></div>)}
           </div>
         </div>
       </section>

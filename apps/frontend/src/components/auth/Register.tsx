@@ -243,9 +243,8 @@ export default function Register() {
                     <label htmlFor="register-phone" className="ml-1 text-[10px] font-black uppercase text-slate-400">{translate("Téléphone")} <span className="text-rose-600">*</span></label>
                     <div className="flex min-w-0 items-center overflow-hidden rounded-lg border border-slate-100 bg-slate-50/50 focus-within:border-indigo-600">
                       <span className="flex shrink-0 items-center gap-2 border-r border-slate-200 px-3 py-3 text-sm font-semibold text-slate-700"><Phone size={16} aria-hidden="true"/>+243</span>
-                      <input id="register-phone" name="telephone" type="tel" inputMode="numeric" autoComplete="tel-national" required pattern="[0-9]{9}" minLength={9} maxLength={9} value={formData.telephone} placeholder="990835638" aria-describedby="register-phone-help" onChange={e => { const value = e.target.value.replace(/\D/g, "").slice(0, 9); setFormData(prev => ({ ...prev, telephone: value })); setError(null); }} className="w-full min-w-0 bg-transparent px-3 py-3 text-sm font-bold text-slate-900 outline-none"/>
+                      <input id="register-phone" name="telephone" type="tel" inputMode="numeric" autoComplete="tel-national" required pattern="[0-9]{9}" minLength={9} maxLength={9} value={formData.telephone} placeholder="990835638" onChange={e => { const value = e.target.value.replace(/\D/g, "").slice(0, 9); setFormData(prev => ({ ...prev, telephone: value })); setError(null); }} className="w-full min-w-0 bg-transparent px-3 py-3 text-sm font-bold text-slate-900 outline-none"/>
                     </div>
-                    <p id="register-phone-help" className="ml-1 text-xs text-slate-500">{translate("9 chiffres, sans le préfixe +243.")}</p>
                   </div>
                 </div>
 

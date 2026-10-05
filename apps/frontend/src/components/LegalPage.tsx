@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ArrowLeft, ArrowRight, ShieldCheck, FileText, Mail } from "lucide-react";
 import AuthNavbar from "./AuthNavbar";
 import { useLanguage } from "./LanguageRuntime";
 
@@ -59,22 +60,46 @@ export default function LegalPage({ kind }: { kind: "conditions" | "confidential
   const { language } = useLanguage();
   const copy = content[language];
   const page = copy[kind];
+  const en = language === "en";
+  const privacy = kind === "confidentialite";
+  const Icon = privacy ? ShieldCheck : FileText;
   return (
     <>
       <AuthNavbar />
-      <main className="min-h-screen bg-white px-6 pb-16 pt-32 text-slate-800" data-no-translate>
-        <article className="mx-auto max-w-3xl">
-          <Link href="/" className="text-sm font-medium text-blue-600 hover:underline">{copy.back}</Link>
-          <h1 className="mb-10 mt-6 text-2xl font-bold text-slate-950">{page.title}</h1>
-          <div className="space-y-8">
-            {page.sections.map(([title, body]) => (
-              <section key={title}>
-                <h2 className="mb-2 text-base font-semibold">{title}</h2>
-                <p className="text-sm leading-7 text-slate-600">{body}</p>
-              </section>
-            ))}
+      <main className="min-h-screen bg-white pb-16 pt-28 text-slate-800 sm:pt-32" data-no-translate>
+        <header className="border-b border-slate-200 bg-slate-50 px-5 pb-10 pt-6 sm:px-8 sm:pb-14">
+          <div className="mx-auto max-w-6xl">
+            <Link href="/" className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-blue-700"><ArrowLeft size={16} />{copy.back}</Link>
+            <p className="mb-5 mt-9 flex items-center gap-2 text-sm font-semibold text-blue-700"><Icon size={20} />Movoora</p>
+            <h1 className="max-w-3xl text-3xl font-bold leading-tight tracking-normal text-slate-950 sm:text-4xl">{page.title}</h1>
+            <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600">{privacy ? (en ? "Understand what information the service uses and how access to your data works." : "Comprenez quelles informations le service utilise et comment fonctionne l'accès à vos données.") : (en ? "The responsibilities and rules that guide the use of your Movoora workspace." : "Les responsabilités et les règles qui encadrent l'utilisation de votre espace Movoora.")}</p>
           </div>
-        </article>
+        </header>
+        <div className="mx-auto grid max-w-6xl gap-10 px-5 py-10 sm:px-8 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-16 lg:py-14">
+          <aside>
+            <nav aria-label={en ? "On this page" : "Sur cette page"} className="lg:sticky lg:top-28">
+              <p className="mb-4 text-xs font-bold uppercase tracking-normal text-slate-500">{en ? "On this page" : "Sur cette page"}</p>
+              <ol className="space-y-1 border-l border-slate-200">
+                {page.sections.map(([title], index) => <li key={title}><a href={`#section-${index + 1}`} className="flex gap-3 px-4 py-2.5 text-sm leading-6 text-slate-600 transition-colors hover:bg-blue-50 hover:text-blue-700"><span className="text-blue-600">{String(index + 1).padStart(2, "0")}</span>{title}</a></li>)}
+              </ol>
+            </nav>
+          </aside>
+          <article className="min-w-0">
+            <div className="divide-y divide-slate-200">
+              {page.sections.map(([title, body], index) => (
+                <section id={`section-${index + 1}`} key={title} className="scroll-mt-28 py-7 first:pt-0">
+                  <h2 className="mb-4 flex items-baseline gap-3 text-lg font-semibold text-slate-950"><span className="text-sm font-medium text-blue-600">{String(index + 1).padStart(2, "0")}</span>{title}</h2>
+                  <p className="break-words text-sm leading-8 text-slate-600 sm:text-base">{body}</p>
+                </section>
+              ))}
+            </div>
+            <div className="mt-6 border-t border-slate-200 pt-8">
+              <h2 className="text-lg font-semibold text-slate-950">{en ? "A question about this page?" : "Une question sur cette page ?"}</h2>
+              <a href="mailto:juniormuteba10@gmail.com" className="mt-3 inline-flex max-w-full items-center gap-2 text-sm font-medium text-blue-700 hover:underline"><Mail size={17} className="shrink-0" /><span className="break-all">juniormuteba10@gmail.com</span></a>
+              <Link href={privacy ? "/conditions" : "/confidentialite"} className="mt-6 flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-blue-700">{privacy ? content[language].conditions.title : content[language].confidentialite.title}<ArrowRight size={16} /></Link>
+            </div>
+          </article>
+        </div>
       </main>
     </>
   );
