@@ -120,8 +120,7 @@ export default function LandingPage() {
             
             <motion.div {...slideIn("right")} className="relative">
               <figure className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg">
-                <img src="https://images.pexels.com/photos/7857528/pexels-photo-7857528.jpeg?auto=compress&cs=tinysrgb&w=1260" width="1260" height="840" loading="lazy" className="aspect-[3/2] w-full object-cover" alt={translate("Deux commerçantes organisent leurs produits et travaillent sur ordinateur.")} />
-                <figcaption className="px-3 py-2 text-right text-xs text-slate-500"><a href="https://www.pexels.com/photo/women-doing-an-online-store-7857528/" target="_blank" rel="noopener noreferrer" className="hover:underline">Kampus Production / Pexels</a></figcaption>
+                <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=1000" width="1000" height="667" loading="lazy" className="aspect-[3/2] w-full object-cover" alt={en ? "Charts and business indicators on a dashboard." : "Graphiques et indicateurs d'activité sur un tableau de bord."} />
               </figure>
             </motion.div>
           </div>
