@@ -1,4 +1,5 @@
 "use client";
+import PendingButton from "../../../../../src/components/PendingButton";
 import { dashboardUi as du, dashboardLocale } from "../../../../../src/i18n/catalog";
 import { useLanguage as useDashboardLanguage } from "../../../../../src/components/LanguageRuntime";
 
@@ -549,14 +550,14 @@ export default function EmployeModal({
                 className="px-4 py-2 text-[11px] font-bold text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors disabled:opacity-40"
               >
                 {du("m46ad3916f6a0")}{" "}</button>
-              <button
+              <PendingButton pending={isSubmitting}
                 type="submit"
                 form="add-employee-form"
                 disabled={isSubmitting}
                 className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold rounded-xl transition-colors flex items-center gap-2 disabled:bg-slate-400"
               >
                 {isSubmitting && <Loader2 size={14} className="animate-spin" />}
-                {du("md95ec2e19dd5")}{" "}</button>
+                {du("md95ec2e19dd5")}{" "}</PendingButton>
             </div>
           </motion.div>
         </div>

@@ -1,4 +1,5 @@
 "use client";
+import PendingButton from "../../../../src/components/PendingButton";
 import { dashboardUi as du, dashboardLocale } from "../../../../src/i18n/catalog";
 import { useLanguage as useDashboardLanguage } from "../../../../src/components/LanguageRuntime";
 
@@ -957,9 +958,9 @@ function EditInterface({ employe, roles, departements, boutiques, onBoutiqueChan
 
       <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2 shrink-0">
         <button onClick={onClose} disabled={isSaving || isLoadingReferences} className="px-4 py-2 hover:bg-slate-200/60 rounded-xl font-bold text-slate-500 text-[11px] transition-colors disabled:opacity-40">{du("m46ad3916f6a0")}</button>
-        <button onClick={handleSave} disabled={isSaving || isLoadingReferences} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-[11px] transition-colors flex items-center gap-2 disabled:bg-slate-400">
+        <PendingButton pending={isSaving} onClick={handleSave} disabled={isSaving || isLoadingReferences} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-[11px] transition-colors flex items-center gap-2 disabled:bg-slate-400">
           {(isSaving || isLoadingReferences) && <Loader2 size={12} className="animate-spin" />}
-          {du("m43e68afe45f2")}{" "}</button>
+          {du("m43e68afe45f2")}{" "}</PendingButton>
       </div>
     </>
   );

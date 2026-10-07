@@ -367,7 +367,7 @@ export default function Register() {
                       bg-[#090E1A] hover:bg-indigo-600 text-white disabled:opacity-30
                       ${isBlocked ? "cursor-none" : "cursor-pointer"}`}
                   >
-                    {isLoading ? <Loader2 className="animate-spin" size={18} /> : "Créer mon compte"}
+                    {isLoading ? <span role="status" className="flex items-center gap-2"><Loader2 aria-hidden="true" className="animate-spin" size={18} />{translate("Création du compte en cours...")}</span> : "Créer mon compte"}
                   </button>
 
                   {isBlocked && (

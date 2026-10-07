@@ -1,4 +1,5 @@
 "use client";
+import PendingButton from "../../../../../src/components/PendingButton";
 import { dashboardUi as du, dashboardLocale } from "../../../../../src/i18n/catalog";
 import { useLanguage as useDashboardLanguage } from "../../../../../src/components/LanguageRuntime";
 
@@ -14,7 +15,7 @@ interface RoleModalProps {
   onClose: () => void;
   role: Role | null;
   mode: "create" | "edit" | "view";
-  onSave: (name: string, description: string, permissions: string[]) => void;
+  onSave: (name: string, description: string, permissions: string[]) => void | Promise<void>;
   apiHeaders: Record<string, string>;
   apiUrl: string;
 }
@@ -80,6 +81,7 @@ function RoleModalContent({ role, mode, onSave, onClose, apiHeaders, apiUrl }: O
   const [showPermissions, setShowPermissions] = useState(mode !== "view");
   const [availableModules, setAvailableModules] = useState<GroupedModule[]>([]);
   const [loadingPermissions, setLoadingPermissions] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [permSearchTerm, setPermSearchTerm] = useState("");
   const [userPermissions, setUserPermissions] = useState<string[]>([]);
 
@@ -202,10 +204,15 @@ function RoleModalContent({ role, mode, onSave, onClose, apiHeaders, apiUrl }: O
     );
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!canSave || selectedPermissions.length === 0) return;
-    onSave(formData.name, formData.description, selectedPermissions);
+    if (submitting || !canSave || selectedPermissions.length === 0) return;
+    setSubmitting(true);
+    try {
+      await onSave(formData.name, formData.description, selectedPermissions);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const getPermissionLabel = (id: string) => {
@@ -404,14 +411,14 @@ function RoleModalContent({ role, mode, onSave, onClose, apiHeaders, apiUrl }: O
         </button>
 
         {mode !== "view" && (
-          <button
+          <PendingButton pending={submitting}
             type="submit"
             form="role-form"
             disabled={!canSave || selectedPermissions.length === 0}
             className={`px-6 py-2 text-xs font-bold rounded-xl transition-colors shadow-sm ${canSave && selectedPermissions.length > 0 ? "bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-600/10 active:scale-95" : "bg-slate-200 text-slate-400 cursor-not-allowed"}`}
           >
             {du(submitButtonText)}
-          </button>
+          </PendingButton>
         )}
       </div>
     </motion.div>

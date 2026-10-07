@@ -1,4 +1,5 @@
 "use client";
+import PendingButton from "../../../../src/components/PendingButton";
 import { dashboardUi as du, dashboardLocale } from "../../../../src/i18n/catalog";
 import { useLanguage as useDashboardLanguage } from "../../../../src/components/LanguageRuntime";
 
@@ -46,7 +47,7 @@ export default function FinanceProfitLossPage() {
   }, [data.salesDetails]);
 
   return <FinanceShell>
-    <CashHeader title={du("m0ee2948fd4ce")} subtitle={du("m6c8d01bed2a0")} action={<button onClick={() => void fetchData()} disabled={loading} className={secondaryButton}><RefreshCw size={14} className={loading ? "animate-spin" : ""} /> {du("md7d646faaecb")}</button>} />
+    <CashHeader title={du("m0ee2948fd4ce")} subtitle={du("m6c8d01bed2a0")} action={<PendingButton pending={loading} onClick={() => void fetchData()} disabled={loading} className={secondaryButton}><RefreshCw size={14} className={loading ? "animate-spin" : ""} /> {du("md7d646faaecb")}</PendingButton>} />
     <FinanceDateFilters dateFilter={dateFilter} onDateFilterChange={setDateFilter} customStart={customStart} customEnd={customEnd} onCustomStartChange={setCustomStart} onCustomEndChange={setCustomEnd} />
     <StateBlock loading={loading} error={error} />
     {!loading && !error && <>

@@ -1,4 +1,5 @@
 "use client";
+import PendingButton from "../../../../src/components/PendingButton";
 import { dashboardUi as du, dashboardLocale } from "../../../../src/i18n/catalog";
 import { useLanguage as useDashboardLanguage } from "../../../../src/components/LanguageRuntime";
 
@@ -231,7 +232,7 @@ export default function CustomerReturnsPage() {
         title={du("me44b386d4c1e")}
         subtitle={du("m686404ba99aa")}
         action={
-          <div className="flex flex-wrap gap-2">{canExportReturns && <><button onClick={exportCsv} disabled={exporting || loading} className={secondaryButton}><Download size={14} /> {du("m48d53635551c")}</button><button onClick={exportWord} disabled={exporting || loading} className={secondaryButton}><FileText size={14} /> {du("m3a2860ece5a4")}</button><button onClick={exportCurrentPdf} disabled={exporting || loading} className={secondaryButton}><Printer size={14} /> {du("m1d393b0081b6")}</button></>}{canCreateReturn && <button onClick={openCreateModal} className={primaryButton}>
+          <div className="flex flex-wrap gap-2">{canExportReturns && <><PendingButton pending={exporting || loading} onClick={exportCsv} disabled={exporting || loading} className={secondaryButton}><Download size={14} /> {du("m48d53635551c")}</PendingButton><PendingButton pending={exporting || loading} onClick={exportWord} disabled={exporting || loading} className={secondaryButton}><FileText size={14} /> {du("m3a2860ece5a4")}</PendingButton><PendingButton pending={exporting || loading} onClick={exportCurrentPdf} disabled={exporting || loading} className={secondaryButton}><Printer size={14} /> {du("m1d393b0081b6")}</PendingButton></>}{canCreateReturn && <button onClick={openCreateModal} className={primaryButton}>
             <Plus size={15} />
             {du("m55b74cb23ae1")}{" "}</button>}</div>
         }
@@ -337,9 +338,9 @@ export default function CustomerReturnsPage() {
         footer={
           <>
             <button onClick={() => setModalOpen(false)} className={secondaryButton}>{du("m46ad3916f6a0")}</button>
-            <button type="submit" form="return-form" disabled={saving || !form.venteId || !form.produitId} className={primaryButton}>
+            <PendingButton pending={saving} type="submit" form="return-form" disabled={saving || !form.venteId || !form.produitId} className={primaryButton}>
               {saving ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
-              {du("m71dc74873e23")}{" "}</button>
+              {du("m71dc74873e23")}{" "}</PendingButton>
           </>
         }
       >

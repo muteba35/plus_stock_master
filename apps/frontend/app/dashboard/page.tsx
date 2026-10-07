@@ -1,4 +1,5 @@
 "use client";
+import PendingButton from "../../src/components/PendingButton";
 import { dashboardUi as du, dashboardLocale } from "../../src/i18n/catalog";
 import { useLanguage as useDashboardLanguage } from "../../src/components/LanguageRuntime";
 
@@ -206,9 +207,9 @@ export default function OverviewPage() {
               <input type="date" value={customEnd} onChange={(event) => setCustomEnd(event.target.value)} className="h-9 rounded-xl border border-slate-200 px-3 text-[11px] font-semibold text-slate-600 outline-none focus:border-indigo-500" />
             </div>
           )}
-          <button onClick={fetchOverview} disabled={loading} className="p-2.5 bg-[#f9fafd] border border-slate-200 rounded-xl hover:bg-slate-100 text-slate-600 transition-colors disabled:opacity-50" title={du("md7d646faaecb")}>
+          <PendingButton pending={loading} onClick={fetchOverview} disabled={loading} className="p-2.5 bg-[#f9fafd] border border-slate-200 rounded-xl hover:bg-slate-100 text-slate-600 transition-colors disabled:opacity-50" title={du("md7d646faaecb")}>
             {loading ? <Loader2 size={15} className="animate-spin" /> : <RefreshCw size={15} />}
-          </button>
+          </PendingButton>
         </div>
       </div>
 

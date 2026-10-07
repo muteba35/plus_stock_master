@@ -1,4 +1,5 @@
 "use client";
+import PendingButton from "../../../src/components/PendingButton";
 import { dashboardUi as du, dashboardLocale } from "../../../src/i18n/catalog";
 import { useLanguage as useDashboardLanguage } from "../../../src/components/LanguageRuntime";
 
@@ -181,11 +182,11 @@ export default function NotificationsPage() {
         subtitle={du("m7ad4466447fc")}
         action={
           <div className="flex flex-wrap items-center gap-2">
-            <button onClick={exportPdf} disabled={loading} className={secondaryButton}><FileText size={14} /> {du("m1d393b0081b6")}</button>
-            <button onClick={exportXlsx} disabled={loading} className={secondaryButton}><Download size={14} /> {du("m48d53635551c")}</button>
-            <button onClick={() => void markAllRead()} disabled={loading || unreadCount === 0} className={secondaryButton}>{du("m8ed33b378dfd")}</button>
-            <button onClick={() => void fetchNotifications()} disabled={loading} className={secondaryButton}>
-              <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> {du("md7d646faaecb")}{" "}</button>
+            <PendingButton pending={loading} onClick={exportPdf} disabled={loading} className={secondaryButton}><FileText size={14} /> {du("m1d393b0081b6")}</PendingButton>
+            <PendingButton pending={loading} onClick={exportXlsx} disabled={loading} className={secondaryButton}><Download size={14} /> {du("m48d53635551c")}</PendingButton>
+            <PendingButton pending={loading} onClick={() => void markAllRead()} disabled={loading || unreadCount === 0} className={secondaryButton}>{du("m8ed33b378dfd")}</PendingButton>
+            <PendingButton pending={loading} onClick={() => void fetchNotifications()} disabled={loading} className={secondaryButton}>
+              <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> {du("md7d646faaecb")}{" "}</PendingButton>
           </div>
         }
       />

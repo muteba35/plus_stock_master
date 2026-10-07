@@ -1,4 +1,5 @@
 "use client";
+import PendingButton from "../../../../src/components/PendingButton";
 import { dashboardUi as du, dashboardLocale } from "../../../../src/i18n/catalog";
 import { useLanguage as useDashboardLanguage } from "../../../../src/components/LanguageRuntime";
 
@@ -412,14 +413,14 @@ export default function DepartementsPage() {
                   className="px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition-colors disabled:opacity-50"
                 >
                   {du("m46ad3916f6a0")}{" "}</button>
-                <button
+                <PendingButton pending={isActionLoading}
                   type="submit"
                   disabled={isActionLoading || !!actionSuccess}
                   className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-2 disabled:bg-indigo-400 shadow-sm"
                 >
                   {isActionLoading && <Loader2 size={12} className="animate-spin" />}
                   {actionSuccess ? du("mc5e5f7d4a0d7") : du("m400cdf4c4104")}
-                </button>
+                </PendingButton>
               </div>
             </form>
           </div>
@@ -463,14 +464,14 @@ export default function DepartementsPage() {
                 className="px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-50 rounded-xl border border-slate-200 transition-all disabled:opacity-50"
               >
                 {du("m46ad3916f6a0")}{" "}</button>
-              <button 
+              <PendingButton pending={isActionLoading} 
                 onClick={handleConfirmDelete}
                 disabled={isActionLoading || !!actionSuccess}
                 className="px-4 py-2 text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-all shadow-sm flex items-center gap-1.5 disabled:opacity-50"
               >
                 {isActionLoading && <Loader2 size={12} className="animate-spin" />}
                 {actionSuccess ? du("m0de249889abd") : du("m5e5d0216ce0b")}
-              </button>
+              </PendingButton>
             </div>
           </div>
         </div>

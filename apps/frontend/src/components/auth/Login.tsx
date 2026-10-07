@@ -358,14 +358,12 @@ export default function Login() {
                 {/* BUTTON */}
                 <button
                   disabled={isLoading || isBlocked}
+                  aria-busy={isLoading}
                   type="submit"
                   className="w-full py-4 bg-[#090E1A] hover:bg-indigo-600 text-white rounded-lg font-black text-[11px] uppercase tracking-[0.2em] transition-all duration-300 flex items-center justify-center gap-2 mt-4 shadow-lg active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed"
                 >
                   {isLoading ? (
-                    <Loader2
-                      size={18}
-                      className="animate-spin"
-                    />
+                    <span role="status" className="flex items-center gap-2"><Loader2 size={18} aria-hidden="true" className="animate-spin" />Connexion en cours...</span>
                   ) : (
                     <span className="flex items-center gap-2">
                       Se connecter

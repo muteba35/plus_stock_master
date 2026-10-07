@@ -1,4 +1,5 @@
 "use client";
+import PendingButton from "../../../../src/components/PendingButton";
 import { dashboardUi as du, dashboardLocale } from "../../../../src/i18n/catalog";
 import { useLanguage as useDashboardLanguage } from "../../../../src/components/LanguageRuntime";
 
@@ -37,7 +38,7 @@ export default function FinanceReportsPage() {
   };
 
   return <FinanceShell>
-    <CashHeader title={du("m071b06db4f59")} subtitle={du("mcd57dc1f14a8")} action={<div className="flex flex-wrap gap-2"><button onClick={() => void fetchData()} disabled={loading} className={secondaryButton}><RefreshCw size={14} className={loading ? "animate-spin" : ""} /> {du("md7d646faaecb")}</button><button onClick={exportReport} disabled={loading} className={secondaryButton}><Download size={14} /> {du("m48d53635551c")}</button><button onClick={exportPdf} disabled={loading} className={secondaryButton}><FileText size={14} /> {du("m1d393b0081b6")}</button></div>} />
+    <CashHeader title={du("m071b06db4f59")} subtitle={du("mcd57dc1f14a8")} action={<div className="flex flex-wrap gap-2"><PendingButton pending={loading} onClick={() => void fetchData()} disabled={loading} className={secondaryButton}><RefreshCw size={14} className={loading ? "animate-spin" : ""} /> {du("md7d646faaecb")}</PendingButton><PendingButton pending={loading} onClick={exportReport} disabled={loading} className={secondaryButton}><Download size={14} /> {du("m48d53635551c")}</PendingButton><PendingButton pending={loading} onClick={exportPdf} disabled={loading} className={secondaryButton}><FileText size={14} /> {du("m1d393b0081b6")}</PendingButton></div>} />
     <FinanceDateFilters dateFilter={dateFilter} onDateFilterChange={setDateFilter} customStart={customStart} customEnd={customEnd} onCustomStartChange={setCustomStart} onCustomEndChange={setCustomEnd} />
     <StateBlock loading={loading} error={error} />
     {!loading && !error && <section className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 space-y-5"><div><h2 className="text-sm font-bold text-slate-900">{du("m152ab2e65fb0")}</h2><p className="text-xs text-slate-500 mt-2">{du("md5340b0fb3ba")}</p></div><div className="grid grid-cols-1 md:grid-cols-4 gap-3"><Metric label={du("m3c700a1d372c")} value={formatMoney(data.metrics.caTTC, data.devise)} /><Metric label={du("mae5f52a29195")} value={formatMoney(data.metrics.tva, data.devise)} /><Metric label={du("m18edfe670359")} value={formatMoney(data.metrics.marge, data.devise)} /><Metric label={du("m7c442e059901")} value={formatMoney(data.metrics.montantRetours, data.devise)} /></div></section>}

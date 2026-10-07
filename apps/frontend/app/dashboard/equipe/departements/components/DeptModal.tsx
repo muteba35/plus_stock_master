@@ -1,4 +1,5 @@
 "use client";
+import PendingButton from "../../../../../src/components/PendingButton";
 import { dashboardUi as du, dashboardLocale } from "../../../../../src/i18n/catalog";
 import { useLanguage as useDashboardLanguage } from "../../../../../src/components/LanguageRuntime";
 
@@ -174,7 +175,7 @@ export default function DeptModal({ isOpen, onClose, onSuccess }: DeptModalProps
                 className="px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition-colors disabled:opacity-50"
               >
                 {du("m46ad3916f6a0")}{" "}</button>
-              <button
+              <PendingButton pending={isLoading}
                 type="submit"
                 form="add-dept-form"
                 disabled={isLoading || !!success}
@@ -182,7 +183,7 @@ export default function DeptModal({ isOpen, onClose, onSuccess }: DeptModalProps
               >
                 {isLoading && <Loader2 size={14} className="animate-spin" />}
                 {success ? du("m759f80e09266") : du("maaeb8666c43e")}
-              </button>
+              </PendingButton>
             </div>
           </motion.div>
         </div>

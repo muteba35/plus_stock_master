@@ -1,4 +1,5 @@
 "use client";
+import PendingButton from "../../../../../src/components/PendingButton";
 import { dashboardUi as du, dashboardLocale } from "../../../../../src/i18n/catalog";
 import { useLanguage as useDashboardLanguage } from "../../../../../src/components/LanguageRuntime";
 
@@ -18,7 +19,7 @@ export default function ProductImportModal({ open, saving, rows, fileName, error
   return (
     <InventoryModal open={open} onClose={onClose} title={du("m2a69621867ad")} subtitle={du("m6624c88bad44")}
       notice={error ? <div className="flex items-start gap-2 p-3 rounded-xl bg-rose-50 border border-rose-100 text-xs font-semibold text-rose-700"><XCircle size={15} className="shrink-0" />{du(error)}</div> : undefined}
-      footer={<><button disabled={saving} onClick={onClose} className={secondaryButton}>{du("m46ad3916f6a0")}</button><button disabled={saving || rows.length === 0} onClick={onImport} className={`${primaryButton} disabled:opacity-40 disabled:cursor-not-allowed`}>{saving ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />} {du("med2c9cb3830e")}{" "}{rows.length || ""}</button></>}>
+      footer={<><button disabled={saving} onClick={onClose} className={secondaryButton}>{du("m46ad3916f6a0")}</button><PendingButton pending={saving} disabled={saving || rows.length === 0} onClick={onImport} className={`${primaryButton} disabled:opacity-40 disabled:cursor-not-allowed`}>{saving ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />} {du("med2c9cb3830e")}{" "}{rows.length || ""}</PendingButton></>}>
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl bg-indigo-50 border border-indigo-100">
           <div><p className="text-xs font-bold text-indigo-800">{du("mab30701bf1b8")}</p><p className="text-[10px] text-indigo-600 mt-1">{du("m305b07c05932")}</p></div>

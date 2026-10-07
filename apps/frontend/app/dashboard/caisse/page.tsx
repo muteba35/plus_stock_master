@@ -1,4 +1,5 @@
 "use client";
+import PendingButton from "../../../src/components/PendingButton";
 import { useDashboardAccess } from "../components/DashboardAccess";
 import { dashboardUi as du, dashboardLocale } from "../../../src/i18n/catalog";
 import { useLanguage as useDashboardLanguage } from "../../../src/components/LanguageRuntime";
@@ -649,9 +650,9 @@ export default function CashRegisterPage() {
         footer={
           <>
             <button disabled={saving} onClick={() => setPaymentOpen(false)} className={secondaryButton}>{du("m46ad3916f6a0")}</button>
-            <button onClick={completePayment} disabled={saving || (paymentMethod === "Espèces" && receivedAmount < totalTTC)} className={primaryButton}>
+            <PendingButton pending={saving} onClick={completePayment} disabled={saving || (paymentMethod === "Espèces" && receivedAmount < totalTTC)} className={primaryButton}>
               {saving ? <Loader2 size={14} className="animate-spin" /> : <ReceiptText size={14} />}
-              {du("ma40db5d660f5")}{" "}</button>
+              {du("ma40db5d660f5")}{" "}</PendingButton>
           </>
         }
       >

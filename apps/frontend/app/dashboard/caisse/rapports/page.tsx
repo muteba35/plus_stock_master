@@ -1,4 +1,5 @@
 "use client";
+import PendingButton from "../../../../src/components/PendingButton";
 import { useDashboardAccess } from "../../components/DashboardAccess";
 import { dashboardUi as du, dashboardLocale } from "../../../../src/i18n/catalog";
 import { useLanguage as useDashboardLanguage } from "../../../../src/components/LanguageRuntime";
@@ -260,7 +261,7 @@ export default function CashReportsPage() {
       <CashHeader
         title={du("md5f65d478abb")}
         subtitle={data.scope === "all" ? du("md448ee1ff728") : du("m5f23de2bb497")}
-        action={<div className="flex flex-wrap gap-2"><button onClick={() => void fetchReports()} disabled={loading} className={secondaryButton}><RefreshCw size={14} className={loading ? "animate-spin" : ""} /> {du("md7d646faaecb")}</button>{canExport && <><button onClick={exportExcel} disabled={loading} className={secondaryButton}><Download size={14} /> {du("m48d53635551c")}</button><button onClick={exportPdf} disabled={loading} className={secondaryButton}><FileText size={14} /> {du("m1d393b0081b6")}</button></>}</div>}
+        action={<div className="flex flex-wrap gap-2"><PendingButton pending={loading} onClick={() => void fetchReports()} disabled={loading} className={secondaryButton}><RefreshCw size={14} className={loading ? "animate-spin" : ""} /> {du("md7d646faaecb")}</PendingButton>{canExport && <><PendingButton pending={loading} onClick={exportExcel} disabled={loading} className={secondaryButton}><Download size={14} /> {du("m48d53635551c")}</PendingButton><PendingButton pending={loading} onClick={exportPdf} disabled={loading} className={secondaryButton}><FileText size={14} /> {du("m1d393b0081b6")}</PendingButton></>}</div>}
       />
 
       {error && <div className="p-3 rounded-xl border border-rose-100 bg-rose-50 text-xs font-semibold text-rose-700 flex items-center gap-2"><AlertCircle size={15} />{du(error)}</div>}
@@ -285,7 +286,7 @@ export default function CashReportsPage() {
               </div>
             </>
           )}
-          <button onClick={() => void fetchReports()} disabled={loading} className={secondaryButton}><RefreshCw size={14} className={loading ? "animate-spin" : ""} /> {du("mf9dd37b7e94e")}</button>
+          <PendingButton pending={loading} onClick={() => void fetchReports()} disabled={loading} className={secondaryButton}><RefreshCw size={14} className={loading ? "animate-spin" : ""} /> {du("mf9dd37b7e94e")}</PendingButton>
         </div>
       </section>
 

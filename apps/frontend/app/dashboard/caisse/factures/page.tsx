@@ -1,4 +1,5 @@
 "use client";
+import PendingButton from "../../../../src/components/PendingButton";
 import { dashboardUi as du, dashboardLocale } from "../../../../src/i18n/catalog";
 import { useLanguage as useDashboardLanguage } from "../../../../src/components/LanguageRuntime";
 
@@ -254,7 +255,7 @@ export default function InvoicesPage() {
 
   return (
     <div className="space-y-5 bg-[#f9fafd] p-3 sm:p-6 rounded-2xl sm:rounded-3xl min-h-screen text-slate-800">
-      <CashHeader title={du("mcf728fa6fc3f")} subtitle={scope === "all" ? du("m89d0d8d23b55") : du("m41a5b0ad015c")} action={canExportInvoices ? <div className="flex flex-wrap gap-2"><button onClick={exportCsv} disabled={exporting || loading} className={secondaryButton}><Download size={14} /> {du("m48d53635551c")}</button><button onClick={exportWord} disabled={exporting || loading} className={secondaryButton}><FileText size={14} /> {du("m3a2860ece5a4")}</button><button onClick={exportCurrentPdf} disabled={exporting || loading} className={secondaryButton}><Printer size={14} /> {du("m1d393b0081b6")}</button></div> : undefined} />
+      <CashHeader title={du("mcf728fa6fc3f")} subtitle={scope === "all" ? du("m89d0d8d23b55") : du("m41a5b0ad015c")} action={canExportInvoices ? <div className="flex flex-wrap gap-2"><PendingButton pending={exporting || loading} onClick={exportCsv} disabled={exporting || loading} className={secondaryButton}><Download size={14} /> {du("m48d53635551c")}</PendingButton><PendingButton pending={exporting || loading} onClick={exportWord} disabled={exporting || loading} className={secondaryButton}><FileText size={14} /> {du("m3a2860ece5a4")}</PendingButton><PendingButton pending={exporting || loading} onClick={exportCurrentPdf} disabled={exporting || loading} className={secondaryButton}><Printer size={14} /> {du("m1d393b0081b6")}</PendingButton></div> : undefined} />
 
       {error && <div className="p-3 rounded-xl bg-rose-50 border border-rose-100 text-xs font-semibold text-rose-700">{du(error)}</div>}
 

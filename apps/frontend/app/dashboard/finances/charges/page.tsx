@@ -1,4 +1,5 @@
 "use client";
+import PendingButton from "../../../../src/components/PendingButton";
 import { dashboardUi as du, dashboardLocale } from "../../../../src/i18n/catalog";
 import { useLanguage as useDashboardLanguage } from "../../../../src/components/LanguageRuntime";
 
@@ -201,7 +202,7 @@ export default function FinanceChargesPage() {
       <CashHeader
         title={du("m0be6066958d9")}
         subtitle={du("m40ac882c49fa")}
-        action={<div className="flex flex-wrap gap-2"><button onClick={refreshAll} disabled={isLoading} className={secondaryButton}><RefreshCw size={14} className={isLoading ? "animate-spin" : ""} /> {du("md7d646faaecb")}</button><button onClick={openCreate} className={primaryButton}><Plus size={14} /> {du("mdf647da3d133")}</button></div>}
+        action={<div className="flex flex-wrap gap-2"><PendingButton pending={isLoading} onClick={refreshAll} disabled={isLoading} className={secondaryButton}><RefreshCw size={14} className={isLoading ? "animate-spin" : ""} /> {du("md7d646faaecb")}</PendingButton><button onClick={openCreate} className={primaryButton}><Plus size={14} /> {du("mdf647da3d133")}</button></div>}
       />
 
       <FinanceDateFilters dateFilter={finance.dateFilter as DateFilterValue} onDateFilterChange={finance.setDateFilter} customStart={finance.customStart} customEnd={finance.customEnd} onCustomStartChange={finance.setCustomStart} onCustomEndChange={finance.setCustomEnd} />
@@ -257,7 +258,7 @@ export default function FinanceChargesPage() {
         </>
       )}
 
-      <CashModal open={modalOpen} title={editingCharge ? du("m2319ecae8d25") : du("mdf647da3d133")} subtitle={du("m76d108674847")} onClose={() => setModalOpen(false)} footer={<div className="flex justify-end gap-2"><button onClick={() => setModalOpen(false)} className={secondaryButton}>{du("m46ad3916f6a0")}</button><button onClick={() => void saveCharge()} disabled={saving} className={primaryButton}>{saving ? <Loader2 size={14} className="animate-spin" /> : null} {du("m71dc74873e23")}</button></div>}>
+      <CashModal open={modalOpen} title={editingCharge ? du("m2319ecae8d25") : du("mdf647da3d133")} subtitle={du("m76d108674847")} onClose={() => setModalOpen(false)} footer={<div className="flex justify-end gap-2"><button onClick={() => setModalOpen(false)} className={secondaryButton}>{du("m46ad3916f6a0")}</button><PendingButton pending={saving} onClick={() => void saveCharge()} disabled={saving} className={primaryButton}>{saving ? <Loader2 size={14} className="animate-spin" /> : null} {du("m71dc74873e23")}</PendingButton></div>}>
         <div className="space-y-4">
           {modalError && <div className="rounded-xl border border-rose-100 bg-rose-50 p-3 text-xs font-bold text-rose-600 flex items-center gap-2"><AlertCircle size={14} />{du(modalError)}</div>}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

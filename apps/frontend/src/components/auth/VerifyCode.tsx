@@ -18,7 +18,9 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://plus-stock-master.on
 
 export default function VerifyCode() {
   const router = useRouter();
-  const { translate } = useLanguage();
+  const { translate, language } = useLanguage();
+  const en = language === "en";
+  const [slowRequest, setSlowRequest] = useState(false);
 
   const [otp, setOtp] = useState<string[]>(["", "", "", "", "", ""]);
   const [isLoading, setIsLoading] = useState(false);
@@ -31,6 +33,12 @@ export default function VerifyCode() {
 
   const inputs = useRef<(HTMLInputElement | null)[]>([]);
   const verifying = useRef(false);
+
+  useEffect(() => {
+    if (!isLoading && !isResending) return;
+    const timeout = window.setTimeout(() => setSlowRequest(true), 8000);
+    return () => window.clearTimeout(timeout);
+  }, [isLoading, isResending]);
 
   // Vérification email temporaire
   useEffect(() => {
@@ -116,6 +124,7 @@ export default function VerifyCode() {
     if (verifying.current || isResending || isBlocked) return;
     if (!/^\d{6}$/.test(otp.join(""))) return;
     verifying.current = true;
+    setSlowRequest(false);
     let authenticated = false;
 
     setIsLoading(true);
@@ -232,6 +241,7 @@ export default function VerifyCode() {
 
   const handleResend = async () => {
     if (verifying.current || isResending || isBlocked || timer > 0) return;
+    setSlowRequest(false);
     setIsResending(true);
     setError("");
 
@@ -369,7 +379,7 @@ export default function VerifyCode() {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleVerify} className="space-y-8">
+          <form onSubmit={handleVerify} aria-busy={isLoading} className="space-y-8">
             {/* OTP Grid Inputs */}
             <div className="flex justify-between gap-3">
               {otp.map((digit, index) => (
@@ -382,7 +392,7 @@ export default function VerifyCode() {
                   inputMode="numeric"
                   maxLength={1}
                   value={digit}
-                  disabled={isBlocked || isLoading}
+                  disabled={isBlocked || isLoading || isResending}
                   onPaste={handlePaste}
                   onChange={(e) => handleChange(e.target, index)}
                   onKeyDown={(e) => handleKeyDown(e, index)}
@@ -394,11 +404,12 @@ export default function VerifyCode() {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={isLoading || isBlocked || otp.some((v) => v === "")}
+              aria-busy={isLoading}
+              disabled={isLoading || isResending || isBlocked || otp.some((v) => v === "")}
               className="w-full py-4 bg-[#090E1A] hover:bg-indigo-600 rounded-2xl text-white font-black text-[11px] uppercase tracking-[0.2em] transition-all duration-300 flex items-center justify-center gap-3 shadow-xl active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed"
             >
               {isLoading ? (
-                <Loader2 size={18} className="animate-spin" />
+                <span data-no-translate role="status" className="flex items-center gap-3"><Loader2 size={18} aria-hidden="true" className="shrink-0 animate-spin" />{successMessage ? (en ? "Opening your workspace..." : "Ouverture de votre espace...") : (en ? "Verifying..." : "Vérification en cours...")}</span>
               ) : (
                 <>
                   {translate("Vérifier le code")}
@@ -407,6 +418,7 @@ export default function VerifyCode() {
               )}
             </button>
           </form>
+          {slowRequest && (isLoading || isResending) && <p role="status" data-no-translate className="mt-4 text-center text-sm leading-6 text-slate-600">{en ? "This is taking longer than expected. Please keep this page open; your request is still in progress." : "Cela prend plus de temps que prévu. Gardez cette page ouverte : votre demande est toujours en cours."}</p>}
 
           {/* Resend Actions */}
           <div className="mt-10 pt-8 border-t border-slate-100 text-center">
@@ -417,7 +429,8 @@ export default function VerifyCode() {
             <button
               type="button"
               onClick={handleResend}
-              disabled={isResending || isBlocked || timer > 0}
+              aria-busy={isResending}
+              disabled={isLoading || isResending || isBlocked || timer > 0}
               className="inline-flex items-center gap-2 text-indigo-600 hover:text-indigo-800 font-black text-[10px] uppercase tracking-[0.15em] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {isResending ? (
@@ -429,7 +442,7 @@ export default function VerifyCode() {
                 />
               )}
 
-              {timer > 0 ? <>{translate("Attendre")} {timer}s</> : translate("Renvoyer un code")}
+              {isResending ? <span data-no-translate>{en ? "Sending..." : "Envoi en cours..."}</span> : timer > 0 ? <>{translate("Attendre")} {timer}s</> : translate("Renvoyer un code")}
             </button>
 
             <AnimatePresence>

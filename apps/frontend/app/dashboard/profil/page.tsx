@@ -1,4 +1,5 @@
 "use client";
+import PendingButton from "../../../src/components/PendingButton";
 import { dashboardUi as du, dashboardLocale } from "../../../src/i18n/catalog";
 import { useLanguage as useDashboardLanguage } from "../../../src/components/LanguageRuntime";
 
@@ -70,6 +71,8 @@ const convertToBase64 = (file: File): Promise<string> => {
 export default function ProfilePage() {
   const { ui: du } = useDashboardLanguage();
   const [isEditing, setIsEditing] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   const [profileMessage, setProfileMessage] = useState({ type: "", text: "" });
@@ -175,6 +178,7 @@ export default function ProfilePage() {
   };
 
   const handleSaveProfile = async () => {
+    if (savingProfile) return;
     if (editFormData) {
       if (canEditTotalProfile && !nameRegex.test(editFormData.firstName)) {
         return setProfileMessage({ type: "error", text: "Le prenom est invalide (minimum 2 lettres)." });
@@ -203,6 +207,7 @@ export default function ProfilePage() {
       }
 
       setProfileMessage({ type: "", text: "" });
+      setSavingProfile(true);
 
       try {
         const token = localStorage.getItem("token");
@@ -263,12 +268,15 @@ export default function ProfilePage() {
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "Erreur lors de la sauvegarde.";
         setProfileMessage({ type: "error", text: errorMessage });
+      } finally {
+        setSavingProfile(false);
       }
     }
   };
 
   const handlePasswordUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (savingPassword) return;
     
     if (!currentPassword || !newPassword || !confirmPassword) {
       setPasswordMessage({ type: "error", text: "Veuillez remplir tous les champs de sécurité." });
@@ -288,6 +296,7 @@ export default function ProfilePage() {
     try {
       const token = localStorage.getItem("token");
 
+      setSavingPassword(true);
       const response = await fetch(`${API_URL}/auth/update-password`, {
         method: "PUT",
         headers: {
@@ -314,6 +323,8 @@ export default function ProfilePage() {
     } catch (error) {
       console.error("Erreur mot de passe :", error);
       setPasswordMessage({ type: "error", text: "Erreur serveur lors du changement de mot de passe." });
+    } finally {
+      setSavingPassword(false);
     }
   };
 
@@ -431,7 +442,7 @@ export default function ProfilePage() {
               >
                 <X size={13} /> {du("m46ad3916f6a0")}{" "}</button>
             )}
-            <button 
+            <PendingButton pending={savingProfile} 
               onClick={isEditing ? handleSaveProfile : handleEditClick}
               className={`w-full sm:w-auto flex items-center justify-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl border border-slate-200 transition-all whitespace-nowrap ${
                 isEditing ? "bg-emerald-600 text-white border-emerald-600 shadow-sm" : "bg-white text-slate-700 hover:bg-slate-50"
@@ -444,7 +455,7 @@ export default function ProfilePage() {
                 <>
                   <Edit2 size={12} /> {du("ma049b48045c1")}{" "}</>
               )}
-            </button>
+            </PendingButton>
           </div>
         </div>
       </div>
@@ -722,11 +733,11 @@ export default function ProfilePage() {
           </div>
 
           <div className="pt-2 flex justify-start">
-            <button 
+            <PendingButton pending={savingPassword} 
               type="submit"
               className="bg-slate-900 text-white text-xs font-bold px-4 py-2 rounded-xl border border-slate-900 hover:bg-slate-800 shadow-sm transition-all flex items-center gap-1.5"
             >
-              {du("m22d502689382")}{" "}</button>
+              {du("m22d502689382")}{" "}</PendingButton>
           </div>
         </form>
       </div>

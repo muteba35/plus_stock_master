@@ -1,4 +1,5 @@
 "use client";
+import PendingButton from "../../../../src/components/PendingButton";
 import { dashboardUi as du, dashboardLocale } from "../../../../src/i18n/catalog";
 import { useLanguage as useDashboardLanguage } from "../../../../src/components/LanguageRuntime";
 
@@ -91,9 +92,9 @@ export default function NotificationSettingsPage() {
           <h1 className="text-xl font-bold text-slate-900">{du("m54e8b54afab3")}</h1>
           <p className="text-xs text-slate-400 font-medium mt-1">{du("m4934dfd3cd80")}</p>
         </div>
-        <button onClick={savePreferences} disabled={saving || loading} className="inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black px-4 py-3 rounded-xl transition-colors disabled:opacity-50">
+        <PendingButton pending={saving || loading} onClick={savePreferences} disabled={saving || loading} className="inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black px-4 py-3 rounded-xl transition-colors disabled:opacity-50">
           {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
-          {du("m71dc74873e23")}{" "}</button>
+          {du("m71dc74873e23")}{" "}</PendingButton>
       </div>
 
       {error && <div className="p-3 rounded-xl bg-rose-50 border border-rose-100 text-rose-600 text-xs font-bold">{du(error)}</div>}

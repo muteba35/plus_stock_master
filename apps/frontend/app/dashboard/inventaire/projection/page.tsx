@@ -1,4 +1,5 @@
 "use client";
+import PendingButton from "../../../../src/components/PendingButton";
 import { useDashboardAccess } from "../../components/DashboardAccess";
 import { dashboardUi as du, dashboardLocale } from "../../../../src/i18n/catalog";
 import { useLanguage as useDashboardLanguage } from "../../../../src/components/LanguageRuntime";
@@ -125,7 +126,7 @@ export default function InventoryProjectionPage() {
 
   return (
     <div className="space-y-5 bg-[#f9fafd] p-3 sm:p-6 rounded-2xl sm:rounded-3xl min-h-screen text-slate-800">
-      <PageHeader title={du("m03378475262d")} subtitle={du("m0f25b515ce61")} action={<div className="flex flex-wrap gap-2"><button onClick={() => void fetchProjection()} disabled={loading} className={secondaryButton}><RefreshCw size={14} className={loading ? "animate-spin" : ""} /> {du("md7d646faaecb")}</button>{canExport && <><button onClick={exportExcel} disabled={loading} className={secondaryButton}><Download size={14} /> {du("m48d53635551c")}</button><button onClick={exportPdf} disabled={loading} className={secondaryButton}><FileText size={14} /> {du("m1d393b0081b6")}</button></>}</div>} />
+      <PageHeader title={du("m03378475262d")} subtitle={du("m0f25b515ce61")} action={<div className="flex flex-wrap gap-2"><PendingButton pending={loading} onClick={() => void fetchProjection()} disabled={loading} className={secondaryButton}><RefreshCw size={14} className={loading ? "animate-spin" : ""} /> {du("md7d646faaecb")}</PendingButton>{canExport && <><PendingButton pending={loading} onClick={exportExcel} disabled={loading} className={secondaryButton}><Download size={14} /> {du("m48d53635551c")}</PendingButton><PendingButton pending={loading} onClick={exportPdf} disabled={loading} className={secondaryButton}><FileText size={14} /> {du("m1d393b0081b6")}</PendingButton></>}</div>} />
 
       {error && <div className="p-3 rounded-xl border border-rose-100 bg-rose-50 text-xs font-semibold text-rose-700 flex items-center gap-2"><AlertCircle size={15} />{du(error)}</div>}
 

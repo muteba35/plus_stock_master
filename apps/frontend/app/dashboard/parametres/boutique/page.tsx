@@ -1,4 +1,5 @@
 "use client";
+import PendingButton from "../../../../src/components/PendingButton";
 import { dashboardUi as du, dashboardLocale } from "../../../../src/i18n/catalog";
 import { useLanguage as useDashboardLanguage } from "../../../../src/components/LanguageRuntime";
 
@@ -667,22 +668,22 @@ export default function BoutiquePage() {
                 {du("m5f2c445cc9ce")}{" "}</p>
             </div>
             <div className="flex flex-col sm:flex-row gap-2">
-              <button
+              <PendingButton pending={ratesSyncing || ratesSaving}
                 type="button"
                 onClick={syncDailyExchangeRates}
                 disabled={ratesSyncing || ratesSaving || ratesLoading || !canChangeCurrency}
                 className="inline-flex items-center justify-center gap-2 border border-indigo-100 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold px-4 py-2.5 rounded-xl disabled:opacity-50"
               >
                 {ratesSyncing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-                {du("me72c2c98b361")}{" "}</button>
-              <button
+                {du("me72c2c98b361")}{" "}</PendingButton>
+              <PendingButton pending={ratesSaving || ratesSyncing}
                 type="button"
                 onClick={saveCurrencySettings}
                 disabled={ratesSaving || ratesSyncing || ratesLoading || !canChangeCurrency}
                 className="inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl disabled:opacity-50"
               >
                 {ratesSaving && <Loader2 size={14} className="animate-spin" />}
-                {du("m71dc74873e23")}{" "}</button>
+                {du("m71dc74873e23")}{" "}</PendingButton>
             </div>
           </div>
           <div className="p-5 grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)] gap-5">
@@ -1221,14 +1222,14 @@ function BoutiqueModal({
                   {isView ? du("m711e5f2e198d") : du("m46ad3916f6a0")}
                 </button>
                 {!isView && (
-                  <button
+                  <PendingButton pending={isSubmitting}
                     type="submit"
                     disabled={isSubmitting}
                     className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-2 disabled:bg-slate-400"
                   >
                     {isSubmitting && <Loader2 size={14} className="animate-spin" />}
                     {mode === "edit" ? du("m71dc74873e23") : du("m83f9ed85946e")}
-                  </button>
+                  </PendingButton>
                 )}
               </div>
             </form>
