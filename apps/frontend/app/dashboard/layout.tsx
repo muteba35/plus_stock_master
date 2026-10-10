@@ -375,8 +375,10 @@ export default function DashboardLayout({
       }
     };
 
+    let syncing = false;
+    let disposed = false;
     const syncSessionFromBackend = async () => {
-      if (signingOut.current) return;
+      if (signingOut.current || syncing || disposed || document.visibilityState === "hidden" || !navigator.onLine) return;
       loadDataFromStorage();
 
       const token = localStorage.getItem("token");
@@ -386,6 +388,7 @@ export default function DashboardLayout({
         return;
       }
 
+      syncing = true;
       try {
         const response = await fetch(`${API_URL}/auth/me`, {
           method: "GET",
@@ -395,9 +398,14 @@ export default function DashboardLayout({
           },
         });
 
+        if (disposed || signingOut.current || localStorage.getItem("token") !== token) return;
+        if (response.status === 401 || response.status === 403) {
+          document.cookie = "stockmaster_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+          ["token", "user_permissions", "user_profile", "subscription_state"].forEach(key => localStorage.removeItem(key));
+          router.replace("/login");
+          return;
+        }
         const data = await response.json();
-
-        if (signingOut.current || localStorage.getItem("token") !== token) return;
 
         if (response.status === 428 && data.mustChangePassword) {
           router.replace("/first-login"); 
@@ -433,14 +441,10 @@ export default function DashboardLayout({
           boutique: userData.boutique || null,
         });
       } catch (error) {
-        if (signingOut.current || localStorage.getItem("token") !== token) return;
+        if (disposed || signingOut.current || localStorage.getItem("token") !== token) return;
         console.error("Erreur synchronisation session:", error);
-        document.cookie = "stockmaster_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-        localStorage.removeItem("token");
-        localStorage.removeItem("user_permissions");
-        localStorage.removeItem("user_profile");
-        localStorage.removeItem("subscription_state");
-        router.push("/login");
+      } finally {
+        syncing = false;
       }
     };
 
@@ -451,13 +455,18 @@ export default function DashboardLayout({
     window.addEventListener("userProfileUpdated", syncSessionFromBackend);
     window.addEventListener("storage", syncSessionFromBackend);
     window.addEventListener("focus", handleFocus);
+    window.addEventListener("online", handleFocus);
+    document.addEventListener("visibilitychange", handleFocus);
 
     return () => {
+      disposed = true;
       clearTimeout(timer);
       window.clearInterval(interval);
       window.removeEventListener("userProfileUpdated", syncSessionFromBackend);
       window.removeEventListener("storage", syncSessionFromBackend);
       window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("online", handleFocus);
+      document.removeEventListener("visibilitychange", handleFocus);
     };
   }, [pathname, router]);
 

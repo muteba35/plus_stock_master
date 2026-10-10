@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import Navbar from "../src/components/Navbar";
 import Hero from "../src/components/Hero";
 import { LandingDemo, LandingPlans, LandingHelp } from "../src/components/LandingDetails";
@@ -30,7 +30,6 @@ const slideIn = (direction: "left" | "right") => ({
 export default function LandingPage() {
   const { translate, language } = useLanguage();
   const en = language === "en";
-  const { scrollYProgress } = useScroll();
   const [showScrollTop, setShowScrollTop] = useState(false);
   const scrollFrame = useRef<number | null>(null);
   const stopScroll = () => { if (scrollFrame.current !== null) cancelAnimationFrame(scrollFrame.current); scrollFrame.current = null; };
@@ -54,8 +53,7 @@ export default function LandingPage() {
     return () => { stopScroll(); window.removeEventListener("wheel", stopScroll); window.removeEventListener("touchstart", stopScroll); window.removeEventListener("keydown", stopScroll); };
   }, []);
   
-  const backgroundColor = useTransform(scrollYProgress, [0, 0.2, 0.4, 0.8], ["#ffffff", "#ffffff", "#020617", "#020617"]);
-  const textColor = useTransform(scrollYProgress, [0, 0.2, 0.4], ["#0f172a", "#0f172a", "#f8fafc"]);
+  const textColor = "#0f172a";
 
   useEffect(() => {
     const handleScroll = () => setShowScrollTop(window.scrollY > 400);
@@ -64,7 +62,7 @@ export default function LandingPage() {
   }, []);
 
   return (
-    <motion.main style={{ backgroundColor }} className="min-h-screen transition-colors duration-1000 relative font-sans">
+    <motion.main className="min-h-screen bg-white relative font-sans">
       <Navbar />
       <Hero />
       <LandingDemo />
@@ -158,7 +156,8 @@ export default function LandingPage() {
 
 
       {/* --- SECTION 4 : FONCTIONNALITÉS CLÉS --- */}
-      <section id="solutions" className="py-24 px-6 max-w-6xl mx-auto scroll-mt-20">
+      <section id="solutions" className="bg-slate-950 scroll-mt-20">
+      <div className="py-24 px-6 max-w-6xl mx-auto">
         <motion.div {...reveal} className="mb-12 text-center">
           <h2 className="text-indigo-500 font-bold uppercase text-[9px] tracking-[0.4em] mb-3">Outils de Gestion</h2>
           <p className="text-2xl md:text-4xl font-extrabold uppercase tracking-tighter text-white leading-none">
@@ -184,6 +183,7 @@ export default function LandingPage() {
             </motion.div>
           ))}
         </div>
+      </div>
       </section>
       {/* --- SÉPARATEUR 2 --- */}
       <div className="w-full flex justify-center px-6"><div className="w-full max-w-4xl h-[1px] bg-gradient-to-r from-transparent via-slate-200 to-transparent opacity-40" /></div>

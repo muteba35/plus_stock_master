@@ -92,7 +92,10 @@ export const protect = async (req, res, next) => {
       });
     }
 
-    return res.status(401).json({ message: "Acces refuse. Token invalide ou altere." });
+    if (error.name === "JsonWebTokenError" || error.name === "NotBeforeError") {
+      return res.status(401).json({ message: "Acces refuse. Token invalide ou altere." });
+    }
+    return res.status(503).json({ message: "Verification de session temporairement indisponible. Reessayez." });
   }
 };
 
