@@ -1,8 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
   <title id="title">Movoora</title>
   <g fill="#2563EB">
-    <path d="M2 13 16 5 32 14 48 5 62 13 32 30Z"/>
-    <path d="M2 17 20 27 20 59 2 49Z"/>
-    <path d="M44 27 62 17 62 49 44 59Z"/>
+    <path d="M6 30V4H34C49 4 58 13 58 26H44C44 21 40 18 33 18H20V30Z"/>
+    <path d="M58 34V60H30C15 60 6 51 6 38H20C20 43 24 46 31 46H44V34Z"/>
   </g>
 </svg>

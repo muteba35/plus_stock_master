@@ -1,4 +1,5 @@
 "use client";
+import BrandLogo from "../BrandLogo";
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Lock, ArrowRight, Loader2, CheckCircle2, Eye, EyeOff, Check, X } from "lucide-react";
@@ -107,15 +108,7 @@ export default function ResetPassword() {
               <motion.div key="reset-form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <header className="text-center mb-10">
                   <div className="flex flex-col items-center gap-3 mb-8">
-                    <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-indigo-100">
-                      <img src="/movoora-mark.svg?v=2" alt="Movoora" className="bg-white rounded-sm p-0.5 w-8 h-8" />
-                    </div>
-                    <div className="flex flex-col leading-none">
-                      <span className="text-xl font-black tracking-tighter text-slate-900 uppercase">
-                        MOVO<span className="text-indigo-600">ORA</span>
-                      </span>
-                      <span className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-1">Pro Edition</span>
-                    </div>
+                    <BrandLogo className="w-[200px] h-12" />
                   </div>
 
                   <h2 className="text-3xl font-black text-slate-950 uppercase tracking-tighter leading-none mb-4">Nouveau Code</h2>

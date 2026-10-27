@@ -1,4 +1,5 @@
 "use client";
+import BrandLogo from "../BrandLogo";
 
 import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -79,17 +80,7 @@ function VerifyEmailContent() {
     <div className="w-full max-w-[460px] bg-white rounded-[2.5rem] shadow-[0_32px_64px_-12px_rgba(15,23,42,0.1)] border border-slate-100 p-8 lg:p-14 relative">
       <header className="text-center">
         <div className="flex flex-col items-center gap-3 mb-8">
-          <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-indigo-100">
-            <img src="/movoora-mark.svg?v=2" alt="Movoora" className="bg-white rounded-sm p-0.5 w-8 h-8" />
-          </div>
-          <div className="flex flex-col leading-none">
-            <span className="text-xl font-black tracking-tighter text-slate-900 uppercase">
-              MOVO<span className="text-indigo-600">ORA</span>
-            </span>
-            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-1">
-              Pro Edition
-            </span>
-          </div>
+          <BrandLogo className="w-[200px] h-12" />
         </div>
 
         <div className="flex items-center justify-center gap-4 mb-10">

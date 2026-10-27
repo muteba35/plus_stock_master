@@ -1,4 +1,5 @@
 "use client";
+import BrandLogo from "../BrandLogo";
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -181,13 +182,7 @@ export default function Login() {
 
             <div className="relative z-10 flex flex-col items-center w-full">
 
-              <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-xl flex items-center justify-center text-white shadow-xl mb-6 border border-white/10">
-                <img src="/movoora-mark.svg?v=2" alt="Movoora" className="bg-white rounded-sm p-0.5 w-8 h-8" />
-              </div>
-
-              <h1 className="text-2xl font-black text-white tracking-tighter uppercase">
-                MOVO<span className="text-indigo-400">ORA</span>
-              </h1>
+              <h1 className="mb-6"><BrandLogo inverse className="w-[200px] h-12" /></h1>
 
               <p className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.4em] mt-1">
                 {translate("Pro Edition")}

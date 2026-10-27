@@ -1,4 +1,5 @@
 "use client";
+import BrandLogo from "../../src/components/BrandLogo";
 import { dashboardUi as du, dashboardLocale } from "../../src/i18n/catalog";
 import { useLanguage as useDashboardLanguage } from "../../src/components/LanguageRuntime";
 
@@ -741,18 +742,14 @@ export default function DashboardLayout({
           {/* LOGO */}
           <div className="p-6 border-b border-slate-800/60 bg-[#141C2F] h-20 flex items-center justify-between shrink-0">
             <div className="flex items-center space-x-3 overflow-hidden">
-              <div className={boutiqueLogo ? "w-9 h-9 flex items-center justify-center shrink-0" : "w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-600/20 shrink-0"}>
-                <ShopLogo logo={boutiqueLogo} name={du("m21b13396785f")} className={boutiqueLogo ? "w-full h-full" : "bg-white rounded-sm p-0.5 w-5 h-5"} />
-              </div>
-
-              {(isSidebarOpen || isMobileSidebarOpen) && (
-                <div className="flex flex-col items-start">
-                  <h1 className="text-lg font-black tracking-tight leading-none text-white">
-                    {du("mc1eefa0388b3")}<span className="text-indigo-500">{du("mcc6db1d5bfb0")}</span>
-                  </h1>
-                  <span className="text-[8px] font-bold text-slate-500 uppercase tracking-[0.2em] mt-1">
-                    {du("m1edcdcb2a04e")}{" "}</span>
-                </div>
+              {boutiqueLogo ? (
+                <>
+                  <ShopLogo logo={boutiqueLogo} name={du("m21b13396785f")} className="w-9 h-9" />
+                  {(isSidebarOpen || isMobileSidebarOpen) && <span className="text-lg text-white">movoora</span>}
+                </>
+              ) : (
+                <BrandLogo inverse compact={!(isSidebarOpen || isMobileSidebarOpen)}
+                  className={(isSidebarOpen || isMobileSidebarOpen) ? "w-[158px] h-9" : "w-9 h-9"} />
               )}
             </div>
 

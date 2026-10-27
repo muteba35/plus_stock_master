@@ -1,4 +1,5 @@
 "use client";
+import BrandLogo from "../../src/components/BrandLogo";
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -96,10 +97,7 @@ export default function FirstLoginPage() {
           className="w-full max-w-4xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-200/50 lg:grid lg:grid-cols-[300px_1fr]"
         >
           <div className="bg-[#090E1A] px-8 py-10 text-center text-white flex flex-col items-center justify-center">
-            <div className="w-16 h-16 rounded-xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-950/40">
-              <img src="/movoora-mark.svg?v=2" alt="Movoora" className="bg-white rounded-sm p-0.5 w-8 h-8" />
-            </div>
-            <h1 className="mt-5 text-xl font-black">Movoora</h1>
+            <h1><BrandLogo inverse className="w-[200px] h-12" /></h1>
             <p className="mt-8 text-xs leading-6 text-slate-400">
               {translate("Protégez votre compte avant votre premier accès au tableau de bord.")}
             </p>

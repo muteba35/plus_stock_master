@@ -1,4 +1,5 @@
 "use client";
+import BrandLogo from "../BrandLogo";
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -166,12 +167,7 @@ export default function Register() {
           {/* --- PANNEAU GAUCHE --- */}
           <div className="lg:w-[320px] bg-[#090E1A] p-10 flex flex-col items-center justify-center relative shrink-0 border-r border-slate-800/40 text-center">
             <div className="relative z-10 flex flex-col items-center w-full">
-              <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-xl flex items-center justify-center text-white shadow-xl mb-6">
-                <img src="/movoora-mark.svg?v=2" alt="Movoora" className="bg-white rounded-sm p-0.5 w-8 h-8" />
-              </div>
-              <h1 className="text-2xl font-black text-white tracking-tighter uppercase">
-                MOVO<span className="text-indigo-400">ORA</span>
-              </h1>
+              <h1 className="mb-6"><BrandLogo inverse className="w-[200px] h-12" /></h1>
               <div className="flex items-center gap-3 w-full my-8">
                 <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-slate-700" />
                 <div className="w-1.5 h-1.5 rounded-full bg-indigo-500/50" />
