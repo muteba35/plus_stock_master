@@ -1,4 +1,5 @@
 "use client";
+import { exportBrandHtml } from "../../components/export-brand";
 import PendingButton from "../../../../src/components/PendingButton";
 import { dashboardUi as du, dashboardLocale } from "../../../../src/i18n/catalog";
 import { useLanguage as useDashboardLanguage } from "../../../../src/components/LanguageRuntime";
@@ -131,6 +132,7 @@ const invoiceHtml = (sale: InvoiceSale, businessName: string) => {
     </head>
     <body>
       <section class="invoice">
+        ${exportBrandHtml}
         <div class="top">
           <div>
             <h1>${du("m7a0aa1554ac7")}</h1>

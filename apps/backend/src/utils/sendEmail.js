@@ -2,9 +2,9 @@ import nodemailer from "nodemailer";
 import { Resend } from "resend";
 import { readFileSync } from "node:fs";
 
-const brandImage = readFileSync(new URL("../assets/movoora-mark.png", import.meta.url));
+const brandImage = readFileSync(new URL("../assets/movoora-relais-email.png", import.meta.url));
 const brandContentId = "movoora-brand";
-export const emailBrand = '<img src="cid:movoora-brand" width="44" height="44" alt="Logo Movoora" style="display:block;width:44px;height:44px;margin:0 auto 12px;border:0;background:#ffffff;border-radius:8px;">Movoora';
+export const emailBrand = '<img src="cid:movoora-brand" width="196" height="45" alt="movoora" style="display:inline-block;width:196px;max-width:100%;height:auto;vertical-align:middle;border:0;">';
 
 const getDefaultEmailTemplate = ({ title, alertColor, iconUrl, bodyMessage, showButton, frontendUrl }) => `
   <div style="background-color: #F4F7FA; padding: 50px 15px; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
@@ -258,7 +258,7 @@ export const sendEmail = async (options) => {
   try {
     const origin = new URL(frontendUrl);
     if (origin.protocol === "https:" && !origin.username && !origin.password) {
-      const logoUrl = new URL("/movoora-mark.png", origin).href;
+      const logoUrl = new URL("/movoora-relais-email.png", origin).href;
       htmlContent = htmlContent.replaceAll("cid:movoora-brand", logoUrl);
       useHostedLogo = true;
     }
@@ -273,7 +273,7 @@ export const sendEmail = async (options) => {
         subject: options.subject || "Notification Movoora",
         html: htmlContent,
         ...(options.replyTo ? { replyTo: options.replyTo } : {}),
-        ...(useHostedLogo ? {} : { attachments: [{ filename: "movoora-mark.png", content: brandImage.toString("base64"), contentId: brandContentId }] }),
+        ...(useHostedLogo ? {} : { attachments: [{ filename: "movoora-relais-email.png", content: brandImage.toString("base64"), contentId: brandContentId }] }),
       });
 
       if (info.error) {
@@ -296,7 +296,7 @@ export const sendEmail = async (options) => {
       subject: options.subject || "Notification Movoora",
       html: htmlContent,
       ...(options.replyTo ? { replyTo: options.replyTo } : {}),
-      ...(useHostedLogo ? {} : { attachments: [{ filename: "movoora-mark.png", content: brandImage, cid: brandContentId, contentType: "image/png", contentDisposition: "inline" }] }),
+      ...(useHostedLogo ? {} : { attachments: [{ filename: "movoora-relais-email.png", content: brandImage, cid: brandContentId, contentType: "image/png", contentDisposition: "inline" }] }),
     });
 
     console.log(`Email SMTP envoye a ${options.email}`);

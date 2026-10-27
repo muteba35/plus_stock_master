@@ -8,7 +8,7 @@ export type ExportContext = { boutiqueId: string; name: string; logo: string; cu
 
 async function reportLogo(source: string) {
   const image = new Image();
-  image.src = /^data:image\/(png|jpeg|webp);base64,/.test(source) ? source : "/movoora-mark.svg";
+  image.src = /^data:image\/(png|jpeg|webp);base64,/.test(source) ? source : "/movoora-relais-logo.png";
   await image.decode();
   const scale = Math.min(160 / image.naturalWidth, 64 / image.naturalHeight);
   const width = Math.max(1, Math.round(image.naturalWidth * scale));
